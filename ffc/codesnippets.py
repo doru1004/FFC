@@ -71,16 +71,10 @@ cell_coordinates = "const double * const * x = c.coordinates;\n"
 
 # Code snippets for computing Jacobian
 _jacobian_1D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];"""
 
 _jacobian_2D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
 const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
@@ -88,9 +82,6 @@ const double J%(restriction)s_10 = x%(restriction)s[1][1] - x%(restriction)s[0][
 const double J%(restriction)s_11 = x%(restriction)s[2][1] - x%(restriction)s[0][1];"""
 
 _jacobian_3D = """\
-// Extract vertex coordinates
-const double * const * x%(restriction)s = c%(restriction)s.coordinates;
-
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];
 const double J%(restriction)s_01 = x%(restriction)s[2][0] - x%(restriction)s[0][0];
