@@ -76,7 +76,7 @@ def _arglist(ir):
 
     # Iteration indices
     if is_matrix:
-        arglist += ", int i, int j"
+        arglist += ", int j, int k"
 
     return arglist
 
@@ -201,7 +201,7 @@ def _tabulate_tensor(ir, parameters):
     value = f_float(0)
     if prim_idims == []:
         common += [f_assign(f_A(f_int(0)), f_float(0))]
-    else:
+    elif len(prim_idims) is not 2:
         dim = reduce(lambda v,u: v*u, prim_idims)
         common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
@@ -454,7 +454,10 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        code += f_loop(lines, loop)
+        if len(loop) is 2:
+            code += lines
+        else:
+            code += f_loop(lines, loop)
 
     return code, num_ops
 
