@@ -249,9 +249,9 @@ format.update({
     "evaluate function":    evaluate_f,
     "ufc comment":          comment_ufc,
     "dolfin comment":       comment_dolfin,
-    "header_h":             header_h,
+    "header_h":             "",
     "header_c":             header_c,
-    "footer":               footer
+    "footer":               ""
 })
 
 # Class names

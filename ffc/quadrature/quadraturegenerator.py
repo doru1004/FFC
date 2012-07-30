@@ -53,8 +53,32 @@ def generate_integral_code(ir, prefix, parameters):
     code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
     code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
     code["additional_includes_set"] = ir["additional_includes_set"]
+    code["arglist"] = _arglist(ir)
 
     return code
+
+def _arglist(ir):
+    is_matrix = (len(ir['prim_idims'])==2)
+    float = format['float declaration']
+ 
+    if is_matrix:
+        # Matrices have a single pointer
+        arglist = "%s *localTensor" % float
+    else:
+        arglist = "%s **localTensor" % float
+
+    # Coordinates
+    arglist += ", %s *x[2]" % float
+
+    # Coefficients
+    for i in xrange(ir['num_coefficients']):
+        arglist += ", %s *w%d" % (float, i)
+
+    # Iteration indices
+    if is_matrix:
+        arglist += ", int i, int j"
+
+    return arglist
 
 def _tabulate_tensor(ir, parameters):
     "Generate code for a single integral (tabulate_tensor())."

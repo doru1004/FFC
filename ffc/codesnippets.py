@@ -155,7 +155,7 @@ evaluate_f = "f.evaluate(vals, y, c);"
 
 scale_factor = """\
 // Set scale factor
-const double det = std::abs(detJ);"""
+const double det = fabs(detJ);"""
 
 _facet_determinant_1D = """\
 // Facet determinant 1D (vertex)

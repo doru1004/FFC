@@ -54,7 +54,8 @@ def compute_integral_ir(domain_type,
           "form_id":              form_id,
           "geometric_dimension":  form_data.geometric_dimension,
           "num_facets":           num_facets,
-          "geo_consts":           {}}
+          "geo_consts":           {},
+          "num_coefficients":     form_data.num_coefficients}
 
     # Sort integrals and tabulate basis.
     sorted_integrals = _sort_integrals(integrals, metadata, form_data)

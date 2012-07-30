@@ -33,7 +33,8 @@ ufc_utils.
 import os
 
 # UFC code generation templates
-from ufc_utils import templates
+#from ufc_utils import templates
+from op2_utils import templates
 
 # FFC modules
 from ffc.log import info, error, begin, end, dstr

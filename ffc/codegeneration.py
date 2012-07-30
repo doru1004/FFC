@@ -64,24 +64,25 @@ def generate_code(ir, prefix, parameters):
     ir_elements, ir_dofmaps, ir_integrals, ir_forms = ir
 
     # Generate code for elements
-    info("Generating code for %d element(s)" % len(ir_elements))
-    code_elements = [_generate_element_code(ir, prefix, parameters) for ir in ir_elements]
+    #info("Generating code for %d element(s)" % len(ir_elements))
+    #code_elements = [_generate_element_code(ir, prefix, parameters) for ir in ir_elements]
 
     # Generate code for dofmaps
-    info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
-    code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters) for ir in ir_dofmaps]
+    #info("Generating code for %d dofmap(s)" % len(ir_dofmaps))
+    #code_dofmaps = [_generate_dofmap_code(ir, prefix, parameters) for ir in ir_dofmaps]
 
     # Generate code for integrals
     info("Generating code for integrals")
     code_integrals = [_generate_integral_code(ir, prefix, parameters) for ir in ir_integrals]
 
     # Generate code for forms
-    info("Generating code for forms")
-    code_forms = [_generate_form_code(ir, prefix, parameters) for ir in ir_forms]
+    #info("Generating code for forms")
+    #code_forms = [_generate_form_code(ir, prefix, parameters) for ir in ir_forms]
 
     end()
 
-    return code_elements, code_dofmaps, code_integrals, code_forms
+    #return code_elements, code_dofmaps, code_integrals, code_forms
+    return None, None, code_integrals, None
 
 def _generate_element_code(ir, prefix, parameters):
     "Generate code for finite element from intermediate representation."
