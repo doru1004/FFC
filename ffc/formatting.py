@@ -108,6 +108,7 @@ def format_code(code, wrapper_code, prefix, parameters):
         _write_file(code_h, prefix, ".h", parameters)
 
     end()
+    return code_h
 
 def _format_h(class_type, code, parameters):
     "Format header code for given class type."

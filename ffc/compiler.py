@@ -172,10 +172,12 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 5: format code
     cpu_time = time()
-    format_code(code, wrapper_code, prefix, parameters)
+    code = format_code(code, wrapper_code, prefix, parameters)
     _print_timing(5, time() - cpu_time)
 
     info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+
+    return code
 
 def compile_element(elements, prefix="Element", parameters=default_parameters()):
     """This function generates UFC code for a given UFL element or
