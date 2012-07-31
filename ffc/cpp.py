@@ -139,7 +139,7 @@ format.update({
 
 # UFC function arguments and class members (names)
 format.update({
-    "element tensor":             lambda i: "A[%s]" % i,
+    "element tensor":             lambda i, j: "A[%s][%s]" % (i, j),
     "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
     "coefficient":                lambda j, k: format["component"]("w%s" % j, [k]),
     "argument basis num":         "i",

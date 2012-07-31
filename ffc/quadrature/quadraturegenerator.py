@@ -72,7 +72,7 @@ def _arglist(ir):
 
     # Coefficients
     for i in xrange(ir['num_coefficients']):
-        arglist += ", %s *w%d" % (float, i)
+        arglist += ", %s **w%d" % (float, i)
 
     # Iteration indices
     if is_matrix:
@@ -197,13 +197,13 @@ def _tabulate_tensor(ir, parameters):
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
-    common += [f_comment("Reset values in the element tensor.")]
-    value = f_float(0)
-    if prim_idims == []:
-        common += [f_assign(f_A(f_int(0)), f_float(0))]
-    elif len(prim_idims) is not 2:
-        dim = reduce(lambda v,u: v*u, prim_idims)
-        common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
+    #common += [f_comment("Reset values in the element tensor.")]
+    #value = f_float(0)
+    #if prim_idims == []:
+    #    common += [f_assign(f_A(f_int(0)), f_float(0))]
+    #elif len(prim_idims) is not 2:
+    #    dim = reduce(lambda v,u: v*u, prim_idims)
+    #    common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
@@ -446,7 +446,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             if len(loop) is 2:
                 entry_code = f_iadd("*A", value)
             else:
-                entry_code = f_iadd(f_A(entry), value)
+                entry_code = f_iadd(f_A(entry, '0'), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
