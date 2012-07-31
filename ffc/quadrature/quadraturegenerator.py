@@ -63,9 +63,9 @@ def _arglist(ir):
  
     if is_matrix:
         # Matrices have a single pointer
-        arglist = "%s *localTensor" % float
+        arglist = "%s *A" % float
     else:
-        arglist = "%s **localTensor" % float
+        arglist = "%s **A" % float
 
     # Coordinates
     arglist += ", %s *x[2]" % float
@@ -443,7 +443,10 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
-            entry_code = f_iadd(f_A(entry), value)
+            if len(loop) is 2:
+                entry_code = f_iadd("*A", value)
+            else:
+                entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
