@@ -34,7 +34,7 @@ import os
 
 # UFC code generation templates
 #from ufc_utils import templates
-from op2_utils import templates
+from pyop2_utils import templates
 
 # FFC modules
 from ffc.log import info, error, begin, end, dstr
@@ -101,11 +101,12 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h += format["footer"]
 
     # Write file(s)
-    if parameters["split"]:
-        _write_file(code_h, prefix, ".h", parameters)
-        _write_file(code_c, prefix, ".cpp", parameters)
-    else:
-        _write_file(code_h, prefix, ".h", parameters)
+    if parameters['write_file']:
+        if parameters["split"]:
+            _write_file(code_h, prefix, ".h", parameters)
+            _write_file(code_c, prefix, ".cpp", parameters)
+        else:
+            _write_file(code_h, prefix, ".h", parameters)
 
     end()
     return code_h

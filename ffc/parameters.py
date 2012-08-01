@@ -52,6 +52,7 @@ FFC_PARAMETERS = {
   "error_control":                  False,   # with error control
   "swig_binary":                    "swig",  # swig binary file for the JIT compiler
   "swig_path":                      "",      # path to swig binary for the JIT compiler
+  "write_file":                     False    # Write the output to file
 }
 
 def default_parameters():
