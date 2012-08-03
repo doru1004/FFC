@@ -963,7 +963,11 @@ class QuadratureTransformerBase(Transformer):
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).
-        loop_index = format["free indices"][0]
+        if isinstance(ffc_element, MixedElement):
+            idx0, idx1 = format["free indices"][0], format["free indices"][1]
+            loop_index = "%s*%s+%s" % (len(ffc_element.elements()), idx0, idx1)
+        else:
+            loop_index = format["free indices"][0]
 
         # Create basis access, we never need to map the entry in the basis
         # table since we will either loop the entire space dimension or the
@@ -990,7 +994,11 @@ class QuadratureTransformerBase(Transformer):
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
-        loop_index_range = shape(self.unique_tables[psi_name])[1]
+        if isinstance(ffc_element, MixedElement):
+            loop_index_range = tuple([ e.get_nodal_basis().get_num_members() \
+                                       for e in ffc_element.elements()]) 
+        else:
+            loop_index_range = shape(self.unique_tables[psi_name])[1]
 
         # Set default coefficient access.
         coefficient_access = loop_index
@@ -1026,6 +1034,13 @@ class QuadratureTransformerBase(Transformer):
                 coefficient_access = format["add"]([f_ip, str(quad_offset)])
             else:
                 coefficient_access = f_ip
+
+        # If we are computing a vector-valued function then we need to access
+        # the coefficient through two indices
+        if isinstance(ffc_element, MixedElement):
+            idx0, idx1 = format["free indices"][0], format["free indices"][1]
+            #loop_index = "%s*%s+%s" % (len(ffc_element.elements()), idx0, idx1)
+            coefficient_access = [idx0, idx1]
 
         # If we have non zero column mapping but only one value just pick it.
         used_nzcs = set()

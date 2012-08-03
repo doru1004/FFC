@@ -333,7 +333,7 @@ def _generate_functions(functions, sets):
     f_F            = format["function value"]
     f_float        = format["floating point"]
     f_decl         = format["declaration"]
-    f_r            = format["free indices"][0]
+    f_r            = format["free indices"]
     f_iadd         = format["iadd"]
     f_loop         = format["generate loop"]
 
@@ -363,6 +363,8 @@ def _generate_functions(functions, sets):
         for function in list_of_functions:
             # Get name and number.
             number, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
+            if not isinstance(range_i, tuple):
+                range_i = tuple([range_i])
 
             # Add name to used psi names and non zeros name to used_nzcs.
             used_psi_tables.add(psi_name)
@@ -376,7 +378,7 @@ def _generate_functions(functions, sets):
             function_expr[number] = function
 
             # Get number of operations to compute entry and add to function operations count.
-            func_ops += (ops + 1)*range_i
+            func_ops += (ops + 1)*sum(range_i)
 
         # Add function operations to total count
         total_ops += func_ops
@@ -384,7 +386,13 @@ def _generate_functions(functions, sets):
 
         # Sort the functions according to name and create loop to compute the function values.
         lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
-        code += f_loop(lines, [(f_r, 0, loop_range)])
+        if isinstance(loop_range, tuple):
+            if not all(map(lambda x: x==loop_range[0], loop_range)):
+                raise RuntimeError("General mixed elements not yet supported")
+            loop_vars = [ (f_r[0], 0, loop_range[0]), (f_r[1], 0, len(loop_range)) ]
+        else: 
+            loop_vars = [(f_r[0], 0, loop_range)]
+        code += f_loop(lines, loop_vars)
 
     return code, total_ops
 
