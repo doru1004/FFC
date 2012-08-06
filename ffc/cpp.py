@@ -138,8 +138,18 @@ format.update({
 })
 
 # UFC function arguments and class members (names)
+def _pyop2_element_tensor(i, j=None):
+    if j is not None:
+        return "A[%s][%s]" % (i, j)
+    else:
+        return "*A"
+
+def _ufc_element_tensor(i):
+    return "A[%s]" % i
+
 format.update({
-    "element tensor":             lambda i, j: "A[%s][%s]" % (i, j),
+    "element tensor":             { "ufc"  : _ufc_element_tensor,
+                                    "pyop2": _pyop2_element_tensor },
     "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
     "coefficient":                lambda j, k: _coefficient(j, k),
     "argument basis num":         "i",

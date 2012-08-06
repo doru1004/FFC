@@ -91,7 +91,7 @@ def _tabulate_tensor(ir, parameters):
     f_switch        = format["switch"]
     f_float         = format["float"]
     f_assign        = format["assign"]
-    f_A             = format["element tensor"]
+    f_A             = format["element tensor"][p_format]
     f_r             = format["free indices"][0]
     f_loop          = format["generate loop"]
     f_int           = format["int"]
@@ -121,7 +121,7 @@ def _tabulate_tensor(ir, parameters):
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par)
+                                         opt_par, parameters)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -136,7 +136,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -162,7 +162,7 @@ def _tabulate_tensor(ir, parameters):
             for j in range(num_facets):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                            opt_par)
+                                                            opt_par, parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -200,13 +200,14 @@ def _tabulate_tensor(ir, parameters):
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
-    #common += [f_comment("Reset values in the element tensor.")]
-    #value = f_float(0)
-    #if prim_idims == []:
-    #    common += [f_assign(f_A(f_int(0)), f_float(0))]
-    #elif len(prim_idims) is not 2:
-    #    dim = reduce(lambda v,u: v*u, prim_idims)
-    #    common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
+    if p_format !=  "pyop2":
+        common += [f_comment("Reset values in the element tensor.")]
+        value = f_float(0)
+        if prim_idims == []:
+            common += [f_assign(f_A(f_int(0)), f_float(0))]
+        else:
+            dim = reduce(lambda v,u: v*u, prim_idims)
+            common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
@@ -230,7 +231,7 @@ def _tabulate_tensor(ir, parameters):
         info(message[domain_type] % tuple(ops))
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters):
+def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -311,7 +312,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters)
+        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
         ip_code += integral_code
@@ -399,16 +400,17 @@ def _generate_functions(functions, sets):
 
     return code, total_ops
 
-def _generate_integral_code(points, terms, sets, optimise_parameters):
+def _generate_integral_code(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
 
     # Prefetch formats to speed up code generation.
+    p_format        = parameters["format"]
     f_comment       = format["comment"]
     f_mul           = format["mul"]
     f_scale_factor  = format["scale factor"]
     f_iadd          = format["iadd"]
     f_add           = format["add"]
-    f_A             = format["element tensor"]
+    f_A             = format["element tensor"][p_format]
     f_loop          = format["generate loop"]
     f_B             = format["basis constant"]
 
@@ -454,10 +456,14 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
-            if len(loop) is 2:
-                entry_code = f_iadd("*A", value)
+            if p_format=="pyop2":
+                # FIXME: This will need modifying for the vector field assembly case.
+                if len(loop) is 2:
+                    entry_code = f_iadd(f_A(entry), value)
+                else:
+                    entry_code = f_iadd(f_A(entry, '0'), value)
             else:
-                entry_code = f_iadd(f_A(entry, '0'), value)
+                entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
