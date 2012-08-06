@@ -31,7 +31,7 @@ __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2", "header_h", "header
            "evaluate_f",
            "facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
-           "scale_factor", "combinations_snippet",
+           "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
            "facet_area"]
@@ -149,8 +149,11 @@ const double K%(restriction)s_22 = d%(restriction)s_22 / detJ%(restriction)s;"""
 
 evaluate_f = "f.evaluate(vals, y, c);"
 
-scale_factor = """\
+ufc_scale_factor = """\
 // Set scale factor
+const double det = std::fabs(detJ);"""
+
+pyop2_scale_factor = """\
 const double det = fabs(detJ);"""
 
 _facet_determinant_1D = """\

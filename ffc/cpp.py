@@ -1,4 +1,4 @@
-"This module defines rules and algorithms for generating C++ code."
+"Thisd module defines rules and algorithms for generating C++ code."
 
 # Copyright (C) 2009-2011 Anders Logg
 #
@@ -247,7 +247,7 @@ format.update({
     "generate facet area":  lambda d: facet_area[d],
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet": scale_factor,
+    "scale factor snippet": { "ufc": ufc_scale_factor, "pyop2": pyop2_scale_factor },
     "map onto physical":    map_onto_physical,
     "combinations":         combinations_snippet,
     "transform snippet":    transform_snippet,
@@ -255,9 +255,9 @@ format.update({
     "ufc comment":          comment_ufc,
     "dolfin comment":       comment_dolfin,
     "pyop2 comment":        comment_pyop2,
-    "header_h":             "",
+    "header_h":             { "ufc": header_h, "pyop2": "" },
     "header_c":             header_c,
-    "footer":               ""
+    "footer":               { "ufc": footer, "pyop2": "" }
 })
 
 # Class names

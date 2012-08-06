@@ -94,6 +94,7 @@ def _tabulate_tensor(ir, parameters):
     f_loop          = format["generate loop"]
     f_int           = format["int"]
     f_facet         = format["facet"]
+    f_scale_factor  = format["scale factor snippet"][parameters["format"]]
 
     # Get data.
     opt_par     = ir["optimise_parameters"]
@@ -127,7 +128,7 @@ def _tabulate_tensor(ir, parameters):
         # Get Jacobian snippet.
         # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
         jacobi_code = format["jacobian and inverse"](geo_dim)
-        jacobi_code += "\n\n" + format["scale factor snippet"]
+        jacobi_code += "\n\n" + f_scale_factor
 
     elif domain_type == "exterior_facet":
         cases = [None for i in range(num_facets)]

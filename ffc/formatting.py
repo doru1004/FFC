@@ -49,7 +49,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     begin("Compiler stage 5: Formatting code")
 
     # Choose format
-    templates = templates_dict[parameters["format"]] 
+    format_name = parameters["format"]
+    templates = templates_dict[format_name] 
 
     # Extract code
     code_elements, code_dofmaps, code_integrals, code_forms = code
@@ -63,7 +64,7 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_c += _generate_comment(parameters) + "\n"
 
     # Generate code for header
-    code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
+    code_h += format["header_h"][format_name] % {"prefix_upper": prefix.upper()}
     code_h += _generate_additional_includes(code_integrals)  + "\n"
     code_c += format["header_c"] % {"prefix": prefix}
 
@@ -103,7 +104,7 @@ def format_code(code, wrapper_code, prefix, parameters):
         code_h += wrapper_code
 
     # Generate code for footer
-    code_h += format["footer"]
+    code_h += format["footer"][format_name]
 
     # Write file(s)
     if parameters['write_file']:
