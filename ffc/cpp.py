@@ -147,11 +147,19 @@ def _pyop2_element_tensor(i, j=None):
 def _ufc_element_tensor(i):
     return "A[%s]" % i
 
+def _ufc_coefficient(count, index):
+    return format["component"]("w", [count, index])
+
+def _pyop2_coefficient(count, indices):
+    if not isinstance(indices, list):
+        indices = [indices, '0']
+    return format["component"]("w%s" % count, indices)
+
 format.update({
     "element tensor":             { "ufc"  : _ufc_element_tensor,
                                     "pyop2": _pyop2_element_tensor },
     "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
-    "coefficient":                lambda j, k: _coefficient(j, k),
+    "coefficient":                { "ufc": _ufc_coefficient, "pyop2": _pyop2_coefficient },
     "argument basis num":         "i",
     "argument derivative order":  "n",
     "argument values":            "values",
@@ -167,11 +175,6 @@ format.update({
     "argument vertex values":     "vertex_values",
     "argument sub":               "i" # sub domain, sub element
 })
-
-def _coefficient(count, indices):
-    if not isinstance(indices, list):
-        indices = [indices, '0']
-    return format["component"]("w%s" % count, indices)
 
 # Formatting used in evaluatedof.
 format.update({

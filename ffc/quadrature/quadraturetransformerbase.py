@@ -56,12 +56,16 @@ class QuadratureTransformerBase(Transformer):
                  psi_tables,
                  quad_weights,
                  geo_dim,
-                 optimise_parameters):
+                 optimise_parameters,
+                 parameters):
 
         Transformer.__init__(self)
 
         # Save optimise_parameters, weights and fiat_elements_map.
         self.optimise_parameters = optimise_parameters
+
+        # Save parameters
+        self.parameters = parameters
 
         # Create containers and variables.
         self.used_psi_tables = set()
@@ -427,7 +431,8 @@ class QuadratureTransformerBase(Transformer):
             component += 1
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        p_format = self.parameters["format"]
+        coefficient = format["coefficient"][p_format](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def vector_constant(self, o, *operands):
@@ -448,7 +453,8 @@ class QuadratureTransformerBase(Transformer):
             component += o.shape()[0]
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        p_format = self.parameters["format"]
+        coefficient = format["coefficient"]["format"](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
@@ -470,7 +476,8 @@ class QuadratureTransformerBase(Transformer):
             component += product(o.shape())
 
         # Let child class create constant symbol
-        coefficient = format["coefficient"](o.count(), component)
+        p_format = self.parameters["format"]
+        coefficient = format["coefficient"][p_format](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     # -------------------------------------------------------------------------
@@ -957,13 +964,17 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_function_name(self, component, deriv, quad_element, ufl_function, ffc_element):
 
+        # Get format
+        p_format = self.parameters["format"]
+        pyop2_mixed_element = isinstance(ffc_element, MixedElement) and p_format=="pyop2"
+
         # Get string for integration points.
         f_ip = format["integration points"]
         generate_psi_name = format["psi name"]
 
         # Pick first free index of secondary type
         # (could use primary indices, but it's better to avoid confusion).
-        if isinstance(ffc_element, MixedElement):
+        if pyop2_mixed_element:
             idx0, idx1 = format["free indices"][0], format["free indices"][1]
             loop_index = "%s*%s+%s" % (len(ffc_element.elements()), idx0, idx1)
         else:
@@ -994,7 +1005,7 @@ class QuadratureTransformerBase(Transformer):
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
-        if isinstance(ffc_element, MixedElement):
+        if pyop2_mixed_element:
             loop_index_range = tuple([ e.get_nodal_basis().get_num_members() \
                                        for e in ffc_element.elements()]) 
         else:
@@ -1035,11 +1046,10 @@ class QuadratureTransformerBase(Transformer):
             else:
                 coefficient_access = f_ip
 
-        # If we are computing a vector-valued function then we need to access
-        # the coefficient through two indices
-        if isinstance(ffc_element, MixedElement):
+        # If we are computing a vector-valued function in PyOP2 then we need to
+        #  access the coefficient through two indices
+        if pyop2_mixed_element:
             idx0, idx1 = format["free indices"][0], format["free indices"][1]
-            #loop_index = "%s*%s+%s" % (len(ffc_element.elements()), idx0, idx1)
             coefficient_access = [idx0, idx1]
 
         # If we have non zero column mapping but only one value just pick it.
@@ -1060,7 +1070,8 @@ class QuadratureTransformerBase(Transformer):
         except:
             pass
 
-        coefficient = format["coefficient"](str(ufl_function.count()), coefficient_access)
+        p_format = self.parameters["format"]
+        coefficient = format["coefficient"][p_format](str(ufl_function.count()), coefficient_access)
         function_expr = self._create_symbol(coefficient, ACCESS)[()]
         if basis_name:
             function_expr = self._create_product([self._create_symbol(basis_name, ACCESS)[()], self._create_symbol(coefficient, ACCESS)[()]])

@@ -392,7 +392,7 @@ def _generate_functions(functions, sets):
         lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
-                raise RuntimeError("General mixed elements not yet supported")
+                raise RuntimeError("General mixed elements not yet supported in PyOP2")
             loop_vars = [ (f_r[0], 0, loop_range[0]), (f_r[1], 0, len(loop_range)) ]
         else: 
             loop_vars = [(f_r[0], 0, loop_range)]
