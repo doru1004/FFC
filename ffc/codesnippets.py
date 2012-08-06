@@ -26,8 +26,10 @@
 
 # Code snippets
 
-__all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2", "header_h", "header_c", "footer",
-           "cell_coordinates", "jacobian", "inverse_jacobian",
+__all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2", 
+           "header_h", "header_c", "footer",
+           "ufc_vertex_coordinates", "pyop2_vertex_coordinates", "cell_coordinates", 
+           "jacobian", "inverse_jacobian",
            "evaluate_f",
            "facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
@@ -75,6 +77,14 @@ footer = """\
 cell_coordinates = "const double * const * x = c.coordinates;\n"
 
 # Code snippets for computing Jacobian
+ufc_vertex_coordinates = """\
+// Extract vertex coordinates
+const double * const * x%(restriction)s = c%(restriction)s.coordinates;
+
+"""
+
+pyop2_vertex_coordinates = ""
+
 _jacobian_1D = """\
 // Compute Jacobian of affine map from reference cell
 const double J%(restriction)s_00 = x%(restriction)s[1][0] - x%(restriction)s[0][0];"""

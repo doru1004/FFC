@@ -235,10 +235,9 @@ format.update({
 from codesnippets import *
 format.update({
     "cell coordinates":     cell_coordinates,
-    "jacobian":             lambda n, r="": jacobian[n] % {"restriction": r},
+    "jacobian":             lambda n, r="", f="ufc": _jacobian(n, r, f),
     "inverse jacobian":     lambda n, r="": inverse_jacobian[n] % {"restriction": r},
-    "jacobian and inverse": lambda n, r=None: format["jacobian"](n, choose_map[r]) +\
-                            "\n" + format["inverse jacobian"](n, choose_map[r]),
+    "jacobian and inverse": lambda n, r=None, f="ufc": _jacobian_and_inverse(n, r, f),
     "facet determinant":    lambda n, r=None: facet_determinant[n] % {"restriction": choose_map[r]},
     "fiat coordinate map":  lambda n: fiat_coordinate_map[n],
     "generate normal":      lambda d, i: _generate_normal(d, i),
@@ -260,6 +259,18 @@ format.update({
     "footer":               { "ufc": footer, "pyop2": "" }
 })
 
+def _jacobian(dim, restriction="", f="ufc"):
+    r = { "restriction": restriction }
+    if f=="pyop2":
+        code = pyop2_vertex_coordinates % r
+    else:
+        code = ufc_vertex_coordinates % r
+    return code + (jacobian[dim] % r)
+
+def _jacobian_and_inverse(dim, restriction=None, f="ufc"):
+    code  = _jacobian(dim, choose_map[restriction], f)
+    code += format["inverse jacobian"](dim, choose_map[restriction])
+    return code
 # Class names
 format.update({
     "classname finite_element": lambda prefix, i:\
