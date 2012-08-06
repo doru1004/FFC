@@ -31,7 +31,7 @@ __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "ufc_vertex_coordinates", "pyop2_vertex_coordinates", "cell_coordinates", 
            "jacobian", "inverse_jacobian",
            "evaluate_f",
-           "facet_determinant", "map_onto_physical",
+           "ufc_facet_determinant", "pyop2_facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "normal_direction",
@@ -179,7 +179,16 @@ const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
-const double det = sqrt(dx0*dx0 + dx1*dx1);"""
+
+"""
+
+_ufc_facet_determinant_2D = _facet_determinant_2D + """
+const double det = std::sqrt(dx0*dx0 + dx1*dx1);
+"""
+
+_pyop2_facet_determinant_2D = _facet_determinant_2D + """
+const double det = sqrt(dx0*dx0 + dx1*dx1);
+"""
 
 _facet_determinant_3D = """\
 // Get vertices on face
@@ -195,7 +204,15 @@ const double a1 = (x%(restriction)s[v0][2]*x%(restriction)s[v1][0] + x%(restrict
 
 const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restriction)s[v0][1]*x%(restriction)s[v2][0] + x%(restriction)s[v1][0]*x%(restriction)s[v2][1]) - (x%(restriction)s[v2][0]*x%(restriction)s[v1][1] + x%(restriction)s[v2][1]*x%(restriction)s[v0][0] + x%(restriction)s[v1][0]*x%(restriction)s[v0][1]);
 
-const double det = sqrt(a0*a0 + a1*a1 + a2*a2);"""
+"""
+
+_ufc_facet_determinant_3D = _facet_determinant_3D + """
+const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
+"""
+
+_pyop2_facet_determinant_3D = _facet_determinant_3D + """
+const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
+"""
 
 _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""
@@ -486,9 +503,13 @@ inverse_jacobian = {1: _inverse_jacobian_1D,
                     2: _inverse_jacobian_2D,
                     3: _inverse_jacobian_3D}
 
-facet_determinant = {1: _facet_determinant_1D,
-                     2: _facet_determinant_2D,
-                     3: _facet_determinant_3D}
+ufc_facet_determinant = {1: _facet_determinant_1D,
+                         2: _ufc_facet_determinant_2D,
+                         3: _ufc_facet_determinant_3D}
+
+pyop2_facet_determinant = {1: _facet_determinant_1D,
+                           2: _pyop2_facet_determinant_2D,
+                           3: _pyop2_facet_determinant_3D}
 
 map_onto_physical = {1: _map_onto_physical_1D,
                      2: _map_onto_physical_2D,
