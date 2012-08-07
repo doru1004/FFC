@@ -283,7 +283,7 @@ def _jacobian(dim, restriction="", f="ufc"):
 
 def _jacobian_and_inverse(dim, restriction=None, f="ufc"):
     code  = _jacobian(dim, choose_map[restriction], f)
-    code += format["inverse jacobian"](dim, choose_map[restriction])
+    code += "\n" + format["inverse jacobian"](dim, choose_map[restriction])
     return code
 # Class names
 format.update({

@@ -85,7 +85,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for Jacobian and its inverse
         j_code = format["jacobian and inverse"](geometric_dimension)
-        j_code += "\n\n" + format["scale factor snippet"]
+        j_code += "\n\n" + format["scale factor snippet"]["ufc"]
 
     elif domain_type == "exterior_facet":
 
@@ -100,7 +100,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for Jacobian
         j_code = format["jacobian and inverse"](geometric_dimension)
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension)
+        j_code += "\n\n" + format["facet determinant"]["ufc"](geometric_dimension)
 
     elif domain_type == "interior_facet":
 
@@ -117,7 +117,7 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for Jacobian
         j_code  = format["jacobian and inverse"](geometric_dimension, "+")
         j_code += format["jacobian and inverse"](geometric_dimension, "-")
-        j_code += "\n\n" + format["facet determinant"](geometric_dimension, "+")
+        j_code += "\n\n" + format["facet determinant"]["ufc"](geometric_dimension, "+")
 
     else:
         error("Unhandled integral type: " + str(domain_type))
@@ -168,7 +168,7 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
     # Prefetch formats to speed up code generation
     iadd            = format["iadd"]
     assign          = format["assign"]
-    element_tensor  = format["element tensor"]
+    element_tensor  = format["element tensor"]["ufc"]
     geometry_tensor = format["geometry tensor"]
     zero            = format["float"](0)
     inner_product   = format["inner product"]
@@ -402,7 +402,7 @@ def _extract_factors(GK, a, b, j_set, index_type):
     "Extract factors of given index type in GK entry."
 
     # Prefetch formats to speed up code generation
-    coefficient = format["coefficient"]
+    coefficient = format["coefficient"]["ufc"]
     transform   = format["transform"]
 
     # List of factors

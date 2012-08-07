@@ -161,7 +161,7 @@ evaluate_f = "f.evaluate(vals, y, c);"
 
 ufc_scale_factor = """\
 // Set scale factor
-const double det = std::fabs(detJ);"""
+const double det = std::abs(detJ);"""
 
 pyop2_scale_factor = """\
 const double det = fabs(detJ);"""
@@ -179,16 +179,13 @@ const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
-
 """
 
-_ufc_facet_determinant_2D = _facet_determinant_2D + """
-const double det = std::sqrt(dx0*dx0 + dx1*dx1);
-"""
+_ufc_facet_determinant_2D = _facet_determinant_2D + """\
+const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
-_pyop2_facet_determinant_2D = _facet_determinant_2D + """
-const double det = sqrt(dx0*dx0 + dx1*dx1);
-"""
+_pyop2_facet_determinant_2D = _facet_determinant_2D + """\
+const double det = sqrt(dx0*dx0 + dx1*dx1);"""
 
 _facet_determinant_3D = """\
 // Get vertices on face
@@ -206,13 +203,11 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
 
 """
 
-_ufc_facet_determinant_3D = _facet_determinant_3D + """
-const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
-"""
+_ufc_facet_determinant_3D = _facet_determinant_3D + """\
+const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
-_pyop2_facet_determinant_3D = _facet_determinant_3D + """
-const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
-"""
+_pyop2_facet_determinant_3D = _facet_determinant_3D + """\
+const double det = sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
 _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? x%(restriction)s[0][0] > x%(restriction)s[1][0] : x%(restriction)s[1][0] > x%(restriction)s[0][0];"""

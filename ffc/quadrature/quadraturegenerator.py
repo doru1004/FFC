@@ -474,7 +474,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if len(loop) is 2:
+        if p_format=="pyop2" and len(loop) is 2:
             code += lines
         else:
             code += f_loop(lines, loop)

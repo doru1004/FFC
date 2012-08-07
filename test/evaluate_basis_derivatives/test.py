@@ -183,7 +183,7 @@ def compute_values(ufl_element, deriv_order):
     if error:
         run_failed.append(repr(ufl_element))
         return None
-    values = [float(value) for value in output.split(" ") if len(value) > 0]
+    values = [float(value) for value in output.strip("\n").split(" ") if len(value) > 0]
     return numpy.array(values)
 
 def print_refs():

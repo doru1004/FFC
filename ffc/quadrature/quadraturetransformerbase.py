@@ -454,7 +454,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Let child class create constant symbol
         p_format = self.parameters["format"]
-        coefficient = format["coefficient"]["format"](o.count(), component)
+        coefficient = format["coefficient"][p_format](o.count(), component)
         return self._create_symbol(coefficient, CONST)
 
     def tensor_constant(self, o, *operands):
