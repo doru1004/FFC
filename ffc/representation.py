@@ -196,7 +196,7 @@ def _compute_integral_ir(form_data, form_id, parameters, common_cell=None):
     for (domain_type, domain_id, integrals, metadata) in form_data.integral_data:
 
         # Select representation
-        if metadata["representation"] == "quadrature":
+        if metadata["representation"] == "quadrature" or parameters["format"] == "pyop2":
             r = quadrature
         elif metadata["representation"] == "tensor":
             r = tensor
