@@ -1006,7 +1006,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get the index range of the loop index.
         if pyop2_mixed_element:
-            loop_index_range = tuple([ e.get_nodal_basis().get_num_members() \
+            loop_index_range = tuple([ e.space_dimension() \
                                        for e in ffc_element.elements()]) 
         else:
             loop_index_range = shape(self.unique_tables[psi_name])[1]
