@@ -37,6 +37,7 @@ from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import build_ufc_programs
 from instant.output import get_status_output
+from utils import run_command
 
 # Parameters
 output_tolerance = 1.e-6
@@ -55,18 +56,6 @@ ext_quad = [\
 "-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
 "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
-
-def run_command(command):
-    "Run command and collect errors in log file."
-    (status, output) = get_status_output(command)
-    if status == 0:
-        return True
-    global logfile
-    if logfile is None:
-        logfile = open("../../error.log", "w")
-    logfile.write(output + "\n")
-    print output
-    return False
 
 def log_error(message):
     "Log error message."

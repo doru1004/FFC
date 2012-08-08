@@ -21,6 +21,7 @@
 import os, sys
 from ffc.log import begin, end, info, info_green, info_red, info_blue
 from instant.output import get_status_output
+from utils import run_command
 
 _test_code = """\
 #include "../../ufctest.h"
@@ -33,19 +34,6 @@ int main()
   return 0;
 }
 """
-
-# FIXME: Quick copypasta for testing.
-def run_command(command):
-    "Run command and collect errors in log file."
-    (status, output) = get_status_output(command)
-    if status == 0:
-        return True
-    global logfile
-    if logfile is None:
-        logfile = open("../../error.log", "w")
-    logfile.write(output + "\n")
-    print output
-    return False
 
 def _generate_test_code(header_file, bench):
     "Generate test code for given header file."
