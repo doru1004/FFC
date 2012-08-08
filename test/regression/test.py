@@ -35,7 +35,7 @@ option --bench.
 import os, sys, shutil, difflib
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
-from ufctest import generate_test_code
+from ufctest import build_ufc_programs
 from instant.output import get_status_output
 
 # Parameters
@@ -171,80 +171,6 @@ def validate_code(reference_dir):
 
     end()
 
-def build_programs(bench):
-    "Build test programs for all test cases."
-
-    # Get a list of all files
-    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
-    header_files.sort()
-
-    begin("Building test programs (%d header files found)" % len(header_files))
-
-    # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
-
-    # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
-    # Set a default directory for the boost installation
-    if sys.platform == "darwin":
-        # Use MacPorts as default
-        default = os.path.join(os.path.sep, "opt", "local")
-    else:
-        default = os.path.join(os.path.sep, "usr")
-
-    # If BOOST_DIR is not set use default directory
-    boost_inc_dir = ""
-    boost_lib_dir = ""
-    boost_dir = os.getenv("BOOST_DIR", default)
-    boost_is_found = False
-    for inc_dir in ["", "include"]:
-        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
-            boost_inc_dir = os.path.join(boost_dir, inc_dir)
-            break
-    for lib_dir in ["", "lib"]:
-        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")) or\
-           os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.dylib")):
-            boost_lib_dir = os.path.join(boost_dir, lib_dir)
-            break
-    if boost_inc_dir != "" and boost_lib_dir != "":
-        boost_is_found = True
-
-    if not boost_is_found:
-        raise OSError, """The Boost library was not found.
-If Boost is installed in a nonstandard location,
-set the environment variable BOOST_DIR.
-"""
-
-    ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
-
-    # Set compiler options
-    if bench > 0:
-        info("Benchmarking activated")
-        # Takes too long to build with -O2
-        #compiler_options = "%s -Wall -Werror -O2" % ufc_cflags
-        compiler_options = "%s -Wall -Werror" % ufc_cflags
-    else:
-        compiler_options = "%s -Wall -Werror -g" % ufc_cflags
-    info("Compiler options: %s" % compiler_options)
-
-    # Iterate over all files
-    for f in header_files:
-
-        # Generate test code
-        filename = generate_test_code(f, bench)
-
-        # Compile test code
-        prefix = f.split(".h")[0]
-        command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
-        ok = run_command(command)
-
-        # Check status
-        if ok:
-            info_green("%s OK" % prefix)
-        else:
-            info_red("%s failed" % prefix)
-
-    end()
-
 def run_programs():
     "Run generated programs."
 
@@ -363,6 +289,7 @@ def main(args):
 
     # Adjust which test cases (combinations of compile arguments) to
     # run here
+    #test_cases = ["-l pyop2", "-r auto"]
     test_cases = ["-r auto"]
     if (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
@@ -399,10 +326,10 @@ def main(args):
         if fast or generate_only:
             info("Skipping program validation")
         elif bench:
-            build_programs(bench)
+            build_ufc_programs(bench)
             run_programs()
         else:
-            build_programs(bench)
+            build_ufc_programs(bench)
             run_programs()
             validate_programs(output_reference_dir)
 

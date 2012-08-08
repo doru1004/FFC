@@ -18,6 +18,10 @@
 # First added:  2010-01-24
 # Last changed: 2011-07-08
 
+import os, sys
+from ffc.log import begin, end, info, info_green, info_red, info_blue
+from instant.output import get_status_output
+
 _test_code = """\
 #include "../../ufctest.h"
 #include "%s.h"
@@ -30,7 +34,20 @@ int main()
 }
 """
 
-def generate_test_code(header_file, bench):
+# FIXME: Quick copypasta for testing.
+def run_command(command):
+    "Run command and collect errors in log file."
+    (status, output) = get_status_output(command)
+    if status == 0:
+        return True
+    global logfile
+    if logfile is None:
+        logfile = open("../../error.log", "w")
+    logfile.write(output + "\n")
+    print output
+    return False
+
+def _generate_test_code(header_file, bench):
     "Generate test code for given header file."
 
     # Count the number of forms and elements
@@ -49,3 +66,79 @@ def generate_test_code(header_file, bench):
     test_file = open(prefix + ".cpp", "w")
     test_file.write(_test_code % (prefix, "\n".join(tests)))
     test_file.close()
+
+def build_ufc_programs(bench):
+    "Build test programs for all test cases."
+
+    # Get a list of all files
+    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
+    header_files.sort()
+
+    begin("Building test programs (%d header files found)" % len(header_files))
+
+    # Get UFC flags
+    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
+
+    # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
+    # Set a default directory for the boost installation
+    if sys.platform == "darwin":
+        # Use MacPorts as default
+        default = os.path.join(os.path.sep, "opt", "local")
+    else:
+        default = os.path.join(os.path.sep, "usr")
+
+    # If BOOST_DIR is not set use default directory
+    boost_inc_dir = ""
+    boost_lib_dir = ""
+    boost_dir = os.getenv("BOOST_DIR", default)
+    boost_is_found = False
+    for inc_dir in ["", "include"]:
+        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
+            boost_inc_dir = os.path.join(boost_dir, inc_dir)
+            break
+    for lib_dir in ["", "lib"]:
+        if os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.so")) or\
+           os.path.isfile(os.path.join(boost_dir, lib_dir, "libboost_math_tr1.dylib")):
+            boost_lib_dir = os.path.join(boost_dir, lib_dir)
+            break
+    if boost_inc_dir != "" and boost_lib_dir != "":
+        boost_is_found = True
+
+    if not boost_is_found:
+        raise OSError, """The Boost library was not found.
+If Boost is installed in a nonstandard location,
+set the environment variable BOOST_DIR.
+"""
+
+    ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
+
+    # Set compiler options
+    if bench > 0:
+        info("Benchmarking activated")
+        # Takes too long to build with -O2
+        #compiler_options = "%s -Wall -Werror -O2" % ufc_cflags
+        compiler_options = "%s -Wall -Werror" % ufc_cflags
+    else:
+        compiler_options = "%s -Wall -Werror -g" % ufc_cflags
+    info("Compiler options: %s" % compiler_options)
+
+    # Iterate over all files
+    for f in header_files:
+
+        # Generate test code
+        filename = _generate_test_code(f, bench)
+
+        # Compile test code
+        prefix = f.split(".h")[0]
+        command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
+        ok = run_command(command)
+
+        # Check status
+        if ok:
+            info_green("%s OK" % prefix)
+        else:
+            info_red("%s failed" % prefix)
+
+    end()
+
+
