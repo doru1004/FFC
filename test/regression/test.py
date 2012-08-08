@@ -67,6 +67,19 @@ class TestHelper(object):
 
 helper = TestHelper()
 
+class TestCase(object):
+
+    def __init__(self, build_programs, options):
+        self._build_programs = build_programs
+        self._options = options
+
+    def build_programs(self, bench, helper):
+        return self._build_programs(bench, helper)
+
+    @property
+    def options(self):
+        return self._options
+
 # Parameters
 output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
@@ -74,12 +87,12 @@ bench_directory = "../../../../bench"
 
 # Extended quadrature tests (optimisations)
 ext_quad = [\
-"-r quadrature -O -feliminate_zeros",
-"-r quadrature -O -fsimplify_expressions",
-"-r quadrature -O -fprecompute_ip_const",
-"-r quadrature -O -fprecompute_basis_const",
-"-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
-"-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
+TestCase(build_ufc_programs, "-r quadrature -O -feliminate_zeros"),
+TestCase(build_ufc_programs, "-r quadrature -O -fsimplify_expressions"),
+TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_ip_const"),
+TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_basis_const"),
+TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_ip_const -feliminate_zeros"),
+TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_basis_const -feliminate_zeros")
 ]
 
 def clean_output(output_directory):
@@ -284,10 +297,11 @@ def main(args):
     fast = "--fast" in args
     ext = "--ext_quad" in args
     generate_only = "--generate-only" in args
+    pyop2 = "--pyop2" in args
 
     args = [arg for arg in args
             if not arg in ("--bench", "--fast", "--ext_quad",
-                           "--generate-only")]
+                           "--generate-only", "pyop2")]
 
     # Clean out old output directory
     output_directory = "output"
@@ -296,17 +310,18 @@ def main(args):
 
     # Adjust which test cases (combinations of compile arguments) to
     # run here
-    #test_cases = ["-l pyop2", "-r auto"]
-    test_cases = ["-r auto"]
+    test_cases = [TestCase(build_ufc_programs,   "-r auto" )]
+    if pyop2:
+        test_cases += [TestCase(build_pyop2_programs, "-l pyop2")]
     if (not bench and not fast):
-        test_cases += ["-r quadrature", "-r quadrature -O"]
+        test_cases += [TestCase(build_ufc_programs, "-r quadrature"), \
+                       TestCase(build_ufc_programs, "-r quadrature -O")]
         if ext:
             test_cases += ext_quad
 
-    #test_cases = ["-l pyop2"]
+    for case in test_cases:
 
-    for argument in test_cases:
-
+        argument = case.options
         begin("Running regression tests with %s" % argument)
 
         # Clear and enter output sub-directory
@@ -327,7 +342,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench and argument not in ext_quad:
+        if not bench and argument not in [ c.options for c in ext_quad ]:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
@@ -335,12 +350,10 @@ def main(args):
         if fast or generate_only:
             info("Skipping program validation")
         elif bench:
-            #build_pyop2_programs(bench, helper)
-            build_ufc_programs(bench, helper)
+            case.build_programs(bench, helper)
             run_programs()
         else:
-            #build_pyop2_programs(bench, helper)
-            build_ufc_programs(bench, helper)
+            case.build_programs(bench, helper)
             run_programs()
             validate_programs(output_reference_dir)
 
