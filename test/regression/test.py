@@ -36,16 +36,41 @@ import os, sys, shutil, difflib
 from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import build_ufc_programs
+from pyop2test import build_pyop2_programs
 from instant.output import get_status_output
-from utils import run_command
+
+class TestHelper(object):
+
+    def __init__(self):
+        self._logfile = None
+
+    def run_command(self, command):
+        "Run command and collect errors in log file."
+        (status, output) = get_status_output(command)
+        if status == 0:
+            return True
+        if self._logfile is None:
+            self._logfile = open("../../error.log", "w")
+        self._logfile.write(output + "\n")
+        print output
+        return False
+
+    def log_error(self, message):
+        "Log error message."
+        if self._logfile is None:
+            self._logfile = open("../../error.log", "w")
+        self._logfile.write(message + "\n")
+
+    @property
+    def error_occurred(self):
+        return self._logfile is not None
+
+helper = TestHelper()
 
 # Parameters
 output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
-
-# Global log file
-logfile = None
 
 # Extended quadrature tests (optimisations)
 ext_quad = [\
@@ -56,13 +81,6 @@ ext_quad = [\
 "-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
 "-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
-
-def log_error(message):
-    "Log error message."
-    global logfile
-    if logfile is None:
-        logfile = open("../../error.log", "w")
-    logfile.write(message + "\n")
 
 def clean_output(output_directory):
     "Clean out old output directory"
@@ -114,7 +132,7 @@ def generate_code(args):
                % (" ".join(args), f))
 
         # Generate code
-        ok = run_command(cmd)
+        ok = helper.run_command(cmd)
 
         # Check status
         if ok:
@@ -155,8 +173,8 @@ def validate_code(reference_dir):
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
             s = ("Code differs for %s, diff follows"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
-            log_error("\n" + s + "\n" + len(s)*"-")
-            log_error(diff)
+            helper.log_error("\n" + s + "\n" + len(s)*"-")
+            helper.log_error(diff)
 
     end()
 
@@ -178,7 +196,7 @@ def run_programs():
             os.remove(prefix + ".out")
         except:
             pass
-        ok = run_command(".%s%s.bin > %s.out" % (os.path.sep, prefix, prefix))
+        ok = helper.run_command(".%s%s.bin > %s.out" % (os.path.sep, prefix, prefix))
 
         # Check status
         if ok:
@@ -221,8 +239,8 @@ def validate_programs(reference_dir):
 
             # Check if value is present
             if not key in new:
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: missing value in generated code" % key)
+                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
+                helper.log_error("%s: missing value in generated code" % key)
                 ok = False
                 continue
 
@@ -232,23 +250,23 @@ def validate_programs(reference_dir):
 
             # Check that shape is correct
             if not shape(old_values) == shape(new_values):
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: shape mismatch" % key)
+                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
+                helper.log_error("%s: shape mismatch" % key)
                 ok = False
                 continue
 
             # Check that values match to within tolerance set by 'output_tolerance'
             diff = max(abs(old_values - new_values))
             if diff > output_tolerance or isnan(diff):
-                if ok: log_error("\n" + header + "\n" + len(header)*"-")
-                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
-                log_error("  old = " + " ".join("%.16g" % v for v in old_values))
-                log_error("  new = " + " ".join("%.16g" % v for v in new_values))
+                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
+                helper.log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
+                helper.log_error("  old = " + " ".join("%.16g" % v for v in old_values))
+                helper.log_error("  new = " + " ".join("%.16g" % v for v in new_values))
                 ok = False
 
         # Add debugging output to log file
         debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])
-        if debug: log_error(debug)
+        if debug: helper.log_error(debug)
 
         # Check status
         if ok:
@@ -285,6 +303,8 @@ def main(args):
         if ext:
             test_cases += ext_quad
 
+    #test_cases = ["-l pyop2"]
+
     for argument in test_cases:
 
         begin("Running regression tests with %s" % argument)
@@ -315,10 +335,12 @@ def main(args):
         if fast or generate_only:
             info("Skipping program validation")
         elif bench:
-            build_ufc_programs(bench)
+            #build_pyop2_programs(bench, helper)
+            build_ufc_programs(bench, helper)
             run_programs()
         else:
-            build_ufc_programs(bench)
+            #build_pyop2_programs(bench, helper)
+            build_ufc_programs(bench, helper)
             run_programs()
             validate_programs(output_reference_dir)
 
@@ -328,13 +350,13 @@ def main(args):
         end()
 
     # Print results
-    if logfile is None:
-        info_green("Regression tests OK")
-        return 0
-    else:
+    if helper.error_occurred:
         info_red("Regression tests failed")
         info("Error messages stored in error.log")
         return 1
+    else:
+        info_green("Regression tests OK")
+        return 0
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

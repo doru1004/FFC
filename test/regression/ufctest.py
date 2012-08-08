@@ -21,7 +21,6 @@
 import os, sys
 from ffc.log import begin, end, info, info_green, info_red, info_blue
 from instant.output import get_status_output
-from utils import run_command
 
 _test_code = """\
 #include "../../ufctest.h"
@@ -55,7 +54,7 @@ def _generate_test_code(header_file, bench):
     test_file.write(_test_code % (prefix, "\n".join(tests)))
     test_file.close()
 
-def build_ufc_programs(bench):
+def build_ufc_programs(bench, helper):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -119,7 +118,7 @@ set the environment variable BOOST_DIR.
         # Compile test code
         prefix = f.split(".h")[0]
         command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
-        ok = run_command(command)
+        ok = helper.run_command(command)
 
         # Check status
         if ok:
