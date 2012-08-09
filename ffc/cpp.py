@@ -68,7 +68,7 @@ format.update({
     "int declaration":                "int",
     "uint declaration":               "unsigned int",
     "static const uint declaration":  { "ufc": "static const unsigned int", "pyop2": "const unsigned uint" },
-    "static const float declaration": { "ufc": "static const double", "pyop2": "const unsigned double" },
+    "static const float declaration": { "ufc": "static const double", "pyop2": "const double" },
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
