@@ -301,7 +301,7 @@ def _tabulate_dmats(dof_data):
     code = []
 
     # Prefetch formats to speed up code generation.
-    f_table     = format["static const float declaration"]
+    f_table     = format["static const float declaration"]["ufc"]
     f_dmats     = format["dmats"]
     f_component = format["component"]
     f_decl      = format["declaration"]

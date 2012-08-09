@@ -192,11 +192,11 @@ def _tabulate_tensor(ir, parameters):
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common = [remove_unused(jacobi_code, trans_set)]
-    common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
+    common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables)
-    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par)
+    common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
@@ -481,12 +481,14 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
 
     return code, num_ops
 
-def _tabulate_weights(quadrature_weights):
+def _tabulate_weights(quadrature_weights, parameters):
     "Generate table of quadrature weights."
 
     # Prefetch formats to speed up code generation.
+    p_format    = parameters["format"]
+
     f_float     = format["floating point"]
-    f_table     = format["static const float declaration"]
+    f_table     = format["static const float declaration"][p_format]
     f_sep       = format["list separator"]
     f_weight    = format["weight"]
     f_component = format["component"]
@@ -556,14 +558,16 @@ def _tabulate_weights(quadrature_weights):
 
     return code
 
-def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters):
+def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, parameters):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.
+    p_format    = parameters["format"]
+
     f_comment     = format["comment"]
-    f_table       = format["static const float declaration"]
+    f_table       = format["static const float declaration"][p_format]
     f_component   = format["component"]
-    f_const_uint  = format["static const uint declaration"]
+    f_const_uint  = format["static const uint declaration"][p_format]
     f_nzcolumns   = format["nonzero columns"]
     f_list        = format["list"]
     f_decl        = format["declaration"]

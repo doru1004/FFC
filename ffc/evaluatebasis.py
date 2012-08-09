@@ -266,7 +266,7 @@ def _tabulate_coefficients(dof_data):
 
     # Prefetch formats to speed up code generation.
     f_comment       = format["comment"]
-    f_table         = format["static const float declaration"]
+    f_table         = format["static const float declaration"]["ufc"]
     f_coefficients  = format["coefficients"]
     f_component     = format["component"]
     f_decl          = format["declaration"]
