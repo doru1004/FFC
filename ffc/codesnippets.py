@@ -171,8 +171,6 @@ _facet_determinant_1D = """\
 const double det = 1.0;"""
 
 _facet_determinant_2D = """\
-// Get vertices on edge
-static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
@@ -181,15 +179,23 @@ const double dx0 = x%(restriction)s[v1][0] - x%(restriction)s[v0][0];
 const double dx1 = x%(restriction)s[v1][1] - x%(restriction)s[v0][1];
 """
 
-_ufc_facet_determinant_2D = _facet_determinant_2D + """\
+_ufc_edge_vertices_2D = """\
+// Get vertices on edge
+static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+"""
+
+_pyop2_edge_vertices_2D = """\
+// Get vertices on edge
+unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+"""
+
+_ufc_facet_determinant_2D = _ufc_edge_vertices_2D + _facet_determinant_2D + """\
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);"""
 
-_pyop2_facet_determinant_2D = _facet_determinant_2D + """\
+_pyop2_facet_determinant_2D = _pyop2_edge_vertices_2D + _facet_determinant_2D + """\
 const double det = sqrt(dx0*dx0 + dx1*dx1);"""
 
 _facet_determinant_3D = """\
-// Get vertices on face
-static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 const unsigned int v0 = face_vertices[facet%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
@@ -203,10 +209,20 @@ const double a2 = (x%(restriction)s[v0][0]*x%(restriction)s[v1][1] + x%(restrict
 
 """
 
-_ufc_facet_determinant_3D = _facet_determinant_3D + """\
+_ufc_edge_vertices_3D = """\
+// Get vertices on face
+static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+"""
+
+_pyop2_edge_vertices_3D = """\
+// Get vertices on face
+unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+"""
+
+_ufc_facet_determinant_3D = _ufc_edge_vertices_3D + _facet_determinant_3D + """\
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
-_pyop2_facet_determinant_3D = _facet_determinant_3D + """\
+_pyop2_facet_determinant_3D = _pyop2_edge_vertices_3D + _facet_determinant_3D + """\
 const double det = sqrt(a0*a0 + a1*a1 + a2*a2);"""
 
 _normal_direction_1D = """\
