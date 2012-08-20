@@ -768,6 +768,9 @@ class QuadratureTransformerBase(Transformer):
         indices = {-2: format["first free index"], -1: format["second free index"],
                     0: format["first free index"],  1: format["second free index"]}
 
+        # Whether we're generating PyOP2 code
+        pyop2 = self.parameters["format"]=="pyop2"
+
         # Create appropriate entries.
         # FIXME: We only support rank 0, 1 and 2.
         entry = ""
@@ -781,29 +784,65 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(key[0] == -2 or key[0] == 0, \
                         "Linear forms must be defined using test functions only: " + repr(key))
             index_j, entry, range_j, space_dim_j = key
+            if pyop2:
+                entry = (entry, '0')
             loop = ((indices[index_j], 0, range_j),)
             if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
                 loop = ()
         elif len(key) == 2:
-            # Extract test and trial loops in correct order and check if for is legal.
-            key0, key1 = (0, 0)
+            # PyOP2 mixed element assembling a rank-1 form
+            if key[0][0]==key[1][0]:
+                key = (key[0], key[1])
+                for k in key:
+                    ffc_assert(key[0][0] == -2 or key[0][0] == 0, \
+                    "Linear forms must be defined using test functions only: " + repr(key))
+                
+                index_j, entry_j, range_j, space_dim_j = key[0]
+                index_r, entry_r, range_r, space_dim_r = key[1]
+                entry = (entry_j, entry_r)
+                loop = ((entry_j, 0, range_j), (entry_r, 0, range_r))
+            else:
+                # Extract test and trial loops in correct order and check if for is legal.
+                key0, key1 = (0, 0)
+                for k in key:
+                    ffc_assert(k[0] in indices, \
+                    "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
+                    if k[0] == -2 or k[0] == 0:
+                        key0 = k
+                    else:
+                        key1 = k
+                index_j, entry_j, range_j, space_dim_j = key0
+                index_k, entry_k, range_k, space_dim_k = key1
+
+                loop = []
+                if not (range_j == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_j:
+                    loop.append((indices[index_j], 0, range_j))
+                if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
+                    loop.append((indices[index_k], 0, range_k))
+                if pyop2:
+                    entry = ('0', '0')
+                else:
+                    entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
+                loop = tuple(loop)
+        elif len(key) == 4:
+            # PyOP2 mixed element case only.
+            key0, key1 = ([], [])
             for k in key:
                 ffc_assert(k[0] in indices, \
                 "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
-                if k[0] == -2 or k[0] == 0:
-                    key0 = k
+                if k[0] == -2 or k[0] ==0:
+                    key0.append(k)
                 else:
-                    key1 = k
-            index_j, entry_j, range_j, space_dim_j = key0
-            index_k, entry_k, range_k, space_dim_k = key1
+                    key1.append(k)
+                
+            index_j, entry_j, range_j, space_dim_j = key0[0]
+            index_r, entry_r, range_r, space_dim_r = key0[1]
+            index_k, entry_k, range_k, space_dim_k = key1[0]
+            index_s, entry_s, range_s, space_dim_s = key1[1]
 
-            loop = []
-            if not (range_j == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_j:
-                loop.append((indices[index_j], 0, range_j))
-            if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
-                loop.append((indices[index_k], 0, range_k))
-            entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
-            loop = tuple(loop)
+            entry = (entry_r, entry_s)
+
+            loop = ((entry_j, 0, range_j), (entry_r, 0, range_r), (entry_k, 0, range_k), (entry_s, 0, range_s))
         else:
             error("Only rank 0, 1 and 2 tensors are currently supported: " + repr(key))
         # Generate the code line for the entry.
@@ -883,6 +922,9 @@ class QuadratureTransformerBase(Transformer):
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
 
+        # Check whether we're generating PyOP2 code and the element is mixed
+        pyop2_mixed_element = (self.parameters["format"]=="pyop2" and isinstance(ffc_element, MixedElement))
+
         # Get string for integration points.
         f_ip = format["integration points"]
         generate_psi_name = format["psi name"]
@@ -894,6 +936,8 @@ class QuadratureTransformerBase(Transformer):
                     0: format["first free index"],
                     1: format["second free index"]}
 
+        index2map = {-2: 0, -1: 1, 0: 0, 1: 1}
+
         # Check that we have a basis function.
         ffc_assert(ufl_argument.count() in indices, \
                    "Currently, Argument index must be either -2, -1, 0 or 1: " + repr(ufl_argument))
@@ -904,17 +948,27 @@ class QuadratureTransformerBase(Transformer):
         # Get element counter and loop index.
         element_counter = self.element_map[self.points][ufl_argument.element()]
         loop_index = indices[ufl_argument.count()]
+        # Index over spatial dimension
+        loop_index2 = format["free indices"][index2map[ufl_argument.count()]]
+        
+        # Offset element space dimension in case of negative restriction,
+        # need to use the complete element for offset in case of mixed element.
+        if pyop2_mixed_element:
+            space_dim = ffc_element.elements()[0].space_dimension()
+            dimension_dim = len(ffc_element.elements())
+        else:
+            space_dim = ffc_element.space_dimension()
+        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             f_ip = "0"
-        basis_access = format["component"]("", [f_ip, loop_index])
-
-        # Offset element space dimension in case of negative restriction,
-        # need to use the complete element for offset in case of mixed element.
-        space_dim = ffc_element.space_dimension()
-        offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
+        if pyop2_mixed_element:
+            index_calc = "%s*%s+%s" % (loop_index2, space_dim, loop_index)
+        else: 
+            index_calc = loop_index
+        basis_access = format["component"]("", [f_ip, index_calc])
 
         # If we have a restricted function multiply space_dim by two.
         if self.restriction == "+" or self.restriction == "-":
@@ -923,7 +977,10 @@ class QuadratureTransformerBase(Transformer):
         # Generate psi name and map to correct values.
         name = generate_psi_name(element_counter, facet, component, deriv)
         name, non_zeros, zeros, ones = self.name_map[name]
-        loop_index_range = shape(self.unique_tables[name])[1]
+        if pyop2_mixed_element:
+            loop_index_range = space_dim
+        else:
+            loop_index_range = shape(self.unique_tables[name])[1]
 
         basis = ""
         # Ignore zeros if applicable
@@ -958,7 +1015,11 @@ class QuadratureTransformerBase(Transformer):
         # Example dx and ds: (0, j, 3, 3)
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
+        if pyop2_mixed_element:
+            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),
+                       (ufl_argument.count(), loop_index2, dimension_dim, dimension_dim))
+        else:
+            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
 
         return (mapping, basis)
 
@@ -976,7 +1037,7 @@ class QuadratureTransformerBase(Transformer):
         # (could use primary indices, but it's better to avoid confusion).
         if pyop2_mixed_element:
             idx0, idx1 = format["free indices"][0], format["free indices"][1]
-            loop_index = "%s*%s+%s" % (len(ffc_element.elements()), idx0, idx1)
+            loop_index = "%s*%s+%s" % (ffc_element.elements()[0].space_dimension(), idx1, idx0)
         else:
             loop_index = format["free indices"][0]
 

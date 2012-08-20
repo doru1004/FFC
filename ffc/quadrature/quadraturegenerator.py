@@ -62,13 +62,13 @@ def _arglist(ir):
     float = format['float declaration']
  
     if is_matrix:
-        # Matrices have a single pointer
-        arglist = "%s *A" % float
+        # Matrices are A[dim][dim]
+        arglist = "%s A[%s][%s]" % (tuple([float]) + ir["tensor_entry_size"])
     else:
         arglist = "%s **A" % float
 
     # Coordinates
-    arglist += ", %s *x[2]" % float
+    arglist += ", %s *x[%d]" % (float, ir["geometric_dimension"])
 
     # Coefficients
     for i in xrange(ir['num_coefficients']):
@@ -403,6 +403,12 @@ def _generate_functions(functions, sets):
 def _generate_integral_code(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
 
+    # For checking if the integral code is for a matrix
+    def is_matrix(loop):
+        loop_indices = [ l[0] for l in loop ]
+        return (format["first free index"] in loop_indices and \
+                format["second free index"] in loop_indices)
+
     # Prefetch formats to speed up code generation.
     p_format        = parameters["format"]
     f_comment       = format["comment"]
@@ -456,14 +462,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
-            if p_format=="pyop2":
-                # FIXME: This will need modifying for the vector field assembly case.
-                if len(loop) is 2:
-                    entry_code = f_iadd(f_A(entry), value)
-                else:
-                    entry_code = f_iadd(f_A(entry, '0'), value)
-            else:
-                entry_code = f_iadd(f_A(entry), value)
+            entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
@@ -474,10 +473,10 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if p_format=="pyop2" and len(loop) is 2:
-            code += lines
-        else:
-            code += f_loop(lines, loop)
+        if p_format=="pyop2" and is_matrix(loop):
+            # Strip out primary indices from loop
+            loop = [ l for l in loop if l[0] in format["free indices"] ]
+        code += f_loop(lines, loop)
 
     return code, num_ops
 

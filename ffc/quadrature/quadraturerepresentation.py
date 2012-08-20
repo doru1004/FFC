@@ -128,6 +128,10 @@ def compute_integral_ir(domain_type,
     ir["name_map"] = transformer.name_map
     ir["unique_tables"] = transformer.unique_tables
 
+    # Add local tensor entry dimensions
+    num_sub_elements = [ a.element().num_sub_elements() for a in form_data.arguments ]
+    ir["tensor_entry_size"] = tuple([1 if n is 0 else n for n in num_sub_elements ])
+
     # Transform integrals.
     if domain_type == "cell":
         # Compute transformed integrals.
