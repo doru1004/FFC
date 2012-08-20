@@ -301,7 +301,7 @@ def main(args):
 
     args = [arg for arg in args
             if not arg in ("--bench", "--fast", "--ext_quad",
-                           "--generate-only", "pyop2")]
+                           "--generate-only", "--pyop2")]
 
     # Clean out old output directory
     output_directory = "output"
