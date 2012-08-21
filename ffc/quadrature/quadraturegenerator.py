@@ -54,6 +54,7 @@ def generate_integral_code(ir, prefix, parameters):
     code["tabulate_tensor_quadrature"] = format["exception"](tabulate_tensor_quadrature_error)
     code["additional_includes_set"] = ir["additional_includes_set"]
     code["arglist"] = _arglist(ir)
+    code["metadata"] = ""
 
     return code
 
