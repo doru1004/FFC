@@ -139,7 +139,10 @@ format.update({
 
 # UFC function arguments and class members (names)
 def _pyop2_element_tensor(entries):
-    return "A[%s][%s]" % entries
+    A = "A"
+    for i in entries:
+        A += ("[%s]" % i)
+    return A
 
 def _ufc_element_tensor(i):
     return "A[%s]" % i

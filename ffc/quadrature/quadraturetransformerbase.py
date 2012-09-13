@@ -785,7 +785,7 @@ class QuadratureTransformerBase(Transformer):
                         "Linear forms must be defined using test functions only: " + repr(key))
             index_j, entry, range_j, space_dim_j = key
             if pyop2:
-                entry = (entry, '0')
+                entry = ('0')
             loop = ((indices[index_j], 0, range_j),)
             if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
                 loop = ()
@@ -799,8 +799,8 @@ class QuadratureTransformerBase(Transformer):
                 
                 index_j, entry_j, range_j, space_dim_j = key[0]
                 index_r, entry_r, range_r, space_dim_r = key[1]
-                entry = (entry_j, entry_r)
-                loop = ((entry_j, 0, range_j), (entry_r, 0, range_r))
+                entry = (entry_r)
+                loop = ((entry_r, 0, range_r),)
             else:
                 # Extract test and trial loops in correct order and check if for is legal.
                 key0, key1 = (0, 0)

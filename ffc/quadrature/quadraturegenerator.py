@@ -59,27 +59,27 @@ def generate_integral_code(ir, prefix, parameters):
     return code
 
 def _arglist(ir):
-    is_matrix = (len(ir['prim_idims'])==2)
+    rank = len(ir['prim_idims'])
     float = format['float declaration']
- 
-    if is_matrix:
-        # Matrices are A[dim][dim]
-        arglist = "%s A[%s][%s]" % (tuple([float]) + ir["tensor_entry_size"])
-    else:
-        arglist = "%s **A" % float
+    
+    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"]))
+    localtensor = "%s A%s" % (float, extent)
+    
+    coordinates = "%s *x[%d]" % (float, ir["geometric_dimension"])
 
-    # Coordinates
-    arglist += ", %s *x[%d]" % (float, ir["geometric_dimension"])
-
-    # Coefficients
+    coeffs = []
     for i in xrange(ir['num_coefficients']):
-        arglist += ", %s **w%d" % (float, i)
+        coeffs.append("%s **w%d" % (float, i))
 
-    # Iteration indices
-    if is_matrix:
-        arglist += ", int j, int k"
+    itindices = ["int j"]
+    if rank==2:
+        itindices.append("int k")
 
-    return arglist
+    arglist = [localtensor, coordinates] + coeffs 
+    if ir['domain_type'] == 'exterior_facet':
+        arglist.append( "unsigned int *facet_p")
+    arglist += itindices
+    return ", ".join(arglist)
 
 def _tabulate_tensor(ir, parameters):
     "Generate code for a single integral (tabulate_tensor())."
@@ -474,7 +474,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if p_format=="pyop2" and is_matrix(loop):
+        if p_format=="pyop2":
             # Strip out primary indices from loop
             loop = [ l for l in loop if l[0] in format["free indices"] ]
         code += f_loop(lines, loop)
