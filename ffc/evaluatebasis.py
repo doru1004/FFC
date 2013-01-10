@@ -139,15 +139,15 @@ def _evaluate_basis(data):
     # Initialise return code.
     code = []
 
-    # Get the element cell domain and geometric dimension.
-    element_cell_domain = data["cell_domain"]
+    # Get the element cell name and geometric dimension.
+    element_cellname = data["cellname"]
     geometric_dimension = data["geometric_dimension"]
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [format["jacobian and inverse"](geometric_dimension)]
-    code += ["", format["fiat coordinate map"](element_cell_domain)]
+    code += ["", format["fiat coordinate map"](element_cellname)]
 
     # Get value shape and reset values. This should also work for TensorElement,
     # scalar are empty tuples, therefore (1,) in which case value_shape = 1.
@@ -554,9 +554,9 @@ def _compute_basisvalues(data, dof_data):
     code += [f_decl(f_double, str(bn), f_float(0))]
     code += [f_decl(f_double, str(cn), f_float(0))]
 
-    # Get the element cell domain.
+    # Get the element cell name.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
-    element_cell_domain = data["cell_domain"]
+    element_cellname = data["cellname"]
 
     def _jrc(a, b, n):
         an = float( ( 2*n+1+a+b)*(2*n+2+a+b))/ float( 2*(n+1)*(n+1+a+b))
@@ -565,7 +565,7 @@ def _compute_basisvalues(data, dof_data):
         return (an,bn,cn)
 
     # 1D
-    if (element_cell_domain == "interval"):
+    if (element_cellname == "interval"):
         # FIAT_NEW.expansions.LineExpansionSet.
         # FIAT_NEW code
         # psitilde_as = jacobi.eval_jacobi_batch(0,0,n,ref_pts)
@@ -632,7 +632,7 @@ def _compute_basisvalues(data, dof_data):
         # Create loop (block of lines).
         code += f_loop(lines, loop_vars)
     # 2D
-    elif (element_cell_domain == "triangle"):
+    elif (element_cellname == "triangle"):
         # FIAT_NEW.expansions.TriangleExpansionSet.
 
         # Compute helper factors
@@ -740,7 +740,7 @@ def _compute_basisvalues(data, dof_data):
                     code += [f_imul(assign_to, f_sqrt(A))]
 
     # 3D
-    elif (element_cell_domain == "tetrahedron"):
+    elif (element_cellname == "tetrahedron"):
 
         # FIAT_NEW code (compute index function) TetrahedronExpansionSet.
         # def idx(p,q,r):
@@ -898,7 +898,6 @@ def _compute_basisvalues(data, dof_data):
                         code += [myline]
 
     else:
-        error("Cannot compute basis values for shape: %d" % elemet_cell_domain)
+        error("Cannot compute basis values for shape: %d" % element_cellname)
 
     return code + [""]
-

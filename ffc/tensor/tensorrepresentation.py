@@ -35,6 +35,7 @@ from ufl.classes import Form, Measure, Integral
 
 # FFC modules
 from ffc.log import info, error
+from ffc.fiatinterface import cellname2num_facets
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -62,17 +63,18 @@ def compute_integral_ir(domain_type,
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
 
+    num_facets = cellname2num_facets[form_data.cell.cellname()]
+
     # Initialize representation
     ir = {"representation": "tensor",
           "domain_type": domain_type,
           "domain_id": domain_id,
           "form_id": form_id,
           "geometric_dimension": form_data.geometric_dimension,
-          "num_facets": form_data.num_facets,
+          "num_facets": num_facets,
           "rank": form_data.rank}
 
     # Compute representation of cell tensor
-    num_facets = form_data.num_facets
     quadrature_degree = metadata["quadrature_degree"]
     if domain_type == "cell":
 

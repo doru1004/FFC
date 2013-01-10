@@ -127,7 +127,7 @@ def _evaluate_basis_derivatives(data):
     code = []
 
     # Get the element cell domain, geometric and topological dimension.
-    element_cell_domain = data["cell_domain"]
+    element_cellname = data["cellname"]
     geometric_dimension = data["geometric_dimension"]
     topological_dimension = data["topological_dimension"]
 
@@ -135,7 +135,7 @@ def _evaluate_basis_derivatives(data):
     # coordinates from physical element to the FIAT reference element.
     # FIXME: KBO: Change this when supporting R^2 in R^3 elements.
     code += [format["jacobian and inverse"](geometric_dimension)]
-    code += ["", format["fiat coordinate map"](element_cell_domain)]
+    code += ["", format["fiat coordinate map"](element_cellname)]
 
     # Compute number of derivatives that has to be computed, and declare an array to hold
     # the values of the derivatives on the reference element.
@@ -146,7 +146,7 @@ def _evaluate_basis_derivatives(data):
     code += _generate_combinations(topological_dimension)
 
     # Generate the transformation matrix.
-    code += _generate_transform(element_cell_domain)
+    code += _generate_transform(element_cellname)
 
     # Reset all values.
     code += _reset_values(data)
@@ -186,20 +186,20 @@ def _generate_combinations(topological_dimension):
                "n": format["argument derivative order"]}]
     return code
 
-def _generate_transform(element_cell_domain):
+def _generate_transform(element_cellname):
     """Generate the transformation matrix, whic is used to transform derivatives from reference
     element back to the physical element."""
 
     # Generate code to construct the inverse of the Jacobian
-    if (element_cell_domain in ["interval", "triangle", "tetrahedron"]):
-        code = ["", format["transform snippet"][element_cell_domain]\
+    if (element_cellname in ["interval", "triangle", "tetrahedron"]):
+        code = ["", format["transform snippet"][element_cellname]\
         % {"transform": format["transform matrix"],\
            "num_derivatives" : format["num derivatives"],\
            "n": format["argument derivative order"],\
            "combinations": format["derivative combinations"],\
            "K":format["transform Jinv"]}]
     else:
-        error("Cannot generate transform for shape: %s" % element_cell_domain)
+        error("Cannot generate transform for shape: %s" % element_cellname)
 
     return code
 
