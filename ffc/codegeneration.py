@@ -202,7 +202,7 @@ def _generate_integral_code(ir, prefix, parameters):
     code = r.generate_integral_code(ir, prefix, parameters)
 
     # Indent code (unused variables should already be removed)
-    _indent_code(code)
+    _indent_code(code, parameters)
 
     return code
 
@@ -494,14 +494,14 @@ def _create_default_foo_integral(ir, integral_type, prefix):
 
 def _postprocess_code(code, parameters):
     "Postprocess generated code."
-    _indent_code(code)
+    _indent_code(code, parameters)
     _remove_code(code, parameters)
 
-def _indent_code(code):
+def _indent_code(code, parameters):
     "Indent code that should be indented."
     for key in code:
-        if not key in ("classname", "members", "constructor_arguments", "initializer_list", "additional_includes_set"):
-            code[key] = indent(code[key], 4)
+        if not key in ("classname", "members", "constructor_arguments", "initializer_list", "additional_includes_set", "arglist"):
+            code[key] = indent(code[key], 2 if parameters['format'] == 'pyop2' else 4)
 
 def _remove_code(code, parameters):
     "Remove code that should not be generated."
