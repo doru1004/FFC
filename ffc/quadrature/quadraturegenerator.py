@@ -61,6 +61,7 @@ def generate_integral_code(ir, prefix, parameters):
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
+    from ufl import Constant
 
     rank = len(ir['prim_idims'])
     float = format['float declaration']
@@ -71,8 +72,8 @@ def _arglist(ir):
     coordinates = "%s *x[%d]" % (float, ir["geometric_dimension"])
 
     coeffs = []
-    for i in xrange(ir['num_coefficients']):
-        coeffs.append("%s **w%d" % (float, i))
+    for i, c in enumerate(ir['coefficients']):
+        coeffs.append("%s %s*w%d" % (float, "" if isinstance(c, Constant) else "*", i))
 
     itindices = {0: "int j", 1: "int k"}
 
