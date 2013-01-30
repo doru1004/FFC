@@ -213,6 +213,7 @@ def _compute_integral_ir(form_data, form_id, parameters):
                                    form_data,
                                    form_id,
                                    parameters)
+        ir['coefficients'] = form_data.coefficients
 
         # Append representation
         irs.append(ir)
