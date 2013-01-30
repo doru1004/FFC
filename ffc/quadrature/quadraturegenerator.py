@@ -60,10 +60,12 @@ def generate_integral_code(ir, prefix, parameters):
     return code
 
 def _arglist(ir):
+    "Generate argument list for tensor tabulation function (only for pyop2)"
+
     rank = len(ir['prim_idims'])
     float = format['float declaration']
     
-    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"]))
+    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
     localtensor = "%s A%s" % (float, extent)
     
     coordinates = "%s *x[%d]" % (float, ir["geometric_dimension"])
@@ -72,14 +74,13 @@ def _arglist(ir):
     for i in xrange(ir['num_coefficients']):
         coeffs.append("%s **w%d" % (float, i))
 
-    itindices = ["int j"]
-    if rank==2:
-        itindices.append("int k")
+    itindices = {0: "int j", 1: "int k"}
 
     arglist = [localtensor, coordinates] + coeffs 
     if ir['domain_type'] == 'exterior_facet':
         arglist.append( "unsigned int *facet_p")
-    arglist += itindices
+    arglist += [itindices[i] for i in range(rank)]
+
     return ", ".join(arglist)
 
 def _tabulate_tensor(ir, parameters):
