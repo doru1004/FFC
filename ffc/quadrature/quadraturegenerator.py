@@ -27,6 +27,7 @@ import functools
 import numpy
 
 # UFL modules.
+from ufl import Constant
 from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
@@ -61,7 +62,6 @@ def generate_integral_code(ir, prefix, parameters):
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
-    from ufl import Constant
 
     rank = len(ir['prim_idims'])
     float = format['float declaration']
@@ -73,7 +73,7 @@ def _arglist(ir):
 
     coeffs = []
     for i, c in enumerate(ir['coefficients']):
-        coeffs.append("%s %s*w%d" % (float, "" if isinstance(c, Constant) else "*", i))
+        coeffs.append("%s *%s%d" % (float, "c" if isinstance(c, Constant) else "*w", i))
 
     itindices = {0: "int j", 1: "int k"}
 
@@ -122,6 +122,14 @@ def _tabulate_tensor(ir, parameters):
 
     affine_tables = {}
     quadrature_weights = ir["quadrature_weights"]
+
+    # The pyop2 format requires dereferencing constant coefficients since
+    # these are passed in as double *
+    if p_format == 'pyop2':
+        common = ['double **w%d = &c%d;' % (c.count(), c.count()) \
+                for c in ir["coefficients"] if isinstance(c, Constant)]
+    else:
+        common = []
 
     operations = []
     if domain_type == "cell":
@@ -219,7 +227,7 @@ def _tabulate_tensor(ir, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
-    common = [remove_unused(jacobi_code, trans_set)]
+    common += [remove_unused(jacobi_code, trans_set)]
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
