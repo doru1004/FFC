@@ -64,10 +64,10 @@ def _arglist(ir):
 
     rank = len(ir['prim_idims'])
     float = format['float declaration']
-    
+
     extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
     localtensor = "%s A%s" % (float, extent)
-    
+
     coordinates = "%s *x[%d]" % (float, ir["geometric_dimension"])
 
     coeffs = []
@@ -76,7 +76,7 @@ def _arglist(ir):
 
     itindices = {0: "int j", 1: "int k"}
 
-    arglist = [localtensor, coordinates] + coeffs 
+    arglist = [localtensor, coordinates] + coeffs
     if ir['domain_type'] == 'exterior_facet':
         arglist.append( "unsigned int *facet_p")
     arglist += [itindices[i] for i in range(rank)]
@@ -99,16 +99,18 @@ def _tabulate_tensor(ir, parameters):
     f_loop          = format["generate loop"]
     f_int           = format["int"]
     f_facet         = format["facet"]
-    f_scale_factor  = format["scale factor snippet"][p_format]
 
     # Get data.
     opt_par     = ir["optimise_parameters"]
     domain_type = ir["domain_type"]
     geo_dim     = ir["geometric_dimension"]
+    top_dim     = ir["topological_dimension"]
     num_facets  = ir["num_facets"]
+    num_vertices= ir["num_vertices"]
     prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
+    oriented    = ir["needs_oriented"]
 
     # Create sets of used variables.
     used_weights    = set()
@@ -131,9 +133,8 @@ def _tabulate_tensor(ir, parameters):
         operations.append([num_ops])
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = format["jacobian and inverse"](geo_dim, f=p_format)
-        jacobi_code += "\n\n" + f_scale_factor
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented, f=p_format)
+        jacobi_code += "\n\n" + format["scale factor snippet"][p_format]
 
     elif domain_type == "exterior_facet":
         cases = [None for i in range(num_facets)]
@@ -151,10 +152,11 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code = format["jacobian and inverse"](geo_dim, f=p_format)
-        jacobi_code += "\n\n" + format["facet determinant"][p_format](geo_dim)
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+                                                     oriented=oriented, f=p_format)
+        jacobi_code += "\n\n" + format["facet determinant"][p_format](geo_dim, top_dim)
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
 
     elif domain_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -177,20 +179,42 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
-        # FIXME: This will most likely have to change if we support e.g., 2D elements in 3D space.
-        jacobi_code  = format["jacobian and inverse"](geo_dim, "+")
+        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["jacobian and inverse"](geo_dim, "-")
+        jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-", oriented=oriented)
         jacobi_code += "\n\n"
-        jacobi_code += format["facet determinant"][p_format](geo_dim, "+")
-        jacobi_code += "\n\n" + format["generate normal"](geo_dim, domain_type)
+        jacobi_code += format["facet determinant"][p_format](geo_dim, top_dim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](geo_dim, top_dim,
+                                                          domain_type)
+
+    elif domain_type == "point":
+        cases = [None for i in range(num_vertices)]
+        for i in range(num_vertices):
+            # Update treansformer with vertices and generate case code +
+            # set of used geometry terms.
+            c, mem_code, ops = _generate_element_tensor(integrals[i],
+                                                        sets, opt_par, parameters)
+            case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
+            case += c
+            cases[i] = "\n".join(case)
+
+            # Save number of operations (for printing info on operations).
+            operations.append([i, ops])
+
+        # Generate tensor code for all cases using a switch.
+        tensor_code = f_switch(format["vertex"], cases)
+
+        # Get Jacobian snippet.
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
+                                                     oriented=oriented)
+        jacobi_code += "\n\n" + format["facet determinant"][p_format](geo_dim, top_dim)
     else:
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, domain_type)
-    jacobi_code += "\n\n" + format["generate facet area"](geo_dim)
+    jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, top_dim, domain_type)
+    jacobi_code += "\n\n" + format["generate facet area"](geo_dim, top_dim)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
@@ -227,7 +251,8 @@ def _tabulate_tensor(ir, parameters):
     # Print info on operation count.
     message = {"cell":           "Cell, number of operations to compute tensor: %d",
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
-               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d"}
+               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d",
+               "point": "Point %d, number of operations to compute tensor: %d"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
         ops[-1] += geo_ops
@@ -397,7 +422,7 @@ def _generate_functions(functions, sets):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
             loop_vars = [ (f_r[0], 0, loop_range[0]), (f_r[1], 0, len(loop_range)) ]
-        else: 
+        else:
             loop_vars = [(f_r[0], 0, loop_range)]
         code += f_loop(lines, loop_vars)
 
@@ -520,8 +545,8 @@ def _tabulate_weights(quadrature_weights, parameters):
         # Tabulate the quadrature points (uncomment for different parameters).
         # 1) Tabulate the points as: p0, p1, p2, with p0 = (x0, y0, z0) etc.
         # Use f_float to format the value (enable variable precision).
-        formatted_points = [f_group(f_sep.join([f_float(val)\
-                            for val in point])) for point in points]
+        formatted_points = [f_group(f_sep.join([f_float(val) for val in point]))
+                            for point in points]
 
         # Create comment.
         comment = "Quadrature points on the UFC reference element: " \

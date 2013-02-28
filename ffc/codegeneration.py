@@ -6,7 +6,7 @@ This module implements the generation of C++ code for the body of each
 UFC function from an (optimized) intermediate representation (OIR).
 """
 
-# Copyright (C) 2009 Anders Logg
+# Copyright (C) 2009-2013 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -23,10 +23,11 @@ UFC function from an (optimized) intermediate representation (OIR).
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Mehdi Nikbakht, 2010
+# Modified by Mehdi Nikbakht 2010
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-12-16
-# Last changed: 2011-11-28
+# Last changed: 2013-01-25
 
 # FFC modules
 from ffc.log import info, begin, end, debug_code
@@ -36,7 +37,8 @@ from ffc.cpp import set_exception_handling
 
 # FFC code generation modules
 from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
-from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives, _evaluate_basis_derivatives_all
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
+from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
 from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 
@@ -45,8 +47,12 @@ from ffc import quadrature
 from ffc import tensor
 
 # Errors issued for non-implemented functions
-map_from_reference_cell = "map_from_reference_cell not yet implemented (introduced in UFC 2.0)."
-map_to_reference_cell = "map_to_reference_cell not yet implemented (introduced in UFC 2.0)."
+def _not_implemented(function_name, return_null=False):
+    body = format["exception"]("%s not yet implemented." % function_name)
+    if return_null:
+        body += "\n" + format["return"](0)
+    return body
+
 
 def generate_code(ir, prefix, parameters):
     "Generate code from intermediate representation."
@@ -94,7 +100,6 @@ def _generate_element_code(ir, prefix, parameters):
     classname  = format["classname finite_element"]
     do_nothing = format["do nothing"]
     create     = format["create foo"]
-    exception  = format["exception"]
 
     # Codes generated together
     (evaluate_dof_code, evaluate_dofs_code) = evaluate_dof_and_dofs(ir["evaluate_dof"])
@@ -121,8 +126,8 @@ def _generate_element_code(ir, prefix, parameters):
     code["evaluate_dof"] = evaluate_dof_code
     code["evaluate_dofs"] = evaluate_dofs_code
     code["interpolate_vertex_values"] = interpolate_vertex_values(ir["interpolate_vertex_values"])
-    code["map_from_reference_cell"] = exception(map_from_reference_cell)
-    code["map_to_reference_cell"] = exception(map_to_reference_cell)
+    code["map_from_reference_cell"] = _not_implemented("map_from_reference_cell")
+    code["map_to_reference_cell"] = _not_implemented("map_to_reference_cell")
     code["num_sub_elements"] = ret(ir["num_sub_elements"])
     code["create_sub_element"] = _create_foo(prefix, "finite_element", ir["create_sub_element"])
     code["create"] = ret(create(code["classname"]))
@@ -152,19 +157,16 @@ def _generate_dofmap_code(ir, prefix, parameters):
     # Generate code
     code = {}
     code["classname"] = classname(prefix, ir["id"])
-    code["members"] = "\nprivate:\n\n  " + declare("unsigned int", "_global_dimension")
-    code["constructor"] = assign("_global_dimension", f_int(0))
+    code["members"] = ""
+    code["constructor"] = do_nothing
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
-    code["init_mesh"] = _init_mesh(ir["init_mesh"])
-    code["init_cell"] = do_nothing
-    code["init_cell_finalize"] = do_nothing
     code["topological_dimension"] = ret(ir["topological_dimension"])
     code["geometric_dimension"] = ret(ir["geometric_dimension"])
-    code["global_dimension"] = ret("_global_dimension")
+    code["global_dimension"] = _global_dimension(ir["global_dimension"])
     code["local_dimension"] = ret(ir["local_dimension"])
     code["max_local_dimension"] = ret(ir["max_local_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])
@@ -229,11 +231,21 @@ def _generate_form_code(ir, prefix, parameters):
     code["num_cell_domains"] = ret(ir["num_cell_domains"])
     code["num_exterior_facet_domains"] = ret(ir["num_exterior_facet_domains"])
     code["num_interior_facet_domains"] = ret(ir["num_interior_facet_domains"])
+    code["num_point_domains"] = ret(ir["num_point_domains"])
+    code["has_cell_integrals"] = _has_foo_integrals(ir, "cell")
+    code["has_exterior_facet_integrals"] = _has_foo_integrals(ir, "exterior_facet")
+    code["has_interior_facet_integrals"] = _has_foo_integrals(ir, "interior_facet")
+    code["has_point_integrals"] = _has_foo_integrals(ir, "point")
     code["create_finite_element"] = _create_foo(prefix, "finite_element", ir["create_finite_element"])
     code["create_dofmap"] = _create_foo(prefix, "dofmap", ir["create_dofmap"])
     code["create_cell_integral"] = _create_foo_integral(ir, "cell", prefix)
     code["create_exterior_facet_integral"] = _create_foo_integral(ir, "exterior_facet", prefix)
     code["create_interior_facet_integral"] = _create_foo_integral(ir, "interior_facet", prefix)
+    code["create_point_integral"] = _create_foo_integral(ir, "point", prefix)
+    code["create_default_cell_integral"] = _create_default_foo_integral(ir, "cell", prefix)
+    code["create_default_exterior_facet_integral"] = _create_default_foo_integral(ir, "exterior_facet", prefix)
+    code["create_default_interior_facet_integral"] = _create_default_foo_integral(ir, "interior_facet", prefix)
+    code["create_default_point_integral"] = _create_default_foo_integral(ir, "point", prefix)
 
     # Postprocess code
     _postprocess_code(code, parameters)
@@ -264,8 +276,8 @@ def _needs_mesh_entities(ir):
 
     return format["switch"](dimension, [ret(boolean(c)) for c in ir], ret(boolean(False)))
 
-def _init_mesh(ir):
-    """Generate code for init_mesh. ir[0] is a list of num dofs per
+def _global_dimension(ir):
+    """Generate code for global_dimension. ir[0] is a list of num dofs per
     entity."""
 
     num_dofs = ir[0]
@@ -282,8 +294,8 @@ def _init_mesh(ir):
         except:
             pass
 
-    code = "\n".join([format["assign"](format["member global dimension"], dimension),
-                      format["return"](format["bool"](False))])
+    code = format["return"](dimension)
+
     return code
 
 def _tabulate_facet_dofs(ir):
@@ -375,21 +387,23 @@ def _tabulate_coordinates(ir):
     coordinates =   format["argument coordinates"]
 
     # Extract coordinates and cell dimension
-    cell_dim = len(ir[0])
+    gdim = ir["gdim"]
+    tdim = ir["tdim"]
+    #cell_dim = len(ir[0])
 
     # Aid mapping points from reference to physical element
-    coefficients = affine_weights(cell_dim)
+    coefficients = affine_weights(tdim)
 
     # Start with code for coordinates for vertices of cell
     code = [format["cell coordinates"]]
 
     # Generate code for each point and each component
-    for (i, coordinate) in enumerate(ir):
+    for (i, coordinate) in enumerate(ir["points"]):
 
         w = coefficients(coordinate)
-        for j in range(cell_dim):
+        for j in range(gdim):
             # Compute physical coordinate
-            coords = [component(f_x(), (k, j)) for k in range(cell_dim + 1)]
+            coords = [component(f_x(), (k, j)) for k in range(tdim + 1)]
             value = inner_product(w, coords)
 
             # Assign coordinate
@@ -459,6 +473,24 @@ def _create_foo_integral(ir, integral_type, prefix):
     class_name = integral_type + "_integral_" + str(ir["id"])
     postfix = ir["create_" + integral_type + "_integral"]
     return _create_foo(prefix, class_name, postfix, numbers=postfix)
+
+def _has_foo_integrals(ir, domain_type):
+    ret = format["return"]
+    b = format["bool"]
+    i = ir["has_%s_integrals" % domain_type]
+    return ret(b(i))
+
+def _create_default_foo_integral(ir, integral_type, prefix):
+    "Generate code for create_default_<foo>_integral."
+    ret = format["return"]
+    postfix = ir["create_default_" + integral_type + "_integral"]
+    if postfix is None:
+        return ret(0)
+    else:
+        create = format["create foo"]
+        class_name = integral_type + "_integral_" + str(ir["id"])
+        name = "%s_%s_%s" % (prefix.lower(), class_name, postfix)
+        return ret(create(name))
 
 def _postprocess_code(code, parameters):
     "Postprocess generated code."

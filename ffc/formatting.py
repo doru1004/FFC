@@ -50,7 +50,7 @@ def format_code(code, wrapper_code, prefix, parameters):
 
     # Choose format
     format_name = parameters["format"]
-    templates = templates_dict[format_name] 
+    templates = templates_dict[format_name]
 
     # Extract code
     code_elements, code_dofmaps, code_integrals, code_forms = code
@@ -92,6 +92,9 @@ def format_code(code, wrapper_code, prefix, parameters):
             elif "interior_facet_integral" in code_integral["classname"]:
                 code_h += _format_h("interior_facet_integral", code_integral, parameters, templates)
                 code_c += _format_c("interior_facet_integral", code_integral, parameters, templates)
+            elif "point_integral" in code_integral["classname"]:
+                code_h += _format_h("point_integral", code_integral, parameters, templates)
+                code_c += _format_c("point_integral", code_integral, parameters, templates)
 
     # Generate code for form
     if code_forms:

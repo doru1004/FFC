@@ -50,7 +50,8 @@ def integrate(monomial,
               domain_type,
               facet0, facet1,
               quadrature_degree,
-              common_cell):
+              cellname,
+              facet_cellname):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -63,7 +64,8 @@ def integrate(monomial,
     (points, weights) = _init_quadrature(monomial.arguments,
                                          domain_type,
                                          quadrature_degree,
-                                         common_cell)
+                                         cellname,
+                                         facet_cellname)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
@@ -86,24 +88,13 @@ def integrate(monomial,
 
     return A0
 
-def _init_quadrature(arguments, domain_type, quadrature_degree, common_cell):
+def _init_quadrature(arguments, domain_type, quadrature_degree, cellname, facet_cellname):
     "Initialize quadrature for given monomial."
-
-    # Get shape (check first factor, should be the same for all)
-    try:
-        if common_cell is None:
-            cell_shape = arguments[0].element.cell().cellname()
-        else:
-            cell_shape = common_cell.cellname()
-    except:
-        error("Missing cell definition in form.")
-    facet_shape = cellname2facetname[cell_shape]
-
     # Create quadrature rule and get points and weights
     if domain_type == Measure.CELL:
-        (points, weights) = create_quadrature(cell_shape, quadrature_degree)
+        (points, weights) = create_quadrature(cellname, quadrature_degree)
     else:
-        (points, weights) = create_quadrature(facet_shape, quadrature_degree)
+        (points, weights) = create_quadrature(facet_cellname, quadrature_degree)
 
     return (points, weights)
 
@@ -156,8 +147,8 @@ def _compute_psi(v, table, num_points, domain_type):
     # corresponding to quadrature points and internal Indices are removed
     # later when we sum over these dimensions.
 
-    # Get cell dimension
-    cell_dimension = v.element.cell().geometric_dimension()
+    # Get topological dimension of cell
+    tdim = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -191,7 +182,7 @@ def _compute_psi(v, table, num_points, domain_type):
         for component in range(len(cindex[0].index_range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
-                dtuple = _multiindex_to_tuple(dlist, cell_dimension)
+                dtuple = _multiindex_to_tuple(dlist, tdim)
                 # Get values from table
                 Psi[component][tuple(dlist)] = \
                     etable[dtuple][:, cindex[0].index_range[component], :]
@@ -199,7 +190,7 @@ def _compute_psi(v, table, num_points, domain_type):
         etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
-            dtuple = _multiindex_to_tuple(dlist, cell_dimension)
+            dtuple = _multiindex_to_tuple(dlist, tdim)
             # Get values from table
             Psi[tuple(dlist)] = etable[dtuple]
 

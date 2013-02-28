@@ -1,4 +1,4 @@
-# Copyright (C) 2009-2010 Kristian B. Oelgaard and Anders Logg
+# Copyright (C) 2009-2013 Kristian B. Oelgaard and Anders Logg
 #
 # This file is part of FFC.
 #
@@ -17,9 +17,10 @@
 #
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2010.
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2009-03-06
-# Last changed: 2011-01-13
+# Last changed: 2013-01-25
 
 # Python modules
 from numpy import array
@@ -62,6 +63,11 @@ def reference_cell(dim):
         return FIAT.ufc_simplex(dim)
     else:
         return FIAT.ufc_simplex(cellname2dim[dim])
+
+def reference_cell_vertices(dim):
+    "Return dict of coordinates of reference cell vertices for this 'dim'."
+    cell = reference_cell(dim)
+    return cell.get_vertices()
 
 def create_element(ufl_element):
 
@@ -164,24 +170,33 @@ def map_facet_points(points, facet):
     tetrahedron.
     """
 
-    # Special case, don't need to map coordinates on vertices
+    # Extract the geometric dimension of the points we want to map
     dim = len(points[0]) + 1
+
+    # Special case, don't need to map coordinates on vertices
     if dim == 1:
         return [[(0.0,), (1.0,)][facet]]
 
-    # Vertex coordinates
-    vertex_coordinates = \
-        {1: ((0.,), (1.,)),
-         2: ((0., 0.), (1., 0.), (0., 1.)),
-         3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
+    # Get the FIAT reference cell for this dimension
+    fiat_cell = reference_cell(dim)
+
+    # Extract vertex coordinates from cell and map of facet index to
+    # indicent vertex indices
+    vertex_coordinates = fiat_cell.get_vertices()
+    facet_vertices = fiat_cell.get_topology()[dim-1]
+
+    #vertex_coordinates = \
+    #    {1: ((0.,), (1.,)),
+    #     2: ((0., 0.), (1., 0.), (0., 1.)),
+    #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
 
     # Facet vertices
-    facet_vertices = \
-        {2: ((1, 2), (0, 2), (0, 1)),
-         3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
+    #facet_vertices = \
+    #    {2: ((1, 2), (0, 2), (0, 1)),
+    #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
 
-    # Compute coordinates and map
-    coordinates = [vertex_coordinates[dim][v] for v in facet_vertices[dim][facet]]
+    # Compute coordinates and map the points
+    coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
     new_points = []
     for point in points:
         w = (1.0 - sum(point),) + tuple(point)

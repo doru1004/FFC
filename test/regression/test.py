@@ -9,7 +9,7 @@ form files found in the 'bench' directory. To run benchmarks, use the
 option --bench.
 """
 
-# Copyright (C) 2010 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
+# Copyright (C) 2010-2013 Anders Logg, Kristian B. Oelgaard and Marie E. Rognes
 #
 # This file is part of FFC.
 #
@@ -26,8 +26,10 @@ option --bench.
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
+# Modified by Martin Alnaes, 2013
+#
 # First added:  2010-01-21
-# Last changed: 2011-11-28
+# Last changed: 2013-02-14
 
 # FIXME: Need to add many more test cases. Quite a few DOLFIN forms
 # failed after the FFC tests passed.
@@ -101,7 +103,7 @@ def clean_output(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases(bench):
+def generate_test_cases(bench, quicksample):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -111,8 +113,12 @@ def generate_test_cases(bench):
         form_directory = bench_directory
     else:
         form_directory = demo_directory
+
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
     form_files.sort()
+    if quicksample:
+        form_files = form_files[:4] # Maybe pick a better selection
+
     for f in form_files:
         shutil.copy("%s/%s" % (form_directory, f), ".")
     info_green("Found %d form files" % len(form_files))
@@ -124,6 +130,8 @@ def generate_test_cases(bench):
     if not bench:
         from elements import elements
         info("Generating form files for extra elements (%d elements)" % len(elements))
+        if quicksample:
+            elements = elements[:3] # Maybe pick a better selection
         for (i, element) in enumerate(elements):
             open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
@@ -287,6 +295,40 @@ def validate_programs(reference_dir):
         else:
             info_red("%s differs" % f)
 
+
+        # Now check json references
+        fj = f.replace(".out", ".json")
+
+        # Get generated json output
+        if os.path.exists(fj):
+            generated_json_output = open(fj).read()
+        else:
+            generated_json_output = "{}"
+
+        # Get reference json output
+        reference_json_file = os.path.join(reference_dir, fj)
+        if os.path.isfile(reference_json_file):
+            reference_json_output = open(reference_json_file).read()
+        else:
+            info_blue("Missing reference for %s" % reference_json_file)
+            reference_json_output = "{}"
+
+        # Compare json with reference using recursive diff algorithm # TODO: Write to different error file?
+        from recdiff import recdiff, print_recdiff, DiffEqual
+        generated_json_output = eval(generated_json_output)
+        reference_json_output = eval(reference_json_output)
+        json_diff = recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance)
+        json_ok = json_diff == DiffEqual
+
+        # Check status
+        if json_ok:
+            info_green("%s OK" % fj)
+        else:
+            info_red("%s differs" % fj)
+            log_error("Json output differs for %s, diff follows:"
+                      % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
+            print_recdiff(json_diff, printer=log_error)
+
     end()
 
 def main(args):
@@ -298,10 +340,11 @@ def main(args):
     ext = "--ext_quad" in args
     generate_only = "--generate-only" in args
     pyop2 = "--pyop2" in args
+    quicksample = "--quick-sample" in args
 
     args = [arg for arg in args
             if not arg in ("--bench", "--fast", "--ext_quad",
-                           "--generate-only", "--pyop2")]
+                           "--generate-only", "--pyop2", "--quick-sample")]
 
     # Clean out old output directory
     output_directory = "output"
@@ -330,7 +373,7 @@ def main(args):
         os.chdir(sub_directory)
 
         # Generate test cases
-        generate_test_cases(bench)
+        generate_test_cases(bench, quicksample)
 
         # Generate code
         generate_code(args + [argument])
