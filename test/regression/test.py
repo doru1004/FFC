@@ -39,48 +39,7 @@ from numpy import array, shape, abs, max, isnan
 from ffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import build_ufc_programs
 from pyop2test import build_pyop2_programs
-from instant.output import get_status_output
-
-class TestHelper(object):
-
-    def __init__(self):
-        self._logfile = None
-
-    def run_command(self, command):
-        "Run command and collect errors in log file."
-        (status, output) = get_status_output(command)
-        if status == 0:
-            return True
-        if self._logfile is None:
-            self._logfile = open("../../error.log", "w")
-        self._logfile.write(output + "\n")
-        print output
-        return False
-
-    def log_error(self, message):
-        "Log error message."
-        if self._logfile is None:
-            self._logfile = open("../../error.log", "w")
-        self._logfile.write(message + "\n")
-
-    @property
-    def error_occurred(self):
-        return self._logfile is not None
-
-helper = TestHelper()
-
-class TestCase(object):
-
-    def __init__(self, build_programs, options):
-        self._build_programs = build_programs
-        self._options = options
-
-    def build_programs(self, bench, helper):
-        return self._build_programs(bench, helper)
-
-    @property
-    def options(self):
-        return self._options
+from testutils import run_command, _command_timings, logfile
 
 # Parameters
 output_tolerance = 1.e-6
@@ -89,13 +48,30 @@ bench_directory = "../../../../bench"
 
 # Extended quadrature tests (optimisations)
 ext_quad = [\
-TestCase(build_ufc_programs, "-r quadrature -O -feliminate_zeros"),
-TestCase(build_ufc_programs, "-r quadrature -O -fsimplify_expressions"),
-TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_ip_const"),
-TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_basis_const"),
-TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_ip_const -feliminate_zeros"),
-TestCase(build_ufc_programs, "-r quadrature -O -fprecompute_basis_const -feliminate_zeros")
+"-r quadrature -O -feliminate_zeros",
+"-r quadrature -O -fsimplify_expressions",
+"-r quadrature -O -fprecompute_ip_const",
+"-r quadrature -O -fprecompute_basis_const",
+"-r quadrature -O -fprecompute_ip_const -feliminate_zeros",
+"-r quadrature -O -fprecompute_basis_const -feliminate_zeros",
 ]
+
+# Extended uflacs tests (to be extended with optimisation parameters later)
+ext_uflacs = [\
+"-r uflacs",
+]
+
+# Extended pyop2 tests
+ext_pyop2 = [\
+"-l pyop2",
+]
+
+def log_error(message):
+    "Log error message."
+    global logfile
+    if logfile is None:
+        logfile = open("../../error.log", "w")
+    logfile.write(message + "\n")
 
 def clean_output(output_directory):
     "Clean out old output directory"
@@ -103,7 +79,7 @@ def clean_output(output_directory):
         shutil.rmtree(output_directory)
     os.mkdir(output_directory)
 
-def generate_test_cases(bench, quicksample):
+def generate_test_cases(bench, only_forms):
     "Generate form files for all test cases."
 
     begin("Generating test cases")
@@ -114,10 +90,11 @@ def generate_test_cases(bench, quicksample):
     else:
         form_directory = demo_directory
 
+    # Make list of form files
     form_files = [f for f in os.listdir(form_directory) if f.endswith(".ufl")]
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
-    if quicksample:
-        form_files = form_files[:4] # Maybe pick a better selection
 
     for f in form_files:
         shutil.copy("%s/%s" % (form_directory, f), ".")
@@ -130,30 +107,36 @@ def generate_test_cases(bench, quicksample):
     if not bench:
         from elements import elements
         info("Generating form files for extra elements (%d elements)" % len(elements))
-        if quicksample:
-            elements = elements[:3] # Maybe pick a better selection
         for (i, element) in enumerate(elements):
             open("X_Element%d.ufl" % i, "w").write("element = %s" % element)
 
     end()
 
-def generate_code(args):
+def generate_code(args, only_forms):
     "Generate code for all test cases."
 
     # Get a list of all files
     form_files = [f for f in os.listdir(".") if f.endswith(".ufl")]
+    if only_forms:
+        form_files = [f for f in form_files if f in only_forms]
     form_files.sort()
 
     begin("Generating code (%d form files found)" % len(form_files))
 
+    # TODO: Parse additional options from .ufl file? I.e. grep for some sort of tag like '#ffc: <flags>'.
+    special = {
+        "AdaptivePoisson.ufl": "-e",
+        }
+
     # Iterate over all files
     for f in form_files:
+        options = special.get(f, "")
 
-        cmd = ("ffc %s -f precision=8 -fconvert_exceptions_to_warnings %s"
-               % (" ".join(args), f))
+        cmd = ("ffc %s %s -f precision=8 -fconvert_exceptions_to_warnings %s"
+               % (options, " ".join(args), f))
 
         # Generate code
-        ok = helper.run_command(cmd)
+        ok = run_command(cmd)
 
         # Check status
         if ok:
@@ -194,13 +177,16 @@ def validate_code(reference_dir):
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
             s = ("Code differs for %s, diff follows"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
-            helper.log_error("\n" + s + "\n" + len(s)*"-")
-            helper.log_error(diff)
+            log_error("\n" + s + "\n" + len(s)*"-")
+            log_error(diff)
 
     end()
 
-def run_programs():
+def run_programs(bench):
     "Run generated programs."
+
+    # This matches argument parsing in the generated main files
+    bench = 'b' if bench else ''
 
     # Get a list of all files
     test_programs = [f for f in os.listdir(".") if f.endswith(".bin")]
@@ -217,7 +203,7 @@ def run_programs():
             os.remove(prefix + ".out")
         except:
             pass
-        ok = helper.run_command(".%s%s.bin > %s.out" % (os.path.sep, prefix, prefix))
+        ok = run_command(".%s%s.bin %s > %s.out" % (os.path.sep, prefix, bench, prefix))
 
         # Check status
         if ok:
@@ -260,8 +246,8 @@ def validate_programs(reference_dir):
 
             # Check if value is present
             if not key in new:
-                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
-                helper.log_error("%s: missing value in generated code" % key)
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: missing value in generated code" % key)
                 ok = False
                 continue
 
@@ -271,23 +257,23 @@ def validate_programs(reference_dir):
 
             # Check that shape is correct
             if not shape(old_values) == shape(new_values):
-                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
-                helper.log_error("%s: shape mismatch" % key)
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: shape mismatch" % key)
                 ok = False
                 continue
 
             # Check that values match to within tolerance set by 'output_tolerance'
             diff = max(abs(old_values - new_values))
             if diff > output_tolerance or isnan(diff):
-                if ok: helper.log_error("\n" + header + "\n" + len(header)*"-")
-                helper.log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
-                helper.log_error("  old = " + " ".join("%.16g" % v for v in old_values))
-                helper.log_error("  new = " + " ".join("%.16g" % v for v in new_values))
+                if ok: log_error("\n" + header + "\n" + len(header)*"-")
+                log_error("%s: values differ, error = %g (tolerance = %g)" % (key, diff, output_tolerance))
+                log_error("  old = " + " ".join("%.16g" % v for v in old_values))
+                log_error("  new = " + " ".join("%.16g" % v for v in new_values))
                 ok = False
 
         # Add debugging output to log file
         debug = "\n".join([line for line in generated_output.split("\n") if "debug" in line])
-        if debug: helper.log_error(debug)
+        if debug: log_error(debug)
 
         # Check status
         if ok:
@@ -315,9 +301,16 @@ def validate_programs(reference_dir):
 
         # Compare json with reference using recursive diff algorithm # TODO: Write to different error file?
         from recdiff import recdiff, print_recdiff, DiffEqual
-        generated_json_output = eval(generated_json_output)
+        # Assuming reference is well formed
         reference_json_output = eval(reference_json_output)
-        json_diff = recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance)
+        try:
+            generated_json_output = eval(generated_json_output)
+        except Exception as e:
+            info_red("Failed to evaluate json output for %s" % fj)
+            log_error(str(e))
+            generated_json_output = None
+        json_diff = (None if generated_json_output is None else
+                     recdiff(generated_json_output, reference_json_output, tolerance=output_tolerance))
         json_ok = json_diff == DiffEqual
 
         # Check status
@@ -334,17 +327,31 @@ def validate_programs(reference_dir):
 def main(args):
     "Run all regression tests."
 
-    # Check command-line arguments
-    bench = "--bench" in args
-    fast = "--fast" in args
-    ext = "--ext_quad" in args
-    generate_only = "--generate-only" in args
-    pyop2 = "--pyop2" in args
-    quicksample = "--quick-sample" in args
+    # Check command-line arguments TODO: Use getargs or something
+    generate_only  = "--generate-only" in args
+    fast           = "--fast" in args
+    bench          = "--bench" in args
+    use_ext_quad   = "--ext_quad" in args
+    use_ext_uflacs = "--ext_uflacs" in args
+    permissive     = "--permissive" in args
+    print_timing   = "--print-timing" in args
+    pyop2          = "--pyop2" in args
 
-    args = [arg for arg in args
-            if not arg in ("--bench", "--fast", "--ext_quad",
-                           "--generate-only", "--pyop2", "--quick-sample")]
+    flags = (
+        "--generate-only",
+        "--fast",
+        "--bench",
+        "--ext_quad",
+        "--ext_uflacs",
+        "--permissive",
+        "--print-timing",
+        "--pyop2",
+        )
+    args = [arg for arg in args if not arg in flags]
+
+    # Extract .ufl names from args
+    only_forms = set([arg for arg in args if arg.endswith(".ufl")])
+    args = [arg for arg in args if arg not in only_forms]
 
     # Clean out old output directory
     output_directory = "output"
@@ -353,18 +360,19 @@ def main(args):
 
     # Adjust which test cases (combinations of compile arguments) to
     # run here
-    test_cases = [TestCase(build_ufc_programs,   "-r auto" )]
+    test_cases = ["-r auto"]
+    if use_ext_uflacs:
+        test_cases = ext_uflacs
+        test_cases += ["-r quadrature -O"]
     if pyop2:
-        test_cases += [TestCase(build_pyop2_programs, "-l pyop2")]
+        test_cases += ext_pyop2
     if (not bench and not fast):
-        test_cases += [TestCase(build_ufc_programs, "-r quadrature"), \
-                       TestCase(build_ufc_programs, "-r quadrature -O")]
-        if ext:
+        test_cases += ["-r quadrature", "-r quadrature -O"]
+        if use_ext_quad:
             test_cases += ext_quad
 
-    for case in test_cases:
+    for argument in test_cases:
 
-        argument = case.options
         begin("Running regression tests with %s" % argument)
 
         # Clear and enter output sub-directory
@@ -373,10 +381,10 @@ def main(args):
         os.chdir(sub_directory)
 
         # Generate test cases
-        generate_test_cases(bench, quicksample)
+        generate_test_cases(bench, only_forms)
 
         # Generate code
-        generate_code(args + [argument])
+        generate_code(args + [argument], only_forms)
 
         # Location of reference directories
         reference_directory =  os.path.abspath("../../references/")
@@ -385,7 +393,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench and argument not in [ c.options for c in ext_quad ]:
+        if not bench and argument not in ext_quad:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
@@ -393,11 +401,17 @@ def main(args):
         if fast or generate_only:
             info("Skipping program validation")
         elif bench:
-            case.build_programs(bench, helper)
-            run_programs()
+            if argument in ext_pyop2:
+                build_pyop2_programs(bench, permissive)
+            else:
+                build_ufc_programs(bench, permissive)
+            run_programs(bench)
         else:
-            case.build_programs(bench, helper)
-            run_programs()
+            if argument in ext_pyop2:
+                build_pyop2_programs(bench, permissive)
+            else:
+                build_ufc_programs(bench, permissive)
+            run_programs(bench)
             validate_programs(output_reference_dir)
 
         # Go back up
@@ -406,13 +420,17 @@ def main(args):
         end()
 
     # Print results
-    if helper.error_occurred:
+    if print_timing:
+        timings = '\n'.join("%10.2e s  %s" % (t, name) for (name, t) in _command_timings)
+        info_green("Timing of all commands executed:")
+        info(timings)
+    if logfile is None:
+        info_green("Regression tests OK")
+        return 0
+    else:
         info_red("Regression tests failed")
         info("Error messages stored in error.log")
         return 1
-    else:
-        info_green("Regression tests OK")
-        return 0
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv[1:]))

@@ -20,30 +20,32 @@
 # First added:  2010-01-24
 # Last changed: 2013-02-14
 
-import os, sys
-from ffc.log import begin, end, info, info_green, info_red, info_blue
+import os
+import sys
+from ffc.log import begin, end, info, info_green, info_red
 from instant.output import get_status_output
+from testutils import run_command
 
 _test_code = """\
 #include "../../ufctest.h"
 #include "%s.h"
 #include <fstream>
 
-int main()
+int main(int argc, char * argv[])
 {
   const char jsonfilename[] = "%s.json";
   std::ofstream jsonfile(jsonfilename);
   Printer printer(std::cout, jsonfile);
   printer.begin();
 
-%s
+%s%s
 
   printer.end();
   return 0;
 }
 """
 
-def _generate_test_code(header_file, bench):
+def _generate_test_code(header_file):
     "Generate test code for given header file."
 
     # Count the number of forms and elements
@@ -54,18 +56,20 @@ def _generate_test_code(header_file, bench):
 
     # Generate tests, either based on forms or elements
     if num_forms > 0:
-        tests = ['  %s_form_%d f%d; test_form(f%d, %d, %d, printer);' % (prefix.lower(), i, i, i, bench, i)
+        benchline = "  bool bench = (argc > 1) && argv[1][0] == 'b';\n"
+        tests = ['  %s_form_%d f%d; test_form(f%d, bench, %d, printer);' % (prefix.lower(), i, i, i, i)
                  for i in range(num_forms)]
     else:
+        benchline = ""
         tests = ['  %s_finite_element_%d e%d; test_finite_element(e%d, %d, printer);' % (prefix.lower(), i, i, i, i)
                  for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
-    test_file.write(_test_code % (prefix, prefix, "\n".join(tests)))
+    test_file.write(_test_code % (prefix, prefix, benchline, "\n".join(tests)))
     test_file.close()
 
-def build_ufc_programs(bench, helper):
+def build_ufc_programs(bench, permissive):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -115,26 +119,26 @@ set the environment variable BOOST_DIR.
     ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
 
     # Set compiler options
-    if bench > 0:
+    compiler_options = "%s -Wall" % ufc_cflags
+    if not permissive:
+        compiler_options += " -Werror"
+    if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
-        #compiler_options = "%s -Wall -Werror -O2" % ufc_cflags
-        compiler_options = "%s -Wall -Werror" % ufc_cflags
-    else:
-        compiler_options = "%s -Wall -Werror -g" % ufc_cflags
+        #compiler_options += " -O2"
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files
     for f in header_files:
 
         # Generate test code
-        filename = _generate_test_code(f, bench)
+        filename = _generate_test_code(f)
 
         # Compile test code
         prefix = f.split(".h")[0]
         command = "g++ %s -o %s.bin %s.cpp -l%s" % \
                   (compiler_options, prefix, prefix, boost_math_tr1_lib)
-        ok = helper.run_command(command)
+        ok = run_command(command)
 
         # Check status
         if ok:
