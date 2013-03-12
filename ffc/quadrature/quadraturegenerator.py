@@ -59,7 +59,7 @@ def _arglist(ir):
     extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
     localtensor = "%s A%s" % (float, extent)
 
-    coordinates = "%s *vertex_coordinates[%d]" % (float, ir["geometric_dimension"])
+    coordinates = "%s **vertex_coordinates" % float
 
     coeffs = []
     for i in xrange(ir['num_coefficients']):

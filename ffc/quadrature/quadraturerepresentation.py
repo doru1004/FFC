@@ -99,8 +99,7 @@ def compute_integral_ir(itg_data,
     ir["geo_consts"] = {}
 
     # Add local tensor entry dimensions
-    num_sub_elements = [ a.num_sub_elements() for a in form_data.argument_elements ]
-    ir["tensor_entry_size"] = tuple([1 if n is 0 else n for n in num_sub_elements ])
+    ir["tensor_entry_size"] = tuple([1] * form_data.rank)
 
     # Add number of coefficients
     ir["num_coefficients"] = form_data.num_coefficients
