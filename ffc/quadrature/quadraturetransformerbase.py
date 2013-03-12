@@ -935,9 +935,6 @@ class QuadratureTransformerBase(Transformer):
     def _create_mapping_basis(self, component, deriv, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
 
-        # Check whether we're generating PyOP2 code and the element is mixed
-        pyop2_mixed_element = (self.parameters["format"]=="pyop2" and isinstance(ffc_element, MixedElement))
-
         # Get string for integration points.
         f_ip = format["integration points"]
         generate_psi_name = format["psi name"]
@@ -960,21 +957,14 @@ class QuadratureTransformerBase(Transformer):
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
-        if pyop2_mixed_element:
-            space_dim = ffc_element.elements()[0].space_dimension()
-            dimension_dim = len(ffc_element.elements())
-        else:
-            space_dim = ffc_element.space_dimension()
+        space_dim = ffc_element.space_dimension()
         offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
 
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         if self.points == 1:
             f_ip = "0"
-        if pyop2_mixed_element:
-            index_calc = "%s*%s+%s" % (loop_index2, space_dim, loop_index)
-        else:
-            index_calc = loop_index
+        index_calc = loop_index
         basis_access = format["component"]("", [f_ip, index_calc])
 
         # If we have a restricted function multiply space_dim by two.
@@ -986,10 +976,7 @@ class QuadratureTransformerBase(Transformer):
 
         name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv)
         name, non_zeros, zeros, ones = self.name_map[name]
-        if pyop2_mixed_element:
-            loop_index_range = space_dim
-        else:
-            loop_index_range = shape(self.unique_tables[name])[1]
+        loop_index_range = shape(self.unique_tables[name])[1]
 
         basis = ""
         # Ignore zeros if applicable
@@ -1024,11 +1011,7 @@ class QuadratureTransformerBase(Transformer):
         # Example dx and ds: (0, j, 3, 3)
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        if pyop2_mixed_element:
-            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),
-                       (ufl_argument.count(), loop_index2, dimension_dim, dimension_dim))
-        else:
-            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
+        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
 
         return (mapping, basis)
 
