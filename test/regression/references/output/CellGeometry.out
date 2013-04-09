@@ -3,7 +3,7 @@ Testing form
 ----------------------
 0_num_coefficients = 1
 1_has_cell_integrals = 1
-2_has_exterior_facet_integrals = 0
+2_has_exterior_facet_integrals = 1
 3_has_interior_facet_integrals = 0
 4_has_point_integrals = 0
 5_num_cell_domains = 0
@@ -87,7 +87,14 @@ Testing dofmap
 
 Testing cell_integral
 ----------------------
-77_tabulate_tensor = 0.01390665493588533
-78_default_exterior_facet_integral = 0
-79_default_interior_facet_integral = 0
-80_default_point_integral = 0
+77_tabulate_tensor = 6.160190116789627e-05
+78_default_exterior_facet_integral = 1
+
+Testing exterior_facet_integral
+----------------------
+79_tabulate_tensor_0 = 8.675675716854716e-05
+80_tabulate_tensor_1 = 0.0001162809252546086
+81_tabulate_tensor_2 = 4.671929500475071e-05
+82_tabulate_tensor_3 = 6.836297208303342e-05
+83_default_interior_facet_integral = 0
+84_default_point_integral = 0

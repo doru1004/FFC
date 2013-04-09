@@ -42,6 +42,7 @@ from pyop2test import build_pyop2_programs
 from testutils import run_command, _command_timings, logfile
 
 # Parameters
+debug = False # TODO: Can make this a cmdline argument, and start crashing programs in debugger automatically?
 output_tolerance = 1.e-6
 demo_directory = "../../../../demo"
 bench_directory = "../../../../bench"
@@ -175,7 +176,7 @@ def validate_code(reference_dir):
         else:
             info_red("%s differs" % f)
             diff = "\n".join([line for line in difflib.unified_diff(reference_code.split("\n"), generated_code.split("\n"))])
-            s = ("Code differs for %s, diff follows"
+            s = ("Code differs for %s, diff follows (reference first, generated second)"
                  % os.path.join(*reference_file.split(os.path.sep)[-3:]))
             log_error("\n" + s + "\n" + len(s)*"-")
             log_error(diff)
@@ -240,7 +241,7 @@ def validate_programs(reference_dir):
         ok = True
         old = [line.split(" = ") for line in reference_output.split("\n") if " = " in line]
         new = dict([line.split(" = ") for line in generated_output.split("\n") if " = " in line])
-        header = ("Output differs for %s, diff follows"
+        header = ("Output differs for %s, diff follows (reference first, generated second)"
                   % os.path.join(*reference_file.split(os.path.sep)[-3:]))
         for (key, value) in old:
 
@@ -288,6 +289,9 @@ def validate_programs(reference_dir):
         # Get generated json output
         if os.path.exists(fj):
             generated_json_output = open(fj).read()
+            if "nan" in generated_json_output:
+                info_red("Found nan in generated json output, replacing with 999 to be able to parse as python dict.")
+                generated_json_output = generated_json_output.replace("nan", "999")
         else:
             generated_json_output = "{}"
 
@@ -318,7 +322,7 @@ def validate_programs(reference_dir):
             info_green("%s OK" % fj)
         else:
             info_red("%s differs" % fj)
-            log_error("Json output differs for %s, diff follows:"
+            log_error("Json output differs for %s, diff follows (reference first, generated second)"
                       % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
             print_recdiff(json_diff, printer=log_error)
 
@@ -331,9 +335,11 @@ def main(args):
     generate_only  = "--generate-only" in args
     fast           = "--fast" in args
     bench          = "--bench" in args
+    use_quad       = "--skip_quad" not in args
     use_ext_quad   = "--ext_quad" in args
     use_ext_uflacs = "--ext_uflacs" in args
     permissive     = "--permissive" in args
+    tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
     pyop2          = "--pyop2" in args
 
@@ -341,9 +347,11 @@ def main(args):
         "--generate-only",
         "--fast",
         "--bench",
+        "--skip_quad",
         "--ext_quad",
         "--ext_uflacs",
         "--permissive",
+        "--tolerant",
         "--print-timing",
         "--pyop2",
         )
@@ -353,6 +361,10 @@ def main(args):
     only_forms = set([arg for arg in args if arg.endswith(".ufl")])
     args = [arg for arg in args if arg not in only_forms]
 
+    if tolerant:
+        global output_tolerance
+        output_tolerance = 1e-3
+
     # Clean out old output directory
     output_directory = "output"
     clean_output(output_directory)
@@ -361,15 +373,15 @@ def main(args):
     # Adjust which test cases (combinations of compile arguments) to
     # run here
     test_cases = ["-r auto"]
+    if use_quad and (not bench and not fast):
+        test_cases += ["-r quadrature", "-r quadrature -O"]
+    if use_ext_quad:
+        test_cases += ext_quad
     if use_ext_uflacs:
         test_cases = ext_uflacs
         test_cases += ["-r quadrature -O"]
     if pyop2:
         test_cases += ext_pyop2
-    if (not bench and not fast):
-        test_cases += ["-r quadrature", "-r quadrature -O"]
-        if use_ext_quad:
-            test_cases += ext_quad
 
     for argument in test_cases:
 

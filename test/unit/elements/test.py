@@ -1,3 +1,5 @@
+"""Unit tests for FFC finite elements"""
+
 # Copyright (C) 2013 Marie E. Rognes
 #
 # This file is part of FFC.
@@ -14,22 +16,28 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# This demo illustrates how to use a point measure: dP
-#
-# Compile this form with FFC: ffc PointMeasure.ufl
 
-element = FiniteElement("CG", triangle, 1)
-V = FiniteElement("CG", triangle, 2)
-u = TrialFunction(element)
-v = TestFunction(element)
-g = Coefficient(element)
-f = Coefficient(V)
-a = u*v*dP + g*g*u*v*dP(1) + u*v*dx
+import unittest
 
-element = FiniteElement("DG", tetrahedron, 1)
-V = FiniteElement("DG", tetrahedron, 2)
-v = TestFunction(element)
-f = Coefficient(V)
-L = v*f*dP
+from ufl import interval
+from ufl import FiniteElement
 
+from ffc import compile_element
+
+class TestCompileElements(unittest.TestCase):
+
+    def testRadau(self):
+        "Test that Radau elements compile."
+        for degree in range(3):
+            element = FiniteElement("Radau", interval, degree)
+            compile_element(element)
+
+    def testLobatto(self):
+        "Test that Lobatto elements compile."
+        for degree in range(1, 4):
+            element = FiniteElement("Lobatto", interval, degree)
+            compile_element(element)
+
+
+if __name__ == "__main__":
+    unittest.main()

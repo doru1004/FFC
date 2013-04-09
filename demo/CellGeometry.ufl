@@ -1,4 +1,4 @@
-# Copyright (C) 2013 Marie E. Rognes
+# Copyright (C) 2013 Martin S. Alnaes
 #
 # This file is part of FFC.
 #
@@ -15,21 +15,21 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# This demo illustrates how to use a point measure: dP
+# A functional M involving a bunch of cell geometry quantities in ufl.
 #
-# Compile this form with FFC: ffc PointMeasure.ufl
+# Compile this form with FFC: ffc CellGeometry.ufl
 
-element = FiniteElement("CG", triangle, 1)
-V = FiniteElement("CG", triangle, 2)
-u = TrialFunction(element)
-v = TestFunction(element)
-g = Coefficient(element)
-f = Coefficient(V)
-a = u*v*dP + g*g*u*v*dP(1) + u*v*dx
+cell = tetrahedron
 
-element = FiniteElement("DG", tetrahedron, 1)
-V = FiniteElement("DG", tetrahedron, 2)
-v = TestFunction(element)
-f = Coefficient(V)
-L = v*f*dP
+V = FiniteElement("CG", cell, 1)
+u = Coefficient(V)
+
+# TODO: Add all geometry for all cell types to this and other demo files, need for regression test.
+x = cell.x
+n = cell.n
+vol = cell.volume
+rad = cell.circumradius
+area = cell.facet_area
+
+M = u*(x[0]*vol*rad)*dx + u*(x[0]*vol*rad*area)*ds # + u*area*avg(n[0]*x[0]*vol*rad)*dS
 

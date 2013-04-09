@@ -2,7 +2,7 @@
     "form_0": {
         "num_coefficients": 1, 
         "has_cell_integrals": 1, 
-        "has_exterior_facet_integrals": 0, 
+        "has_exterior_facet_integrals": 1, 
         "has_interior_facet_integrals": 0, 
         "has_point_integrals": 0, 
         "num_cell_domains": 0, 
@@ -82,9 +82,15 @@
         },
         "default_cell_integral": 1, 
         "cell_integral": {
-            "tabulate_tensor": [1.3906654935885334e-02], 
+            "tabulate_tensor": [6.1601901167896269e-05], 
         },
-        "default_exterior_facet_integral": 0, 
+        "default_exterior_facet_integral": 1, 
+        "exterior_facet_integral": {
+            "tabulate_tensor_0": [8.6756757168547161e-05], 
+            "tabulate_tensor_1": [1.1628092525460860e-04], 
+            "tabulate_tensor_2": [4.6719295004750708e-05], 
+            "tabulate_tensor_3": [6.8362972083033419e-05], 
+        },
         "default_interior_facet_integral": 0, 
         "default_point_integral": 0, 
     },

@@ -14,7 +14,7 @@ class DiffMarkerType:
 DiffMissing = DiffMarkerType("<value missing>")
 DiffEqual = DiffMarkerType("<equal>")
 
-_default_recdiff_tolerance = 1e-8
+_default_recdiff_tolerance = 1e-6
 
 def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
     keys1 = set(data1.keys())
@@ -36,8 +36,18 @@ def recdiff_dict(data1, data2, tolerance=_default_recdiff_tolerance):
 def recdiff(data1, data2, tolerance=_default_recdiff_tolerance):
     if isinstance(data1, (float,int)) and isinstance(data2, (float,int)):
         # This approach allows numbers formatted as ints and floats interchangably as long as the values are equal
-        diff = data1 - data2
-        return DiffEqual if abs(diff) < tolerance else (data1, data2)
+        delta = abs(data1 - data2)
+        avg = (abs(data1) + abs(data2)) / 2.0
+
+        if 0:
+            # Using relative comparison, i.e. a tolerance of 1e-2 means one percent error is acceptable
+            eps = tolerance * avg
+            same = avg < 1e-14 or delta < eps
+        else:
+            # Using absolute comparison, this is what the old .out comparison does
+            same = delta < tolerance
+
+        return DiffEqual if same else (data1, data2)
     elif type(data1) != type(data2):
         return (data1, data2)
     elif isinstance(data1, dict):
@@ -65,7 +75,7 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
         for i, d in enumerate(diff):
             if isinstance(d, tuple):
                 data1, data2 = d
-                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))   
+                printer("%s%d: %s != %s" % ("  "*indent, i, data1, data2))
 
     elif isinstance(diff, tuple):
         assert len(diff) == 2
@@ -77,7 +87,7 @@ def print_recdiff(diff, indent=0, printer=_print, prekey=""):
             printer("%s!=" % ("  "*indent))
             printer("%s%s" % ("  "*indent, data2))
         else:
-            printer("%s%s != %s" % ("  "*indent, data1, data2))   
+            printer("%s%s != %s" % ("  "*indent, data1, data2))
 
 
 # ---------- Unittest code
@@ -90,18 +100,22 @@ class RecDiffTestCase(unittest.TestCase):
             print a
             print b
             assert a == b
-    
+
     def assertDiffEqual(self, diff):
         self.assertEqual(diff, DiffEqual)
 
     def test_recdiff_equal_items(self):
         self.assertDiffEqual(recdiff(1,1))
+        self.assertDiffEqual(recdiff(0,0))
+        self.assertDiffEqual(recdiff(0,1e-15))
         self.assertDiffEqual(recdiff(1.1,1.1+1e-7,tolerance=1e-6))
         self.assertDiffEqual(recdiff(1.1,1.1-1e-7,tolerance=1e-6))
         self.assertDiffEqual(recdiff("foo", "foo"))
 
     def test_recdiff_not_equal_items(self):
         self.assertEqual(recdiff(1,2), (1,2))
+        self.assertEqual(recdiff(0,0.0001), (0,0.0001))
+        self.assertEqual(recdiff(0,1e-13), (0,1e-13))
         self.assertEqual(recdiff(1.1,1.2+1e-7,tolerance=1e-6), (1.1,1.2+1e-7))
         self.assertEqual(recdiff(1.1,1.2-1e-7,tolerance=1e-6), (1.1,1.2-1e-7))
         self.assertEqual(recdiff("foo", "bar"), ("foo", "bar"))
@@ -131,17 +145,17 @@ class RecDiffTestCase(unittest.TestCase):
             "has_default_cell_integral": 1,
             "cell_integrals": { 0: { "tabulate_tensor_input1": ["data"] } },
         }
- 
+
         form2 = eval("""{
             "num_coefficients": 2,
             "rank": 2,
             "has_default_cell_integral": 0,
             "cell_integrals": { 0: { "tabulate_tensor_input1": ["data2"] } },
         }""")
- 
+
         actual_diff = recdiff(form1, form2)
         if 0: print_recdiff(actual_diff)
- 
+
         expected_diff = {
             #"num_coefficients": DiffEqual,
             "num_arguments": (2,DiffMissing),
@@ -152,11 +166,11 @@ class RecDiffTestCase(unittest.TestCase):
         self.assertEqual(actual_diff, expected_diff)
 
 
-def main(a, b):
+def main(a, b, tolerance=_default_recdiff_tolerance):
     print "Running diff on files %s and %s" % (a, b)
     a = eval(open(a).read())
     b = eval(open(b).read())
-    d = recdiff(a, b)   
+    d = recdiff(a, b, float(tolerance))
     print_recdiff(d)
 
 if __name__ == "__main__":
@@ -167,4 +181,3 @@ if __name__ == "__main__":
         unittest.main()
     else:
         main(*args)
-
