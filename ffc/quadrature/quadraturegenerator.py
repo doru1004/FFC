@@ -71,8 +71,9 @@ def _arglist(ir):
     coordinates = "%s *x[%d]" % (float, ir["geometric_dimension"])
 
     coeffs = []
-    for i in xrange(ir['num_coefficients']):
-        coeffs.append("%s **w%d" % (float, i))
+    for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
+	coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*", \
+			n[1:] if e.family() == 'Real' else n))
 
     itindices = {0: "int j", 1: "int k"}
 
@@ -121,6 +122,15 @@ def _tabulate_tensor(ir, parameters):
 
     affine_tables = {}
     quadrature_weights = ir["quadrature_weights"]
+
+    #The pyop2 format requires dereferencing constant coefficients since
+    # these are passed in as double *
+    common = []
+    if p_format == 'pyop2':
+	common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:]) \
+	         for n,c in zip(ir["coefficient_names"], ir["coefficient_elements"]) if c.family() == 'Real']
+    else:
+        common = []
 
     operations = []
     if domain_type == "cell":
@@ -218,7 +228,7 @@ def _tabulate_tensor(ir, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
-    common = [remove_unused(jacobi_code, trans_set)]
+    common += [remove_unused(jacobi_code, trans_set)]
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
