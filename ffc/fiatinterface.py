@@ -78,15 +78,19 @@ supported_families = ("Brezzi-Douglas-Marini",
 # Cache for computed elements
 _cache = {}
 
-def reference_cell(dim):
-    if isinstance(dim, int):
-        return FIAT.ufc_simplex(dim)
-    else:
-        return FIAT.ufc_simplex(cellname2dim[dim])
+def reference_cell(cell):
+    # really want to be using cells only, but sometimes only cellname is passed
+    # in. FIAT handles the cases.
+    
+    # I hope nothing is still passing in just dimension...
+    if isinstance(cell, int):
+        error("%s was passed into reference_cell(). Need cell or cellname." % str(cell))
 
-def reference_cell_vertices(dim):
+    return FIAT.ufc_cell(cell)
+
+def reference_cell_vertices(cellname):
     "Return dict of coordinates of reference cell vertices for this 'dim'."
-    cell = reference_cell(dim)
+    cell = reference_cell(cellname)
     return cell.get_vertices()
 
 def create_element(ufl_element):
@@ -100,7 +104,7 @@ def create_element(ufl_element):
         return _cache[element_signature]
 
     # Create regular FIAT finite element
-    if isinstance(ufl_element, ufl.FiniteElement):
+    if isinstance(ufl_element, ufl.FiniteElement) or isinstance(ufl_element, ufl.TensorTwoProductElement):
         element = _create_fiat_element(ufl_element)
 
     # Create mixed element (implemented by FFC)
@@ -155,33 +159,34 @@ def _create_fiat_element(ufl_element):
     elif family == "Quadrature":
         element = FFCQuadratureElement(ufl_element)
 
-    else:
+    elif family == "Bubble":
+    # Handle Bubble element as RestrictedElement of P_{k} to interior
         # Create FIAT cell
-        fiat_cell = reference_cell(cell.cellname())
+        fiat_cell = reference_cell(cell)
+        V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
+        dim = cell.geometric_dimension()
+        element =  RestrictedElement(V, _indices(V, "interior", dim), None)
 
-        # Handle Bubble element as RestrictedElement of P_{k} to interior
-        if family == "Bubble":
-            V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-            dim = cell.topological_dimension()
-            return RestrictedElement(V, _indices(V, "interior", dim), None)
-
+    else:
         # Check if finite element family is supported by FIAT
         if not family in FIAT.supported_elements:
             error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
         # Create FIAT finite element
         ElementClass = FIAT.supported_elements[family]
+        
+        # Tensor Product case
+        if family == "TensorTwoProductElement":
+            A = create_element(ufl_element._A)
+            B = create_element(ufl_element._B)
+            element = ElementClass(A, B)
+        
+        # Create FIAT cell
+        fiat_cell = reference_cell(cell)
         if degree is None:
             element = ElementClass(fiat_cell)
         else:
             element = ElementClass(fiat_cell, degree)
-
-    # Consistency check between UFL and FIAT elements. This will not hold for elements
-    # where the reference value shape is different from the global value shape, i.e.
-    # RT elements on a triangle in 3D.
-    #ffc_assert(element.value_shape() == ufl_element.value_shape(),
-    #           "Something went wrong in the construction of FIAT element from UFL element." + \
-    #           "Shapes are %s and %s." % (element.value_shape(), ufl_element.value_shape()))
 
     return element
 
