@@ -108,6 +108,8 @@ def compute_ir(analysis, parameters):
 def _compute_element_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of element."
 
+    if isinstance(ufl_element, ufl.TensorTwoProductElement):
+        return None
     # Create FIAT element
     element = create_element(ufl_element)
     cell = ufl_element.cell()
@@ -136,6 +138,8 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of dofmap."
 
+    if isinstance(ufl_element, ufl.TensorTwoProductElement):
+        return None
     # Create FIAT element
     element = create_element(ufl_element)
     cell = ufl_element.cell()
@@ -519,7 +523,7 @@ def _interpolate_vertex_values(ufl_element, element, cell):
     ir["physical_value_size"] = _value_size(ufl_element)
 
     # Get vertices of reference cell
-    cell = reference_cell(cell.cellname())
+    cell = reference_cell(cell)
     vertices = cell.get_vertices()
 
     # Compute data for each constituent element
