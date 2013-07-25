@@ -108,7 +108,7 @@ def compute_ir(analysis, parameters):
 def _compute_element_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of element."
 
-    if isinstance(ufl_element, ufl.TensorTwoProductElement):
+    if isinstance(ufl_element, ufl.OuterProductElement):
         return None
     # Create FIAT element
     element = create_element(ufl_element)
@@ -138,7 +138,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of dofmap."
 
-    if isinstance(ufl_element, ufl.TensorTwoProductElement):
+    if isinstance(ufl_element, ufl.OuterProductElement):
         return None
     # Create FIAT element
     element = create_element(ufl_element)

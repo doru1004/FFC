@@ -113,7 +113,7 @@ def create_element(ufl_element):
         return _cache[element_signature]
 
     # Create regular FIAT finite element
-    if isinstance(ufl_element, ufl.FiniteElement) or isinstance(ufl_element, ufl.TensorTwoProductElement):
+    if isinstance(ufl_element, ufl.FiniteElement) or isinstance(ufl_element, ufl.OuterProductElement):
         element = _create_fiat_element(ufl_element)
 
     # Create mixed element (implemented by FFC)
@@ -185,7 +185,7 @@ def _create_fiat_element(ufl_element):
         ElementClass = FIAT.supported_elements[family]
         
         # Tensor Product case
-        if family == "TensorTwoProductElement":
+        if family == "OuterProductElement":
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
             element = ElementClass(A, B)
