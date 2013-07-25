@@ -1036,6 +1036,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get format
         p_format = self.parameters["format"]
+        pyop2_mixed_element = isinstance(ffc_element, MixedElement) and p_format=="pyop2"
 
         # Get string for integration points.
         f_ip = "0" if self.points == 1 else format["integration points"]
@@ -1059,11 +1060,19 @@ class QuadratureTransformerBase(Transformer):
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
-        loop_index_range = shape(self.unique_tables[psi_name])[1]
+        if pyop2_mixed_element:
+            loop_index_range = tuple([ e.space_dimension() \
+                                       for e in ffc_element.elements()])
+        else:
+            loop_index_range = shape(self.unique_tables[psi_name])[1]
         if loop_index_range > 1:
             # Pick first free index of secondary type
             # (could use primary indices, but it's better to avoid confusion).
-            loop_index = format["free indices"][0]
+            if pyop2_mixed_element:
+                idx0, idx1 = format["free indices"][0], format["free indices"][1]
+                loop_index = "%s*%s+%s" % (ffc_element.elements()[0].space_dimension(), idx1, idx0)
+            else:
+                loop_index = format["free indices"][0]
 
         # If we have a quadrature element we can use the ip number to look
         # up the value directly. Need to add offset in case of components.
@@ -1106,6 +1115,12 @@ class QuadratureTransformerBase(Transformer):
         else:
             # Or just set default coefficient access.
             coefficient_access = loop_index
+
+        # If we are computing a vector-valued function in PyOP2 then we need to
+        #  access the coefficient through two indices
+        if pyop2_mixed_element:
+            idx0, idx1 = format["free indices"][0], format["free indices"][1]
+            coefficient_access = [idx0, idx1]
 
         # Offset by element space dimension in case of negative restriction.
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
