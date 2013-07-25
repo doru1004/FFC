@@ -39,14 +39,23 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import EnrichedElement, SpaceOfReals
 
-# Dictionary mapping from cellname to dimension
-from ufl.geometry import cellname2dim
+# Dictionary mapping from cell to dimension
+from ufl.geometry import cell2dim
 
 # Number of entities associated with each cell name
+# Need to pass in the full cell for OuterProduct compatibility
+# though no useful functionality implemented yet.
+def cell_to_num_entities(cell):
+    if isinstance(cell, str):
+        return cellname_to_num_entities[cell]
+    else:
+        return cellname_to_num_entities[cell.cellname()]
+
 cellname_to_num_entities = {
     "cell1D": None,
     "cell2D": None,
     "cell3D": None,
+    "OuterProductCell": None,
     "interval": (2, 1),
     "triangle": (3, 3, 1),
     "tetrahedron": (4, 6, 4, 1),
@@ -190,19 +199,19 @@ def _create_fiat_element(ufl_element):
 
     return element
 
-def create_quadrature(shape, num_points):
+def create_quadrature(cell, num_points):
     """
     Generate quadrature rule (points, weights) for given shape with
     num_points points in each direction.
     """
 
-    if isinstance(shape, int) and shape == 0:
+    if isinstance(cell, int) and cell == 0:
         return ([()], array([1.0,]))
 
-    if shape in cellname2dim and cellname2dim[shape] == 0:
+    if cell2dim(cell) == 0:
         return ([()], array([1.0,]))
 
-    quad_rule = FIAT.make_quadrature(reference_cell(shape), num_points)
+    quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
 def map_facet_points(points, facet):

@@ -34,7 +34,7 @@ from ufl.sorting import sorted_expr_sum
 from ffc.log import ffc_assert, info, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
-from ffc.fiatinterface import cellname_to_num_entities
+from ffc.fiatinterface import cell_to_num_entities
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 from ffc.quadrature_schemes import create_quadrature
@@ -142,8 +142,8 @@ def _parse_optimise_parameters(parameters):
     return optimise_parameters
 
 def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
-    num_facets = cellname_to_num_entities[cell.cellname()][-2]
-    num_vertices = cellname_to_num_entities[cell.cellname()][0]
+    num_facets = cell_to_num_entities(cell)[-2]
+    num_vertices = cell_to_num_entities(cell)[0]
 
     if domain_type == "cell":
         # Compute transformed integrals.
@@ -181,7 +181,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
 
 def _create_quadrature_points_and_weights(domain_type, cell, degree, rule):
     if domain_type == "cell":
-        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+        (points, weights) = create_quadrature(cell, degree, rule)
     elif domain_type == "exterior_facet" or domain_type == "interior_facet":
         (points, weights) = create_quadrature(cell.facet_cellname(), degree, rule)
     elif domain_type == "point":
@@ -239,7 +239,7 @@ def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
     entity_dim = domain_to_entity_dim(domain_type, cell)
-    num_entities = cellname_to_num_entities[cell.cellname()][entity_dim]
+    num_entities = cell_to_num_entities(cell)[entity_dim]
     psi_table = {}
     for entity in range(num_entities):
         entity_points = _map_entity_points(cell, points, entity_dim, entity)

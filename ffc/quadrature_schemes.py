@@ -49,10 +49,10 @@ from ffc.log import debug, error
 from ffc.fiatinterface import reference_cell
 from ffc.fiatinterface import create_quadrature as fiat_create_quadrature
 
-# Dictionary mapping from cellname to dimension
-from ufl.geometry import cellname2dim
+# Dictionary mapping from cell to dimension
+from ufl.geometry import cell2dim
 
-def create_quadrature(shape, degree, scheme="default"):
+def create_quadrature(cell, degree, scheme="default"):
     """
     Generate quadrature rule (points, weights) for given shape
     that will integrate an polynomial of order 'degree' exactly.
@@ -60,16 +60,21 @@ def create_quadrature(shape, degree, scheme="default"):
 
     # FIXME: KBO: Can this be handled more elegantly?
     # Handle point case
-    if isinstance(shape, int) and shape == 0 or cellname2dim[shape] == 0:
+    if isinstance(cell, int) and cell == 0 or cell2dim(cell) == 0:
         return ([()], array([1.0,]))
+        
+    if isinstance(cell, str):
+        cellname = cell
+    else:
+        cellname = cell.cellname()
 
     if scheme == "default":
-        if shape == "tetrahedron":
+        if cellname == "tetrahedron":
             return _tetrahedron_scheme(degree)
-        elif shape == "triangle":
+        elif cellname == "triangle":
             return _triangle_scheme(degree)
         else:
-            return _fiat_scheme(shape, degree)
+            return _fiat_scheme(cell, degree)
     elif scheme == "vertex":
         # The vertex scheme, i.e., averaging the function value in the vertices
         # and multiplying with the simplex volume, is only of order 1 and
@@ -82,14 +87,14 @@ def create_quadrature(shape, degree, scheme="default"):
             from warnings import warn
             warn(("Explicitly selected vertex quadrature (degree 1), "
                  +"but requested degree is %d.") % degree)
-        if shape == "tetrahedron":
+        if cellname == "tetrahedron":
             return (array([ [0.0, 0.0, 0.0],
                             [1.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0],
                             [0.0, 0.0, 1.0] ]),
                     array([1.0/24.0, 1.0/24.0, 1.0/24.0, 1.0/24.0])
                     )
-        elif shape == "triangle":
+        elif cellname == "triangle":
             return (array([ [0.0, 0.0],
                             [1.0, 0.0],
                             [0.0, 1.0] ]),
@@ -102,18 +107,18 @@ def create_quadrature(shape, degree, scheme="default"):
                     array([1.0/2.0, 1.0/2.0])
                     )
     elif scheme == "canonical":
-        return _fiat_scheme(shape, degree)
+        return _fiat_scheme(cell, degree)
     else:
         error("Unknown quadrature scheme: %s." % scheme)
 
-def _fiat_scheme(shape, degree):
+def _fiat_scheme(cell, degree):
     """Get quadrature scheme from FIAT interface"""
 
     # Number of points per axis for exact integration
     num_points_per_axis = (degree + 1 + 1) / 2
 
     # Create and return FIAT quadrature rulet
-    return fiat_create_quadrature(shape, num_points_per_axis)
+    return fiat_create_quadrature(cell, num_points_per_axis)
 
 
 def _triangle_scheme(degree):

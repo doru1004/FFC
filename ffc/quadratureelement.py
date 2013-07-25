@@ -59,7 +59,7 @@ class QuadratureElement:
         self._points = points
 
         # Create entity dofs.
-        ufc_cell = reference_cell(ufl_element.cell().cellname())
+        ufc_cell = reference_cell(ufl_element.cell())
         self._entity_dofs = _create_entity_dofs(ufc_cell, len(points))
 
         # The dual is a simply the PointEvaluation at the quadrature points
