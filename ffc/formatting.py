@@ -132,14 +132,23 @@ def format_code(code, wrapper_code, prefix, parameters):
 def _format_h(class_type, code, parameters, templates):
     "Format header code for given class type."
     if parameters["split"]:
-        return templates[class_type + "_header"] % code + "\n"
+        if code is None:
+            return ""
+        else:
+            return templates[class_type + "_header"] % code + "\n"
     else:
-        return templates[class_type + "_combined"] % code + "\n"
+        if code is None:
+            return ""
+        else:
+            return templates[class_type + "_combined"] % code + "\n"
 
 def _format_c(class_type, code, parameters, templates):
     "Format implementation code for given class type."
     if parameters["split"]:
-        return templates[class_type + "_implementation"] % code + "\n"
+        if code is None:
+            return ""
+        else:
+            return templates[class_type + "_implementation"] % code + "\n"
     else:
         return ""
 
