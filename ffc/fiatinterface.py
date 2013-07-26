@@ -81,7 +81,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Raviart-Thomas",
                       "Real",
                       "Bubble",
-                      "Quadrature")
+                      "Quadrature",
+                      "OuterProductElement")
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
 # cellname_to_num_entities contains the same information, but with string keys.)
