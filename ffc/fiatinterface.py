@@ -23,7 +23,7 @@
 # Last changed: 2013-01-25
 
 # Python modules
-from numpy import array
+from numpy import array, polymul
 
 # UFL and FIAT modules
 import ufl
@@ -49,13 +49,18 @@ def cell_to_num_entities(cell):
     if isinstance(cell, str):
         return cellname_to_num_entities[cell]
     else:
-        return cellname_to_num_entities[cell.cellname()]
+        if isinstance(cell, ufl.OuterProductCell):
+            temp_a = cell_to_num_entities(cell._A)
+            temp_b = cell_to_num_entities(cell._B)
+            # this is both correct and useless
+            return tuple(polymul(temp_a, temp_b))
+        else:
+            return cellname_to_num_entities[cell.cellname()]
 
 cellname_to_num_entities = {
     "cell1D": None,
     "cell2D": None,
     "cell3D": None,
-    "OuterProductCell": None,
     "interval": (2, 1),
     "triangle": (3, 3, 1),
     "tetrahedron": (4, 6, 4, 1),
