@@ -24,7 +24,7 @@ quadrature and tensor representation."""
 # Last changed: 2013-02-10
 
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import cellname_to_num_entities
+from ffc.fiatinterface import cell_to_num_entities
 from ffc.cpp import format
 
 def transform_component(component, offset, ufl_element):
@@ -112,8 +112,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
              "geometric_dimension":  form_data.geometric_dimension,
              "topological_dimension":form_data.topological_dimension,
              "entitytype":           entitytype,
-             "num_facets":           cellname_to_num_entities[form_data.cell.cellname()][-2],
-             "num_vertices":         cellname_to_num_entities[form_data.cell.cellname()][0],
+             "num_facets":           cell_to_num_entities(form_data.cell)[-2],
+             "num_vertices":         cell_to_num_entities(form_data.cell)[0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
 
