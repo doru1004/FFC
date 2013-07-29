@@ -56,6 +56,7 @@ def _tabulate_tensor(ir, parameters):
     domain_type = ir["domain_type"]
     tdim = ir["topological_dimension"]
     gdim = ir["geometric_dimension"]
+    isOPE = ir["is_outer_product"]
     oriented = ir["needs_oriented"]
     num_facets = ir["num_facets"]
 
@@ -70,9 +71,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for basic geometric quantities
         j_code  = ""
-        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += format["compute_jacobian"](tdim, gdim, isOPE)
         j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
         if oriented:
             j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
@@ -91,9 +92,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for Jacobian
         j_code = ""
-        j_code += format["compute_jacobian"](tdim, gdim)
+        j_code += format["compute_jacobian"](tdim, gdim, isOPE)
         j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim)
+        j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
         if oriented:
             j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
@@ -114,9 +115,9 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for Jacobian
         j_code = ""
         for _r in ["+", "-"]:
-            j_code += format["compute_jacobian"](tdim, gdim, r=_r)
+            j_code += format["compute_jacobian"](tdim, gdim, isOPE, r=_r)
             j_code += "\n"
-            j_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
+            j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE, r=_r)
             j_code += "\n"
         j_code += format["facet determinant"]["ufc"](tdim, gdim, r="+")
         j_code += "\n"

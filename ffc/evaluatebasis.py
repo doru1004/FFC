@@ -146,11 +146,12 @@ def _evaluate_basis(data):
     element_cellname = data["cellname"]
     gdim = data["geometric_dimension"]
     tdim = data["topological_dimension"]
+    isOPE = data["is_outer_product"]
 
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["compute_jacobian"](tdim, gdim)]
-    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    code += [format["compute_jacobian"](tdim, gdim, isOPE)]
+    code += [format["compute_jacobian_inverse"](tdim, gdim, isOPE)]
     if data["needs_oriented"]:
         code += [format["orientation"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]

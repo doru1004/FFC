@@ -122,6 +122,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
     ir["cell_shape"] = cell.cellname()
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["is_outer_product"] = 1 if isinstance(ufl_element, ufl.OuterProductElement) else 0
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
@@ -156,6 +157,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
     ir["topological_dimension"] = cell.topological_dimension()
     ir["geometric_dimension"] = cell.geometric_dimension()
+    ir["is_outer_product"] = 1 if isinstance(ufl_element, ufl.OuterProductElement) else 0
     ir["global_dimension"] = _global_dimension(element)
     ir["local_dimension"] = element.space_dimension()
     ir["num_facet_dofs"] = len(facet_dofs[0])
@@ -387,6 +389,7 @@ def _evaluate_basis(ufl_element, element, cell):
             "cellname" : cell.cellname(),
             "topological_dimension" : cell.topological_dimension(),
             "geometric_dimension" : cell.geometric_dimension(),
+            "is_outer_product" : 1 if isinstance(ufl_element, ufl.OuterProductElement) else 0,
             "space_dimension" : element.space_dimension(),
             "needs_oriented": needs_oriented_jacobian(element)
             }

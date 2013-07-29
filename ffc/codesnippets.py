@@ -118,12 +118,19 @@ double J%(restriction)s[9];
 compute_jacobian_tetrahedron_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
-compute_jacobian = {1: {1: _compute_jacobian_interval_1d,
-                        2: _compute_jacobian_interval_2d,
-                        3: _compute_jacobian_interval_3d},
-                    2: {2: _compute_jacobian_triangle_2d,
-                        3: _compute_jacobian_triangle_3d},
-                    3: {3: _compute_jacobian_tetrahedron_3d}}
+_compute_jacobian_prism_3d = """\
+// Compute Jacobian
+double J%(restriction)s[9];
+compute_jacobian_prism_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+compute_jacobian = {1: {1: {0: _compute_jacobian_interval_1d},
+                        2: {0: _compute_jacobian_interval_2d},
+                        3: {0: _compute_jacobian_interval_3d}},
+                    2: {2: {0: _compute_jacobian_triangle_2d},
+                        3: {0: _compute_jacobian_triangle_3d}},
+                    3: {3: {0: _compute_jacobian_tetrahedron_3d,
+                            1: _compute_jacobian_prism_3d}}}
 
 # Code snippets for computing Jacobian inverses
 
@@ -169,12 +176,20 @@ double detJ%(restriction)s;
 compute_jacobian_inverse_tetrahedron_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
 """
 
-compute_jacobian_inverse = {1: {1: _compute_jacobian_inverse_interval_1d,
-                                2: _compute_jacobian_inverse_interval_2d,
-                                3: _compute_jacobian_inverse_interval_3d},
-                            2: {2: _compute_jacobian_inverse_triangle_2d,
-                                3: _compute_jacobian_inverse_triangle_3d},
-                            3: {3: _compute_jacobian_inverse_tetrahedron_3d}}
+_compute_jacobian_inverse_prism_3d = """\
+// Compute Jacobian inverse and determinant
+double K%(restriction)s[9];
+double detJ%(restriction)s;
+compute_jacobian_inverse_prism_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
+"""
+
+compute_jacobian_inverse = {1: {1: {0: _compute_jacobian_inverse_interval_1d},
+                                2: {0: _compute_jacobian_inverse_interval_2d},
+                                3: {0: _compute_jacobian_inverse_interval_3d}},
+                            2: {2: {0: _compute_jacobian_inverse_triangle_2d},
+                                3: {0: _compute_jacobian_inverse_triangle_3d}},
+                            3: {3: {0: _compute_jacobian_inverse_tetrahedron_3d,
+                                    1: _compute_jacobian_inverse_prism_3d}}}
 
 # Code snippet for scale factor
 
