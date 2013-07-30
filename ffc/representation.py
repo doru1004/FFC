@@ -339,6 +339,7 @@ def _evaluate_dof(ufl_element, element, cell):
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
             "geometric_dimension": cell.geometric_dimension(),
+            "is_outer_product": 1 if isinstance(ufl_element, ufl.OuterProductElement) else 0,
             "topological_dimension": cell.topological_dimension(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
