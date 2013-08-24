@@ -325,9 +325,9 @@ def validate_programs(reference_dir):
             info_green("%s OK" % fj)
         else:
             info_red("%s differs" % fj)
-            log_error("Json output differs for %s, diff follows:"
-                      % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
-            print_recdiff(json_diff, printer=log_error)
+            helper.log_error("Json output differs for %s, diff follows:"
+                             % os.path.join(*reference_json_file.split(os.path.sep)[-3:]))
+            print_recdiff(json_diff, printer=helper.log_error)
 
     end()
 
