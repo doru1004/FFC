@@ -46,15 +46,15 @@ def interpolate_vertex_values(ir):
 
     # Add code for Jacobian if necessary
     code = []
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-    isOPE = ir["is_outer_product"]
+    cell = ir["cell"]
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
     if ir["needs_jacobian"]:
 
         # Generate code for basic geometric quantities
-        code.append(format["compute_jacobian"](tdim, gdim, isOPE))
+        code.append(format["compute_jacobian"](cell))
         code.append("")
-        code.append(format["compute_jacobian_inverse"](tdim, gdim, isOPE))
+        code.append(format["compute_jacobian_inverse"](cell))
         if ir["needs_oriented"]:
             code.append("")
             code.append(format["orientation"](tdim, gdim))

@@ -139,15 +139,15 @@ def _evaluate_basis_derivatives(data):
     code = []
 
     # Get the element cell domain, geometric and topological dimension.
-    element_cellname = data["cellname"]
-    gdim = data["geometric_dimension"]
-    tdim = data["topological_dimension"]
-    isOPE = data["is_outer_product"]
+    cell = data["cell"]
+    element_cellname = cell.cellname()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
 
     # Get code snippets for Jacobian, inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["compute_jacobian"](tdim, gdim, isOPE)]
-    code += [format["compute_jacobian_inverse"](tdim, gdim, isOPE)]
+    code += [format["compute_jacobian"](cell)]
+    code += [format["compute_jacobian_inverse"](cell)]
     if data["needs_oriented"]:
         code += [format["orientation"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]

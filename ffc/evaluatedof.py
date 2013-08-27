@@ -121,9 +121,9 @@ def _required_declarations(ir):
     information.
     """
     code = []
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
-    isOPE = ir["is_outer_product"]
+    cell = ir["cell"]
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
 
     # Declare variable for storing the result and physical coordinates
     code.append(comment("Declare variables for result of evaluation"))
@@ -147,10 +147,10 @@ def _required_declarations(ir):
 
     # Add sufficient Jacobian information. Note: same criterion for
     # needing inverse Jacobian as for needing oriented Jacobian
-    code.append(format["compute_jacobian"](tdim, gdim, isOPE))
+    code.append(format["compute_jacobian"](cell))
     if needs_inverse_jacobian:
         code.append("")
-        code.append(format["compute_jacobian_inverse"](tdim, gdim, isOPE))
+        code.append(format["compute_jacobian_inverse"](cell))
         code.append("")
         code.append(format["orientation"](tdim, gdim))
 

@@ -97,9 +97,9 @@ def _tabulate_tensor(ir, parameters):
     # Get data.
     opt_par     = ir["optimise_parameters"]
     domain_type = ir["domain_type"]
-    gdim        = ir["geometric_dimension"]
-    tdim        = ir["topological_dimension"]
-    isOPE       = ir["is_outer_product"]
+    cell        = ir["cell"]
+    gdim        = cell.geometric_dimension()
+    tdim        = cell.topological_dimension()
     num_facets  = ir["num_facets"]
     num_vertices= ir["num_vertices"]
     prim_idims  = ir["prim_idims"]
@@ -137,9 +137,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for basic geometric quantities
         jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
             jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
@@ -165,9 +165,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for basic geometric quantities
         jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
             jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
@@ -208,9 +208,9 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for basic geometric quantities
         jacobi_code  = ""
         for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian"](tdim, gdim, isOPE, r=_r)
+            jacobi_code += format["compute_jacobian"](cell, r=_r)
             jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE, r=_r)
+            jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
@@ -240,9 +240,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for basic geometric quantities
         jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
+        jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
             jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"

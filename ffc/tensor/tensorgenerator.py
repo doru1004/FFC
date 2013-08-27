@@ -54,9 +54,9 @@ def _tabulate_tensor(ir, parameters):
     # Extract data from intermediate representation
     AK = ir["AK"]
     domain_type = ir["domain_type"]
-    tdim = ir["topological_dimension"]
-    gdim = ir["geometric_dimension"]
-    isOPE = ir["is_outer_product"]
+    tdim = ir["cell"].topological_dimension()
+    gdim = ir["cell"].geometric_dimension()
+    cell = ir["cell"]
     oriented = ir["needs_oriented"]
     num_facets = ir["num_facets"]
 
@@ -71,9 +71,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for basic geometric quantities
         j_code  = ""
-        j_code += format["compute_jacobian"](tdim, gdim, isOPE)
+        j_code += format["compute_jacobian"](cell)
         j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
+        j_code += format["compute_jacobian_inverse"](cell)
         if oriented:
             j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
@@ -92,9 +92,9 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate code for Jacobian
         j_code = ""
-        j_code += format["compute_jacobian"](tdim, gdim, isOPE)
+        j_code += format["compute_jacobian"](cell)
         j_code += "\n"
-        j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE)
+        j_code += format["compute_jacobian_inverse"](cell)
         if oriented:
             j_code += format["orientation"](tdim, gdim)
         j_code += "\n"
@@ -115,9 +115,9 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for Jacobian
         j_code = ""
         for _r in ["+", "-"]:
-            j_code += format["compute_jacobian"](tdim, gdim, isOPE, r=_r)
+            j_code += format["compute_jacobian"](cell, r=_r)
             j_code += "\n"
-            j_code += format["compute_jacobian_inverse"](tdim, gdim, isOPE, r=_r)
+            j_code += format["compute_jacobian_inverse"](cell, r=_r)
             j_code += "\n"
         j_code += format["facet determinant"]["ufc"](tdim, gdim, r="+")
         j_code += "\n"
