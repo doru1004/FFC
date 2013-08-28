@@ -110,8 +110,6 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
              "form_id":              form_id,
              "rank":                 form_data.rank,
              "cell":                 form_data.cell,
-             #"geometric_dimension":  form_data.geometric_dimension,
-             #"topological_dimension":form_data.topological_dimension,
              "entitytype":           entitytype,
              "num_facets":           cell_to_num_entities(form_data.cell)[-2],
              "num_vertices":         cell_to_num_entities(form_data.cell)[0],

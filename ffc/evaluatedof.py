@@ -107,8 +107,8 @@ def _generate_common_code(ir):
     # Extract variables
     mappings = ir["mappings"]
     offsets  = ir["physical_offsets"]
-    gdim = ir["geometric_dimension"]
-    tdim = ir["topological_dimension"]
+    gdim = ir["cell"].geometric_dimension()
+    tdim = ir["cell"].topological_dimension()
 
     # Generate bodies for each degree of freedom
     cases = [_generate_body(i, dof, mappings[i], gdim, tdim, offsets[i])

@@ -252,8 +252,8 @@ def _compute_values(data, dof_data):
     f_trans         = format["transform"]
     f_inner         = format["inner product"]
 
-    tdim = data["topological_dimension"]
-    gdim = data["geometric_dimension"]
+    tdim = data["cell"].topological_dimension()
+    gdim = data["cell"].geometric_dimension()
 
     # Initialise return code.
     code = [f_comment("Compute value(s)")]
@@ -309,8 +309,8 @@ def _compute_values(data, dof_data):
         code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
                   for i in range(num_components)]
         # Create names for inner product.
-        tdim = data["topological_dimension"]
-        gdim = data["geometric_dimension"]
+        tdim = data["cell"].topological_dimension()
+        gdim = data["cell"].geometric_dimension()
         basis_col = [f_tmp_ref(j) for j in range(tdim)]
         for i in range(gdim):
             # Create inverse of Jacobian.

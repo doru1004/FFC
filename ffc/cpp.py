@@ -260,10 +260,10 @@ format.update({
 from codesnippets import *
 
 format.update({
-    "compute_jacobian":         lambda tdim, gdim, isOPE, r=None: \
-                                compute_jacobian[tdim][gdim][isOPE] % {"restriction": _choose_map[r]},
-    "compute_jacobian_inverse": lambda tdim, gdim, isOPE, r=None: \
-                                compute_jacobian_inverse[tdim][gdim][isOPE] % {"restriction": _choose_map[r]},
+    "compute_jacobian":         lambda cell, r=None: \
+                                compute_jacobian[cell] % {"restriction": _choose_map[r]},
+    "compute_jacobian_inverse": lambda cell, r=None: \
+                                compute_jacobian_inverse[cell] % {"restriction": _choose_map[r]},
     "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
     "facet determinant":        { "ufc": lambda gdim, tdim, r=None: ufc_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]},
                                   "pyop2": lambda gdim, tdim, r=None: pyop2_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]} },

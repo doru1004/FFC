@@ -119,9 +119,6 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # Compute data for each function
     ir["signature"] = repr(ufl_element)
-    #ir["cell_shape"] = cell.cellname()
-    #ir["topological_dimension"] = cell.topological_dimension()
-    #ir["geometric_dimension"] = cell.geometric_dimension()
     ir["cell"] = cell
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
@@ -155,8 +152,6 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     # Compute data for each function
     ir["signature"] = "FFC dofmap for " + repr(ufl_element)
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
-    #ir["topological_dimension"] = cell.topological_dimension()
-    #ir["geometric_dimension"] = cell.geometric_dimension()
     ir["cell"] = cell
     ir["global_dimension"] = _global_dimension(element)
     ir["local_dimension"] = element.space_dimension()
@@ -338,9 +333,7 @@ def _evaluate_dof(ufl_element, element, cell):
     return {"mappings": element.mapping(),
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "geometric_dimension": cell.geometric_dimension(),
-            "is_outer_product": 1 if isinstance(ufl_element, ufl.OuterProductElement) else 0,
-            "topological_dimension": cell.topological_dimension(),
+            "cell": cell,
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
@@ -389,8 +382,6 @@ def _evaluate_basis(ufl_element, element, cell):
             "physical_value_size": _value_size(ufl_element),
             "cellname" : cell.cellname(),
             "cell": cell,
-            #"topological_dimension" : cell.topological_dimension(),
-            #"geometric_dimension" : cell.geometric_dimension(),
             "space_dimension" : element.space_dimension(),
             "needs_oriented": needs_oriented_jacobian(element)
             }
@@ -437,8 +428,7 @@ def _tabulate_coordinates(ufl_element, element):
         return {}
 
     data = {}
-    data["tdim"] = ufl_element.cell().topological_dimension()
-    data["gdim"] = ufl_element.cell().geometric_dimension()
+    data["cell"] = ufl_element.cell()
     data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
     return data
 
@@ -514,8 +504,7 @@ def _interpolate_vertex_values(ufl_element, element, cell):
             return "Function is not supported/implemented for QuadratureElement."
 
     ir = {}
-    ir["geometric_dimension"] = cell.geometric_dimension()
-    ir["topological_dimension"] = cell.topological_dimension()
+    ir["cell"] = cell
 
     # Check whether computing the Jacobian is necessary
     mappings = element.mapping()

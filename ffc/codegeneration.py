@@ -111,9 +111,9 @@ def _generate_element_code(ir, prefix, parameters):
     code["initializer_list"] = ""
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
-    code["cell_shape"] = ret(format["cell"](ir["cell_shape"]))
-    code["topological_dimension"] = ret(ir["topological_dimension"])
-    code["geometric_dimension"] = ret(ir["geometric_dimension"])
+    code["cell_shape"] = ret(format["cell"](ir["cell"].cellname()))
+    code["topological_dimension"] = ret(ir["cell"].topological_dimension())
+    code["geometric_dimension"] = ret(ir["cell"].geometric_dimension())
     code["space_dimension"] = ret(ir["space_dimension"])
     code["value_rank"] = ret(ir["value_rank"])
     code["value_dimension"] = _value_dimension(ir["value_dimension"])
@@ -162,8 +162,8 @@ def _generate_dofmap_code(ir, prefix, parameters):
     code["destructor"] = do_nothing
     code["signature"] = ret('"%s"' % ir["signature"])
     code["needs_mesh_entities"] = _needs_mesh_entities(ir["needs_mesh_entities"])
-    code["topological_dimension"] = ret(ir["topological_dimension"])
-    code["geometric_dimension"] = ret(ir["geometric_dimension"])
+    code["topological_dimension"] = ret(ir["cell"].topological_dimension())
+    code["geometric_dimension"] = ret(ir["cell"].geometric_dimension())
     code["global_dimension"] = _global_dimension(ir["global_dimension"])
     code["local_dimension"] = ret(ir["local_dimension"])
     code["num_facet_dofs"] = ret(ir["num_facet_dofs"])

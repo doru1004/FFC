@@ -27,6 +27,8 @@
 
 # Code snippets
 
+from ufl import Cell, OuterProductCell
+
 __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "header_h", "header_c", "footer",
            "compute_jacobian", "compute_jacobian_inverse"]
@@ -124,13 +126,14 @@ double J%(restriction)s[9];
 compute_jacobian_prism_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
-compute_jacobian = {1: {1: {0: _compute_jacobian_interval_1d},
-                        2: {0: _compute_jacobian_interval_2d},
-                        3: {0: _compute_jacobian_interval_3d}},
-                    2: {2: {0: _compute_jacobian_triangle_2d},
-                        3: {0: _compute_jacobian_triangle_3d}},
-                    3: {3: {0: _compute_jacobian_tetrahedron_3d,
-                            1: _compute_jacobian_prism_3d}}}
+compute_jacobian = {}
+compute_jacobian[Cell("interval")] = _compute_jacobian_interval_1d
+compute_jacobian[Cell("interval", 2)] = _compute_jacobian_interval_2d
+compute_jacobian[Cell("interval", 3)] = _compute_jacobian_interval_3d
+compute_jacobian[Cell("triangle")] = _compute_jacobian_triangle_2d
+compute_jacobian[Cell("triangle", 3)] = _compute_jacobian_triangle_3d
+compute_jacobian[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_3d
+compute_jacobian[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_prism_3d
 
 # Code snippets for computing Jacobian inverses
 
@@ -183,13 +186,14 @@ double detJ%(restriction)s;
 compute_jacobian_inverse_prism_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
 """
 
-compute_jacobian_inverse = {1: {1: {0: _compute_jacobian_inverse_interval_1d},
-                                2: {0: _compute_jacobian_inverse_interval_2d},
-                                3: {0: _compute_jacobian_inverse_interval_3d}},
-                            2: {2: {0: _compute_jacobian_inverse_triangle_2d},
-                                3: {0: _compute_jacobian_inverse_triangle_3d}},
-                            3: {3: {0: _compute_jacobian_inverse_tetrahedron_3d,
-                                    1: _compute_jacobian_inverse_prism_3d}}}
+compute_jacobian_inverse = {}
+compute_jacobian_inverse[Cell("interval")] = _compute_jacobian_inverse_interval_1d
+compute_jacobian_inverse[Cell("interval", 2)] = _compute_jacobian_inverse_interval_2d
+compute_jacobian_inverse[Cell("interval", 3)] = _compute_jacobian_inverse_interval_3d
+compute_jacobian_inverse[Cell("triangle")] = _compute_jacobian_inverse_triangle_2d
+compute_jacobian_inverse[Cell("triangle", 3)] = _compute_jacobian_inverse_triangle_3d
+compute_jacobian_inverse[Cell("tetrahedron")] = _compute_jacobian_inverse_tetrahedron_3d
+compute_jacobian_inverse[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_inverse_prism_3d
 
 # Code snippet for scale factor
 

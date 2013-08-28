@@ -89,12 +89,12 @@ def _evaluate_basis_derivatives_all(data):
         return "\n".join(code)
 
     # Compute number of derivatives.
-    if data["topological_dimension"]==data["geometric_dimension"]:
+    if data["cell"].topological_dimension()==data["cell"].geometric_dimension():
         _g = ""
     else:
         _g = "_g"
 
-    code += _compute_num_derivatives(data["geometric_dimension"], _g)
+    code += _compute_num_derivatives(data["cell"].geometric_dimension(), _g)
 
     # Declare helper value to hold single dof values and reset.
     code += ["", f_comment("Helper variable to hold values of a single dof.")]
@@ -473,8 +473,8 @@ def _compute_reference_derivatives(data, dof_data):
 
     f_r, f_s, f_t, f_u = format["free indices"]
 
-    tdim = data["topological_dimension"]
-    gdim = data["geometric_dimension"]
+    tdim = data["cell"].topological_dimension()
+    gdim = data["cell"].geometric_dimension()
 
     if tdim == gdim:
         _t = ""
@@ -619,7 +619,7 @@ def _transform_derivatives(data, dof_data):
     f_r, f_s      = format["free indices"][:2]
     f_index       = format["matrix index"]
 
-    if data["topological_dimension"]==data["geometric_dimension"]:
+    if data["cell"].topological_dimension()==data["cell"].geometric_dimension():
         _t = ""
         _g = ""
     else:
@@ -634,7 +634,7 @@ def _transform_derivatives(data, dof_data):
     if "piola" in mapping:
         # In either of the Piola cases, the value space of the derivatives is the geometric dimension rather than the topological dimension.
         _p = "_p"
-        num_components_p = data["geometric_dimension"]
+        num_components_p = data["cell"].geometric_dimension()
     else:
         _p = ""
         num_components_p = num_components
@@ -656,7 +656,7 @@ def _transform_derivatives(data, dof_data):
 def _delete_pointers(data, dof_data):
     "Delete the pointers to arrays."
 
-    if data["topological_dimension"]==data["geometric_dimension"]:
+    if data["cell"].topological_dimension()==data["cell"].geometric_dimension():
         _t = ""
         _g = ""
     else:
