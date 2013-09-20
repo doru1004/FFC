@@ -80,6 +80,8 @@ def _arglist(ir):
     arglist = [localtensor, coordinates] + coeffs
     if ir['domain_type'] == 'exterior_facet':
         arglist.append( "unsigned int *facet_p")
+    if ir['domain_type'] == 'interior_facet':
+        arglist.append( "unsigned int *facet_p[2]")
     arglist += [itindices[i] for i in range(rank)]
 
     return ", ".join(arglist)
