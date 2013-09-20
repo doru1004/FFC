@@ -81,7 +81,7 @@ def _arglist(ir):
     if ir['domain_type'] == 'exterior_facet':
         arglist.append( "unsigned int *facet_p")
     if ir['domain_type'] == 'interior_facet':
-        arglist.append( "unsigned int *facet_p[2]")
+        arglist.append( "unsigned int facet_p[2]")
     arglist += [itindices[i] for i in range(rank)]
 
     return ", ".join(arglist)
@@ -131,8 +131,6 @@ def _tabulate_tensor(ir, parameters):
     if p_format == 'pyop2':
 	common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:]) \
 	         for n,c in zip(ir["coefficient_names"], ir["coefficient_elements"]) if c.family() == 'Real']
-    else:
-        common = []
 
     operations = []
     if domain_type == "cell":
@@ -149,6 +147,9 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n" + format["scale factor snippet"][p_format]
 
     elif domain_type == "exterior_facet":
+        if p_format == 'pyop2':
+            common += ["unsigned int facet = *facet_p;\n"]
+
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
@@ -174,6 +175,13 @@ def _tabulate_tensor(ir, parameters):
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
 
+        if p_format == 'pyop2':
+            common += ["unsigned int facet0 = facet_p[0];"]
+            common += ["unsigned int facet1 = facet_p[1];"]
+            common += ["double **x0 = x;"]
+            # Note that the following line is unsafe for isoparametric elements.
+            common += ["double **x1 = x + %d;" % num_vertices]
+
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -191,7 +199,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
-        jacobi_code  = format["jacobian and inverse"](geo_dim, top_dim, r="+", 
+        jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, r="+", 
                                                       oriented=oriented, f=p_format)
         jacobi_code += "\n\n"
         jacobi_code += format["jacobian and inverse"](geo_dim, top_dim, r="-", 
