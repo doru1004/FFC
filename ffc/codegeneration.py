@@ -380,8 +380,8 @@ def _tabulate_coordinates(ir):
     coordinates =   format["argument coordinates"]
 
     # Extract coordinates and cell dimension
-    gdim = ir["gdim"]
-    tdim = ir["tdim"]
+    gdim = ir["cell"].geometric_dimension() #ir["gdim"]
+    tdim = ir["cell"].topological_dimension() #ir["tdim"]
     #cell_dim = len(ir[0])
 
     # Aid mapping points from reference to physical element
