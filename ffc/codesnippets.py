@@ -202,30 +202,31 @@ _facet_determinant_1D = """\
 // Facet determinant 1D (vertex)
 const double det = 1.0;"""
 
-_facet_determinant_2D = """\
+_ufc_facet_determinant_2D = """\
+// Get vertices on edge
+static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+
 const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = vertex_coordinates%(restriction)s[2*v1 + 0] - vertex_coordinates%(restriction)s[2*v0 + 0];
 const double dx1 = vertex_coordinates%(restriction)s[2*v1 + 1] - vertex_coordinates%(restriction)s[2*v0 + 1];
-"""
 
-_ufc_edge_vertices_2D = """\
-// Get vertices on edge
-static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-"""
-
-_pyop2_edge_vertices_2D = """\
-// Get vertices on edge
-unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-"""
-
-_ufc_facet_determinant_2D = _ufc_edge_vertices_2D + _facet_determinant_2D + """\
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
-_pyop2_facet_determinant_2D = _pyop2_edge_vertices_2D + _facet_determinant_2D + """\
+_pyop2_facet_determinant_2D = """\
+// Get vertices on edge
+unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+
+const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%(restriction)s[v1 + 0][0] - vertex_coordinates%(restriction)s[v0 + 0][0];
+const double dx1 = vertex_coordinates%(restriction)s[v1 + 3][0] - vertex_coordinates%(restriction)s[v0 + 3][0];
+
 const double det = sqrt(dx0*dx0 + dx1*dx1);
 """
 
@@ -234,39 +235,73 @@ _facet_determinant_2D_1D = """\
 const double det = 1.0;
 """
 
-_facet_determinant_3D = """\
+_ufc_facet_determinant_3D = """\
+// Get vertices on face
+static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+
 const unsigned int v0 = face_vertices[facet%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
-const double a0 = (vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2]  + vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v2 + 1]  + vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v2 + 2]) - (vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] + vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v0 + 1] + vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v0 + 2]);
+const double a0 = (vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] +
+                   vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v2 + 1] +
+                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v2 + 2])
+                - (vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] +
+                   vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v0 + 1] +
+                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v0 + 2]);
 
-const double a1 = (vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  + vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v2 + 2] + vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v2 + 0]) - (vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  + vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v0 + 2] + vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v0 + 0]);
+const double a1 = (vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0] +
+                   vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v2 + 2] +
+                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v2 + 0])
+                - (vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0] +
+                   vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v0 + 2] +
+                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v0 + 0]);
 
-const double a2 = (vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  + vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v2 + 0]  + vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v2 + 1]) - (vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  + vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v0 + 0]  + vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v0 + 1]);
+const double a2 = (vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1] +
+                   vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v2 + 0] +
+                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v2 + 1])
+                - (vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1] +
+                   vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v0 + 0] +
+                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v0 + 1]);
 
-"""
-
-_ufc_edge_vertices_3D = """\
-// Get vertices on face
-static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-"""
-
-_pyop2_edge_vertices_3D = """\
-// Get vertices on face
-unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-"""
-
-_ufc_facet_determinant_3D = _ufc_edge_vertices_3D + _facet_determinant_3D + """\
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 """
 
-_pyop2_facet_determinant_3D = _pyop2_edge_vertices_3D + _facet_determinant_3D + """\
+_pyop2_facet_determinant_3D = """\
+// Get vertices on face
+unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
+
+const unsigned int v0 = face_vertices[facet%(restriction)s][0];
+const unsigned int v1 = face_vertices[facet%(restriction)s][1];
+const unsigned int v2 = face_vertices[facet%(restriction)s][2];
+
+// Compute scale factor (area of face scaled by area of reference triangle)
+const double a0 = (vertex_coordinates%(restriction)s[v0 + 4][0]*vertex_coordinates%(restriction)s[v1 + 8][0] +
+                   vertex_coordinates%(restriction)s[v0 + 8][0]*vertex_coordinates%(restriction)s[v2 + 4][0] +
+                   vertex_coordinates%(restriction)s[v1 + 4][0]*vertex_coordinates%(restriction)s[v2 + 8][0])
+                - (vertex_coordinates%(restriction)s[v2 + 4][0]*vertex_coordinates%(restriction)s[v1 + 8][0] +
+                   vertex_coordinates%(restriction)s[v2 + 8][0]*vertex_coordinates%(restriction)s[v0 + 4][0] +
+                   vertex_coordinates%(restriction)s[v1 + 4][0]*vertex_coordinates%(restriction)s[v0 + 8][0]);
+
+const double a1 = (vertex_coordinates%(restriction)s[v0 + 8][0]*vertex_coordinates%(restriction)s[v1 + 0][0] +
+                   vertex_coordinates%(restriction)s[v0 + 0][0]*vertex_coordinates%(restriction)s[v2 + 8][0] +
+                   vertex_coordinates%(restriction)s[v1 + 8][0]*vertex_coordinates%(restriction)s[v2 + 0][0])
+                - (vertex_coordinates%(restriction)s[v2 + 8][0]*vertex_coordinates%(restriction)s[v1 + 0][0] +
+                   vertex_coordinates%(restriction)s[v2 + 0][0]*vertex_coordinates%(restriction)s[v0 + 8][0] +
+                   vertex_coordinates%(restriction)s[v1 + 8][0]*vertex_coordinates%(restriction)s[v0 + 0][0]);
+
+const double a2 = (vertex_coordinates%(restriction)s[v0 + 0][0]*vertex_coordinates%(restriction)s[v1 + 4][0] +
+                   vertex_coordinates%(restriction)s[v0 + 4][0]*vertex_coordinates%(restriction)s[v2 + 0][0] +
+                   vertex_coordinates%(restriction)s[v1 + 0][0]*vertex_coordinates%(restriction)s[v2 + 4][0])
+                - (vertex_coordinates%(restriction)s[v2 + 0][0]*vertex_coordinates%(restriction)s[v1 + 4][0] +
+                   vertex_coordinates%(restriction)s[v2 + 4][0]*vertex_coordinates%(restriction)s[v0 + 0][0] +
+                   vertex_coordinates%(restriction)s[v1 + 0][0]*vertex_coordinates%(restriction)s[v0 + 4][0]);
+
 const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
 """
 
-_facet_determinant_3D_2D = """\
+_ufc_facet_determinant_3D_2D = """\
 // Facet determinant 2D in 3D (edge)
 // Get vertices on edge
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
@@ -278,6 +313,20 @@ const double dx0 = vertex_coordinates%(restriction)s[3*v1 + 0] - vertex_coordina
 const double dx1 = vertex_coordinates%(restriction)s[3*v1 + 1] - vertex_coordinates%(restriction)s[3*v0 + 1];
 const double dx2 = vertex_coordinates%(restriction)s[3*v1 + 2] - vertex_coordinates%(restriction)s[3*v0 + 2];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+_pyop2_facet_determinant_3D_2D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%(restriction)s[v1 + 0] - vertex_coordinates%(restriction)s[v0 + 0];
+const double dx1 = vertex_coordinates%(restriction)s[v1 + 4] - vertex_coordinates%(restriction)s[v0 + 4];
+const double dx2 = vertex_coordinates%(restriction)s[v1 + 8] - vertex_coordinates%(restriction)s[v0 + 8];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
 _facet_determinant_3D_1D = """\
@@ -721,14 +770,14 @@ ufc_facet_determinant = {1: {1: _facet_determinant_1D,
                              2: _facet_determinant_2D_1D,
                              3: _facet_determinant_3D_1D},
                          2: {2: _ufc_facet_determinant_2D,
-                             3: _facet_determinant_3D_2D},
+                             3: _ufc_facet_determinant_3D_2D},
                          3: {3: _ufc_facet_determinant_3D}}
 
 pyop2_facet_determinant = {1: {1: _facet_determinant_1D,
                                2: _facet_determinant_2D_1D,
                                3: _facet_determinant_3D_1D},
                            2: {2: _pyop2_facet_determinant_2D,
-                               3: _facet_determinant_3D_2D},
+                               3: _pyop2_facet_determinant_3D_2D},
                            3: {3: _pyop2_facet_determinant_3D}}
 
 # Geometry related snippets
