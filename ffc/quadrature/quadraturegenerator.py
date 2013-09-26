@@ -62,14 +62,17 @@ def _arglist(ir):
     coordinates = "%s **vertex_coordinates" % float
 
     coeffs = []
-    for i in xrange(ir['num_coefficients']):
-        coeffs.append("%s **w%d" % (float, i))
+    for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
+	coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*", \
+			n[1:] if e.family() == 'Real' else n))
 
     itindices = {0: "int j", 1: "int k"}
 
     arglist = [localtensor, coordinates] + coeffs
     if ir['domain_type'] == 'exterior_facet':
         arglist.append( "unsigned int *facet_p")
+    if ir['domain_type'] == 'interior_facet':
+        arglist.append( "unsigned int facet_p[2]")
     arglist += [itindices[i] for i in range(rank)]
 
     return ", ".join(arglist)
@@ -113,6 +116,13 @@ def _tabulate_tensor(ir, parameters):
     affine_tables = {} # TODO: This is not populated anywhere, remove?
     quadrature_weights = ir["quadrature_weights"]
 
+    #The pyop2 format requires dereferencing constant coefficients since
+    # these are passed in as double *
+    common = []
+    if p_format == 'pyop2':
+	common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:]) \
+	         for n,c in zip(ir["coefficient_names"], ir["coefficient_elements"]) if c.family() == 'Real']
+
     operations = []
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
@@ -134,6 +144,9 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += format["scale factor snippet"][p_format]
 
     elif domain_type == "exterior_facet":
+        if p_format == 'pyop2':
+            common += ["unsigned int facet = *facet_p;\n"]
+
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
@@ -163,6 +176,13 @@ def _tabulate_tensor(ir, parameters):
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
 
+        if p_format == 'pyop2':
+            common += ["unsigned int facet0 = facet_p[0];"]
+            common += ["unsigned int facet1 = facet_p[1];"]
+            common += ["double **x0 = x;"]
+            # Note that the following line is unsafe for isoparametric elements.
+            common += ["double **x1 = x + %d;" % num_vertices]
+
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -182,9 +202,9 @@ def _tabulate_tensor(ir, parameters):
         # Generate code for basic geometric quantities
         jacobi_code  = ""
         for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian"](tdim, gdim, r=_r)
+            jacobi_code += format["compute_jacobian"](tdim, gdim, r=_r, f=p_format)
             jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r)
+            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=_r, f=p_format)
             if oriented:
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
@@ -229,7 +249,7 @@ def _tabulate_tensor(ir, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
-    common = [remove_unused(jacobi_code, trans_set)]
+    common += [remove_unused(jacobi_code, trans_set)]
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     name_map = ir["name_map"]
     tables = ir["unique_tables"]

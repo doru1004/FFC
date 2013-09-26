@@ -214,6 +214,8 @@ def _compute_integral_ir(form_data, form_id, parameters):
                                    form_data,
                                    form_id,
                                    parameters)
+        ir['coefficient_names'] = form_data.coefficient_names
+        ir['coefficient_elements'] = form_data.coefficient_elements
 
         # Append representation
         irs.append(ir)
