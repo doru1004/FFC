@@ -33,6 +33,9 @@ from ffc.log import debug, error
 # Mapping of restrictions
 _choose_map = {None: "", "+": "_0", "-": "_1"}
 
+# FIXME: MSA: Using a dict to collect functions in a namespace is weird
+#             and makes the code harder to follow, change to a class
+#             with member functions instead!
 # FIXME: KBO: format is a builtin_function, i.e., we should use a different name.
 # Formatting rules
 format = {}
@@ -132,6 +135,8 @@ format.update({
     "cell volume":        lambda r=None: "volume%s" % _choose_map[r],
     "circumradius":       lambda r=None: "circumradius%s" % _choose_map[r],
     "facet area":         "facet_area",
+    "min facet edge length": lambda r: "min_facet_edge_length",
+    "max facet edge length": lambda r: "max_facet_edge_length",
     "scale factor":       "det",
     "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
     "normal component":   lambda r, j: "n%s%s" % (_choose_map[r], j),
@@ -234,7 +239,7 @@ format.update({
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
     "weight":             lambda i: "W%d" % (i),
-    "psi name":           lambda c, et, e, co, d: _generate_psi_name(c, et, e, co, d),
+    "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
     "free indices":       ["r","s","t","u"],
     "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
@@ -267,6 +272,8 @@ format.update({
     "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
     "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
+    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
+    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet":     { "ufc": ufc_scale_factor, "pyop2": pyop2_scale_factor },
@@ -536,9 +543,9 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, entitytype, entity, component, derivatives):
+def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg):
     """Generate a name for the psi table of the form:
-    FE#_f#_v#_C#_D###, where '#' will be an integer value.
+    FE#_f#_v#_C#_D###_A#, where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
@@ -547,22 +554,31 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives):
 
     v   - denotes vertices if applicable, range(num_vertices).
 
-    C   - is the component number if any (this does not yet take into account
-          tensor valued functions)
+    C   - is the component number if any (flattened in the case of tensor valued functions)
 
     D   - is the number of derivatives in each spatial direction if any.
           If the element is defined in 3D, then D012 means d^3(*)/dydz^2.
+
+    A   - denotes averaged over cell (AC) or facet (AF)
     """
 
     name = "FE%d" % counter
+
     if entitytype == "facet":
         name += "_f%d" % entity
     elif entitytype == "vertex":
         name += "_v%d" % entity
+
     if component != () and component != []:
         name += "_C%d" % component
+
     if any(derivatives):
         name += "_D" + "".join(map(str,derivatives))
+
+    if avg == "cell":
+        name += "_AC"
+    elif avg == "facet":
+        name += "_AF"
 
     return name
 

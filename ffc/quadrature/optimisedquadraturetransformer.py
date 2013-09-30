@@ -173,17 +173,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
-#            sym = create_symbol(format["std power"](str(val), exp), val.t)
-#            sym.base_expr = val
-#            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1, exp)
+            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)[()]
-#            sym = create_symbol(format["std power"](str(val), exp[()]), val.t)
-#            sym.base_expr = val
-#            sym.base_op = 1 # Add one operation for the pow() function.
-            sym = create_symbol(format["std power"], val.t, val, 1, exp)
+#            print "pow exp: ", exp
+#            print "pow val: ", val
+            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -197,10 +193,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-#        new_val = create_symbol(format["absolute value"](str(val)), val.t)
-#        new_val.base_expr = val
-#        new_val.base_op = 1 # Add one operation for taking the absolute value.
-        new_val = create_symbol(format["absolute value"], val.t, val, 1)
+        new_val = create_symbol(format["absolute value"](str(val)), val.t, val, 1)
         return {():new_val}
 
     # -------------------------------------------------------------------------
@@ -213,7 +206,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         c, = operands
         ffc_assert(len(c) == 1 and c.keys()[0] == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
-        sym = create_symbol("", c[()].t, cond=(c[()], format["not"]))
+        sym = create_symbol(format["not"](str(c[()])), c[()].t, base_op=c[()].ops()+1)
         return {(): sym}
 
     def binary_condition(self, o, *operands):
@@ -234,7 +227,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Get the minimum type
         t = min(lhs[()].t, rhs[()].t)
-        sym = create_symbol("", t, cond=(lhs[()], format[name_map[o._name]], rhs[()]))
+        ops = lhs[()].ops() + rhs[()].ops() + 1
+        cond = str(lhs[()])+format[name_map[o._name]]+str(rhs[()])
+        sym = create_symbol(format["grouping"](cond), t, base_op=ops)
         return {(): sym}
 
     def conditional(self, o, *operands):
@@ -298,7 +293,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     def cell_volume(self, o,  *operands):
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
+        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
 
         # FIXME: KBO: This has to change for higher order elements
 #        detJ = format["det(J)"](self.restriction)
@@ -320,9 +315,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(circumradius, GEO)}
 
-    def facet_area(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetArea: " + repr(operands))
+    def facet_area(self, o):
 
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
@@ -334,12 +327,35 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(area, GEO)}
 
+    def min_facet_edge_length(self, o):
+        # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        if self.tdim < 3:
+            return self.facet_area(o)
+
+        edgelen = format["min facet edge length"](self.restriction)
+        self.trans_set.add(edgelen)
+
+        return {():create_symbol(edgelen, GEO)}
+
+    def max_facet_edge_length(self, o):
+        # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
+
+        if self.tdim < 3:
+            return self.facet_area(o)
+
+        edgelen = format["max facet edge length"](self.restriction)
+        self.trans_set.add(edgelen)
+
+        return {():create_symbol(edgelen, GEO)}
+
     # -------------------------------------------------------------------------
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                         local_offset, ffc_element, transformation, multiindices,
-                        tdim, gdim):
+                        tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_transform     = format["transform"]
@@ -356,42 +372,45 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 if not any(deriv):
                     deriv = []
 
-                # Call function to create mapping and basis name.
-                mapping, basis = self._create_mapping_basis(component, deriv, ufl_argument, ffc_element)
+                # Create mapping and basis name.
+                mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+                if not mapping in code:
+                    code[mapping] = []
 
-                # Add transformation if needed.
-                if mapping in code:
+                if basis is not None:
+                    # Add transformation if needed.
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                else:
-                    code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Handle non-affine mappings.
         else:
+            ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
+
                 for c in range(self.tdim):
-                    # Call function to create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, ufl_argument, ffc_element)
+                    # Create mapping and basis name.
+                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
+                    if not mapping in code:
+                        code[mapping] = []
 
-                    # Multiply basis by appropriate transform.
-                    if transformation == "covariant piola":
-                        dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
-                        basis = create_product([dxdX, basis])
-                    elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
-                        dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
-                        basis = create_product([detJ, dXdx, basis])
-                    else:
-                        error("Transformation is not supported: " + repr(transformation))
+                    if basis is not None:
+                        # Multiply basis by appropriate transform.
+                        if transformation == "covariant piola":
+                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
+                            basis = create_product([dxdX, basis])
+                        elif transformation == "contravariant piola":
+                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
+                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
+                            basis = create_product([detJ, dXdx, basis])
+                        else:
+                            error("Transformation is not supported: " + repr(transformation))
 
-                    # Add transformation if needed.
-                    if mapping in code:
+                        # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-                    else:
-                        code[mapping] = [self.__apply_transform(basis, derivatives, multi, tdim, gdim)]
 
         # Add sums and group if necessary.
         for key, val in code.items():
@@ -404,8 +423,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
                        local_offset, ffc_element, is_quad_element, transformation, multiindices,
-                       tdim, gdim):
+                       tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
+        ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_transform     = format["transform"]
@@ -421,37 +441,40 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
-                # Call other function to create function name.
-                function_name = self._create_function_name(component, deriv, is_quad_element, ufl_function, ffc_element)
-                if not function_name:
-                    continue
 
-                # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+                # Create function name.
+                function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                if function_name:
+                    # Add transformation if needed.
+                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
         else:
+            ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(self.tdim)]
                 if not any(deriv):
                     deriv = []
+
                 for c in range(self.tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, is_quad_element, ufl_function, ffc_element)
+                    function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                    if function_name:
+                        # Multiply basis by appropriate transform.
+                        if transformation == "covariant piola":
+                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
+                            function_name = create_product([dxdX, function_name])
+                        elif transformation == "contravariant piola":
+                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
+                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
+                            function_name = create_product([detJ, dXdx, function_name])
+                        else:
+                            error("Transformation is not supported: ", repr(transformation))
 
-                    # Multiply basis by appropriate transform.
-                    if transformation == "covariant piola":
-                        dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
-                        function_name = create_product([dxdX, function_name])
-                    elif transformation == "contravariant piola":
-                        detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
-                        dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
-                        function_name = create_product([detJ, dXdx, function_name])
-                    else:
-                        error("Transformation is not supported: ", repr(transformation))
+                        # Add transformation if needed.
+                        code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
-                    # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
         if not code:
             return create_float(0.0)
         elif len(code) > 1:
@@ -500,10 +523,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in operand.items():
-#            new_val = create_symbol(format_function(str(val)), val.t)
-#            new_val.base_expr = val
-#            new_val.base_op = 1 # Add one operation for the math function.
-            new_val = create_symbol(format_function, val.t, val, 1)
+            new_val = create_symbol(format_function(str(val)), val.t, val, 1)
             operand[key] = new_val
         return operand
 
@@ -524,7 +544,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if x is None:
             x = format["floating point"](0.0)
 
-        sym = create_symbol(format_function, x.t, x, 1, nu)
+        sym = create_symbol(format_function(x,nu), x.t, x, 1)
         return {():sym}
 
     # -------------------------------------------------------------------------

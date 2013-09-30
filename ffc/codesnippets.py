@@ -37,7 +37,7 @@ __old__ = ["evaluate_f",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area",
+           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "orientation_snippet"]
 
 __all__ += __old__
@@ -205,28 +205,24 @@ const double det = 1.0;"""
 _ufc_facet_determinant_2D = """\
 // Get vertices on edge
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-
 const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = vertex_coordinates%(restriction)s[2*v1 + 0] - vertex_coordinates%(restriction)s[2*v0 + 0];
 const double dx1 = vertex_coordinates%(restriction)s[2*v1 + 1] - vertex_coordinates%(restriction)s[2*v0 + 1];
-
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
 _pyop2_facet_determinant_2D = """\
 // Get vertices on edge
 unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-
 const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = vertex_coordinates%(restriction)s[v1 + 0][0] - vertex_coordinates%(restriction)s[v0 + 0][0];
 const double dx1 = vertex_coordinates%(restriction)s[v1 + 3][0] - vertex_coordinates%(restriction)s[v0 + 3][0];
-
 const double det = sqrt(dx0*dx0 + dx1*dx1);
 """
 
@@ -238,7 +234,6 @@ const double det = 1.0;
 _ufc_facet_determinant_3D = """\
 // Get vertices on face
 static unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-
 const unsigned int v0 = face_vertices[facet%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
@@ -271,7 +266,6 @@ const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 _pyop2_facet_determinant_3D = """\
 // Get vertices on face
 unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-
 const unsigned int v0 = face_vertices[facet%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
@@ -550,6 +544,19 @@ for (unsigned int j = 0; j < %d; j++)
     tmp += dofs_per_element[j];
 }"""
 
+_min_facet_edge_length_3D = """\
+// Min edge length of facet
+double min_facet_edge_length;
+compute_min_facet_edge_length_tetrahedron_3d(min_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_max_facet_edge_length_3D = """\
+// Max edge length of facet
+double max_facet_edge_length;
+compute_max_facet_edge_length_tetrahedron_3d(max_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+# FIXME: This is dead slow because of all the new calls
 # Used in evaluate_basis_derivatives. For second order derivatives in 2D it will
 # generate the combinations: [(0, 0), (0, 1), (1, 0), (1, 1)] (i.e., xx, xy, yx, yy)
 # which will also be the ordering of derivatives in the return value.
@@ -842,3 +849,7 @@ facet_area = {1: {1: _facet_area_1D,
               2: {2: _facet_area_2D,
                   3: _facet_area_3D_2D},
               3: {3: _facet_area_3D}}
+
+min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
+
+max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}

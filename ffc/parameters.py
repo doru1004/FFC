@@ -43,15 +43,14 @@ FFC_PARAMETERS = {
   "cache_dir":                      "",      # cache dir used by Instant
   "output_dir":                     ".",     # output directory for generated
                                              # code
-  "cpp_optimize":                   False,   # optimization for the JIT compiler
+  "cpp_optimize":                   True,    # optimization for the JIT compiler
   "cpp_optimize_flags":             "-O2",   # optimization flags for the JIT compiler
   "optimize":                       False,   # optimise the code generation
+  "restrict_keyword":               "",      # compiler specific "__restrict" or "__restrict__" keyword
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
   "error_control":                  False,   # with error control
-  "swig_binary":                    "swig",  # swig binary file for the JIT compiler
-  "swig_path":                      "",      # path to swig binary for the JIT compiler
   "write_file":                     True    # Write the output to file
 }
 

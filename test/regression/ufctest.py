@@ -69,7 +69,7 @@ def _generate_test_code(header_file):
     test_file.write(_test_code % (prefix, prefix, benchline, "\n".join(tests)))
     test_file.close()
 
-def build_ufc_programs(bench, permissive):
+def build_ufc_programs(bench, permissive, debug=False):
     "Build test programs for all test cases."
 
     # Get a list of all files
@@ -126,6 +126,10 @@ set the environment variable BOOST_DIR.
         info("Benchmarking activated")
         # Takes too long to build with -O2
         #compiler_options += " -O2"
+        #compiler_options += " -O3 -fno-math-errno -march=native"
+    if debug:
+        info("Debugging activated")
+        compiler_options += " -g -O0"
     info("Compiler options: %s" % compiler_options)
 
     # Iterate over all files

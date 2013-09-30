@@ -20,6 +20,7 @@
 
 from ffc.log import begin, end, info, info_green, info_red
 import os
+from testutils import run_command
 
 _test_code = """\
 #include "../../pyop2test.h"
@@ -59,7 +60,7 @@ def _generate_test_code(header_file, bench):
     test_file.write(_test_code % (prefix, "\n".join(tests)))
     test_file.close()
 
-def build_pyop2_programs(bench, helper):
+def build_pyop2_programs(bench, permissive, debug=False):
 
     # Get a list of all files
     header_files = [f for f in os.listdir(".") if f.endswith(".h")]
@@ -68,10 +69,13 @@ def build_pyop2_programs(bench, helper):
     begin("Building test programs (%d header files found)" % len(header_files))
     
     # Set compiler options
+    if not permissive:
+        compiler_options += " -Werror"
     if bench > 0:
         info("Benchmarking activated")
         compiler_options = "-Wall -Werror"
-    else:
+    if debug:
+        info("Debugging activated")
         compiler_options = "-Wall -Werror -g"
     info("Compiler options: %s" % compiler_options)
 
@@ -84,7 +88,7 @@ def build_pyop2_programs(bench, helper):
         # Compile test code
         prefix = f.split(".h")[0]
         command = "g++ %s -o %s.bin %s.cpp -lboost_math_tr1" % (compiler_options, prefix, prefix)
-        ok = helper.run_command(command)
+        ok = run_command(command)
 
         # Check status
         if ok:
