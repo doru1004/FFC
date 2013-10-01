@@ -32,16 +32,6 @@ import ufl
 # FFC modules.
 from constants import FFC_VERSION
 
-# UFC modules.
-import ufc_utils
-
-# Compute signature of all ufc headers combined
-ufc_signature = sha1(''.join(getattr(ufc_utils, header)
-                             for header in
-                             (k for k in vars(ufc_utils).keys()
-                              if k.endswith("_header")))
-                              ).hexdigest()
-
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
     specific compiler parameters. A JITObject is identified either by its
@@ -90,6 +80,14 @@ class JITObject:
         ffc_signature = str(FFC_VERSION)
         swig_signature = str(get_swig_version())
         cell_signature = str(self.form.form_data().cell)
+
+        # Compute signature of all ufc headers combined
+        import ufc_utils
+        ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+                                     for header in
+                                     (k for k in vars(ufc_utils).keys()
+                                      if k.endswith("_header")))
+                                      ).hexdigest()
 
         # Build common signature
         signatures = [form_signature,
