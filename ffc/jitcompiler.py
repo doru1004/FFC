@@ -30,8 +30,6 @@ It uses Instant to wrap the generated code into a Python module."""
 # Python modules
 import os, sys
 import instant
-import ufc_utils
-import ufc
 
 # UFL modules
 from ufl.classes import Form, FiniteElementBase, TestFunction
@@ -139,7 +137,7 @@ def _compute_element_mapping(form, common_cell):
     return element_mapping
 
 def check_swig_version(compiled_module):
-    
+    import ufc
     # Check swig version of compiled module
     if compiled_module and compiled_module.swigversion != ufc.__swigversion__:
         error("Incompatible swig versions detected. UFC swig "\
@@ -149,6 +147,7 @@ def check_swig_version(compiled_module):
 
 def jit_form(form, parameters=None, common_cell=None):
     "Just-in-time compile the given form."
+    import ufc_utils
 
     # Check that we get a Form
     if not isinstance(form, Form):
