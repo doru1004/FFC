@@ -33,8 +33,14 @@ ufc_utils.
 import os
 
 # Code generation templates
-from ufc_utils import templates as ufc_templates
-from pyop2_utils import templates as pyop2_templates
+try:
+    from ufc_utils import templates as ufc_templates
+except ImportError:
+    ufc_templates = None
+try:
+    from pyop2_utils import templates as pyop2_templates
+except ImportError:
+    pyop2_templates = None
 templates_dict = { "ufc":   ufc_templates,
                    "pyop2": pyop2_templates }
 
@@ -51,6 +57,9 @@ def format_code(code, wrapper_code, prefix, parameters):
     # Choose format
     format_name = parameters["format"]
     templates = templates_dict[format_name]
+    if templates is None:
+        raise ImportError("Format %s depends on %s_utils, which is not available."
+                          % (format_name, format_name))
 
     # Extract code
     code_elements, code_dofmaps, code_integrals, code_forms = code
