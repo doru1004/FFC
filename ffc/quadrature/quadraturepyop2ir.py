@@ -61,7 +61,7 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["additional_includes_set"] = ir["additional_includes_set"]
     code["arglist"] = _arglist(ir)
     code["metadata"] = ""
-
+    
     return code
 
 def _arglist(ir):
@@ -92,7 +92,7 @@ def _arglist(ir):
     return ", ".join(arglist)
 
 def _tabulate_tensor(ir, parameters):
-    "Generate code for a single integral (tabulate_tensor())."
+    "Generate the pyop2 ir for a single integral (tabulate_tensor())."
 
     p_format        = parameters["format"]
 
@@ -134,7 +134,7 @@ def _tabulate_tensor(ir, parameters):
     # these are passed in as double *
     common = []
     if p_format == 'pyop2':
-	common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:]) \
+    	common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:]) \
 	         for n,c in zip(ir["coefficient_names"], ir["coefficient_elements"]) if c.family() == 'Real']
 
     operations = []
@@ -148,6 +148,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([num_ops])
 
         # Get Jacobian snippet.
+        # @@@: Jacobian snippet
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, oriented=oriented, f=p_format)
         jacobi_code += "\n\n" + format["scale factor snippet"][p_format]
 
@@ -170,6 +171,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet(None), cases)
 
         # Get Jacobian snippet.
+        # @@@: Jacobian snippet
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
                                                      oriented=oriented, f=p_format)
         jacobi_code += "\n\n" + format["facet determinant"][p_format](geo_dim, top_dim)
@@ -204,6 +206,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
 
         # Get Jacobian snippet.
+        # @@@: Jacobian snippet
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim, r="+", 
                                                       oriented=oriented, f=p_format)
         jacobi_code += "\n\n"
@@ -232,6 +235,7 @@ def _tabulate_tensor(ir, parameters):
         tensor_code = f_switch(format["vertex"], cases)
 
         # Get Jacobian snippet.
+        # @@@: Jacobian snippet
         jacobi_code = format["jacobian and inverse"](geo_dim, top_dim,
                                                      oriented=oriented)
         jacobi_code += "\n\n" + format["facet determinant"][p_format](geo_dim, top_dim)
@@ -239,17 +243,20 @@ def _tabulate_tensor(ir, parameters):
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
+    # @@@: adding circumradius, area, ... after the jacobian
     jacobi_code += "\n\n" + format["generate cell volume"](geo_dim, top_dim, domain_type)
     jacobi_code += "\n\n" + format["generate circumradius"](geo_dim, top_dim, domain_type)
     jacobi_code += "\n\n" + format["generate facet area"](geo_dim, top_dim)
-
+    
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
+    # @@@: const double W3[3] = {{...}}
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables)
+    # @@@: const double FE0[] = {{...}}
     common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
@@ -376,6 +383,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
 
         # Loop code over all IPs.
+        # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
             element_code += f_loop(ip_code, [(f_ip, 0, points)])
         else:
@@ -517,6 +525,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
+            # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
@@ -528,6 +537,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
+        # @@@: for (j = 0; ...) for (k = 0; ...)
         if p_format=="pyop2":
             # Strip out primary indices from loop
             loop = [ l for l in loop if l[0] in format["free indices"] ]
