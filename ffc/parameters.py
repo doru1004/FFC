@@ -49,6 +49,7 @@ FFC_PARAMETERS = {
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
+  "pyop2-ir":                       False,   # produce a pyop2-conformed ir 
   "error_control":                  False,   # with error control
   "swig_binary":                    "swig",  # swig binary file for the JIT compiler
   "swig_path":                      "",      # path to swig binary for the JIT compiler

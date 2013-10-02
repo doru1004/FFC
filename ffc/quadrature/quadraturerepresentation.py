@@ -119,7 +119,7 @@ def compute_integral_ir(domain_type,
     ir["optimise_parameters"] = optimise_parameters
 
     # Create transformer.
-    if optimise_parameters["optimisation"]:
+    if optimise_parameters["optimisation"] or parameters["pyop2-ir"]:
         transformer = QuadratureTransformerOpt(psi_tables,
                                                quad_weights,
                                                form_data.geometric_dimension,
