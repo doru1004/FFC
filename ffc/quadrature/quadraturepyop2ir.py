@@ -52,7 +52,7 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
 
     body_ir = _tabulate_tensor(ir, parameters)
-    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
+    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir, ["static", "inline"])
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
@@ -62,8 +62,12 @@ def _arglist(ir):
     f_k   = format["second free index"]
     float = format['float declaration']
     int   = format['int declaration']
+    prim_idims  = ir["prim_idims"]
+    domain_type = ir["domain_type"]
 
-    localtensor = pyop2.Decl(float, pyop2.Symbol("A", ir["tensor_entry_size"] or (1,)))
+    if domain_type == 'interior_facet':
+        prim_idims = [d*2 for d in prim_idims]
+    localtensor = pyop2.Decl(float, pyop2.Symbol("A", tuple(prim_idims) or (1,)))
 
     coordinates = pyop2.Decl(float, pyop2.Symbol("**vertex_coordinates", ()))
 
@@ -72,15 +76,11 @@ def _arglist(ir):
         coeffs.append(pyop2.Decl(float, pyop2.Symbol("*%s%s" % \
             ("c" if e.family() == 'Real' else "*", n[1:] if e.family() == 'Real' else n), ())))
 
-    itindices = {0: pyop2.Decl(int, pyop2.Symbol(f_j, ())), \
-                    1: pyop2.Decl(int, pyop2.Symbol(f_k, ()))}
-
     arglist = [localtensor, coordinates] + coeffs
     if ir['domain_type'] == 'exterior_facet':
         arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
     if ir['domain_type'] == 'interior_facet':
         arglist.append(pyop2.Decl(int, pyop2.Symbol("facet_p", (2,)), qualifiers=["unsigned"]))
-    arglist += [itindices[i] for i in range(rank)]
 
     return arglist
 
@@ -173,7 +173,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet(None), cases)
-        nest_ir = pyop2.FunCall(tensor_code)
+        nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -207,7 +207,7 @@ def _tabulate_tensor(ir, parameters):
             for j in range(num_facets):
                 # Update transformer with facets and generate case code + set of used geometry terms.
                 c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                            opt_par, parameters)
+                                                            opt_par, parameters, prim_idims)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += [nest_ir.gencode()]
                 cases[i][j] = "\n".join(case)
@@ -217,7 +217,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
-        nest_ir = pyop2.FunCall(tensor_code)
+        nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -275,7 +275,7 @@ def _tabulate_tensor(ir, parameters):
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
-    jacobi_ir = pyop2.FunCall("\n".join(common))
+    jacobi_ir = pyop2.FlatBlock("\n".join(common))
 
     # @@@: const double W3[3] = {{...}}
     for weights, points in [quadrature_weights[p] for p in used_weights]:
@@ -283,7 +283,7 @@ def _tabulate_tensor(ir, parameters):
         value = f_float(weights[0])
         w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
         values = f_float(weights[0]) if n_points == 1 else "{%s}" % ", ".join(map(str, [f_float(i) for i in weights]))
-        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["const"])
+        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"])
 
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
@@ -295,7 +295,7 @@ def _tabulate_tensor(ir, parameters):
     for name, data in decl.items():
         rank, value = data
         feo_sym = pyop2.Symbol(name, rank)
-        pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["const"]))
+        pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["static", "const"]))
 
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
@@ -303,7 +303,7 @@ def _tabulate_tensor(ir, parameters):
 
     return root
 
-def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
+def _generate_element_tensor(integrals, sets, optimise_parameters, parameters, prim_idims=None):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -362,7 +362,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # and function values so put here).
         # TODO: Some conditionals might only depend on geometry so they
         # should be moved outside if possible.
-        # TODO: Currently NOT SUPPORTED
         if conditionals:
             ip_code += [f_decl(f_double, f_C(len(conditionals)))]
             # Sort conditionals (need to in case of nested conditionals).
@@ -385,7 +384,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
+        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, prim_idims)
         num_ops += ops
         tensor_ops_count += num_ops*points
         ip_ir += [nest_ir]
@@ -408,7 +407,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     return (element_code, nest_ir, members_code, tensor_ops_count)
 
 
-def travel_rhs(node):
+def visit_rhs(node):
     """Create a PyOP2 AST-conformed object starting from a FFC node. """
 
     def create_pyop2_node(typ, exp1, exp2):
@@ -436,14 +435,14 @@ def travel_rhs(node):
         return pyop2.Symbol(node.ide, tuple(node.loop_index))
     if node._prec in [2, 3] and len(node.vrs) == 1:
         # "Fake" Product, "Fake" Sum
-        return pyop2.Par(travel_rhs(node.vrs[0]))
+        return pyop2.Par(visit_rhs(node.vrs[0]))
     children = []
     if node._prec == 4:
         # Fraction
-        children = [travel_rhs(node.num), travel_rhs(node.denom)]
+        children = [visit_rhs(node.num), visit_rhs(node.denom)]
     else:
         # Product, Sum
-        children = [travel_rhs(n) for n in reversed(node.vrs)]
+        children = [visit_rhs(n) for n in reversed(node.vrs)]
     # PyOP2's ast expr are binary, so we deal with this here
     return pyop2.Par(create_nested_pyop2_node(node._prec, children))
 
@@ -463,8 +462,6 @@ def _generate_functions(functions, sets):
     ast_items = []
 
     # Create the function declarations.
-    # code = ["", f_comment("Coefficient declarations.")]
-    # code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
     ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
                     for n in range(len(functions))]
 
@@ -501,14 +498,11 @@ def _generate_functions(functions, sets):
             ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
 
             # Convert function (that might be a symbol) to a simple string and save.
-            function = travel_rhs(function)
+            function = visit_rhs(function)
             function_expr[number] = function
 
             # Get number of operations to compute entry and add to function operations count.
             func_ops += (ops + 1)*sum(range_i)
-
-        # Add function operations to total count
-        # total_ops += func_ops
 
         # Sort the functions according to name and create loop to compute the function values.
         lines = [pyop2.Incr(c_sym(f_F(n)), function_expr[n]) for n in sorted(function_expr.keys())]
@@ -526,7 +520,7 @@ def _generate_functions(functions, sets):
 
     return ast_items, total_ops
 
-def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
+def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, prim_idims=None):
     "Generate code to evaluate the element tensor."
 
     # For checking if the integral code is for a matrix
@@ -558,8 +552,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
 
     # Loop terms and create code.
     for loop, (data, entry_vals) in terms.items():
-        # If we don't have any entry values, there's no need to generate the
-        # loop.
+        # If we don't have any entry values, there's no need to generate the loop.
         if not entry_vals:
             continue
 
@@ -575,22 +568,26 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
         for entry, value, ops in entry_vals:
             # Left hand side
-            it_vars = tuple([j for i, j in zip([f_j, f_k], list(entry))])
+            it_vars = tuple([i for i, j in zip([f_j, f_k], list(entry))]) if len(loop) > 0 else (0,)
             local_tensor = pyop2.Symbol(f_A(''), it_vars)
             # Right hand side
-            pyop2_rhs = travel_rhs(value)
-            entry_ir = pyop2.Incr(local_tensor, pyop2_rhs)
+            pyop2_rhs = visit_rhs(value)
+            pragma = "#pragma pyop2 outerproduct(j,k)" if len(loop) == 2 else ""
+            entry_ir = pyop2.Incr(local_tensor, pyop2_rhs, pragma)
 
-    # @@@: for (j = 0; ...) for (k = 0; ...)
-    # TODO: J and K loops temporarily switched off, for compatibility with pyop2's wrappers
-    #loop_size = loops.keys()[0][1][2]
-    #it_var = pyop2.Symbol(f_k, ())
-    #nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
-    #            pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True))
-    #it_var = pyop2.Symbol(f_j, ())
-    #nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
-    #            pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest], open_scope=True))
-    nest = entry_ir
+    if len(loop) == 0:
+        nest = entry_ir
+    elif len(loop) in [1, 2]:
+        it_var = c_sym(loop[0][0])
+        end = c_sym(loop[0][2]) if not prim_idims else c_sym(loop[0][2]*prim_idims[0])
+        nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
+                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True), "#pragma pyop2 itspace")
+    if len(loop) == 2:
+        it_var = c_sym(loop[1][0])
+        end = c_sym(loop[1][2]) if not prim_idims else c_sym(loop[1][2]*prim_idims[1])
+        nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
+                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True), "#pragma pyop2 itspace")
+        nest.children[0] = pyop2.Block([nest_k], open_scope=True)
 
     return nest, num_ops
 
