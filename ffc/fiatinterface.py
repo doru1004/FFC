@@ -237,7 +237,9 @@ def map_facet_points(points, facet):
         return [[(0.0,), (1.0,)][facet]]
 
     # Get the FIAT reference cell for this dimension
-    fiat_cell = reference_cell(dim)
+    # TEMPORARY HACK! WILL NEED TO BE CHANGED FOR OUTER PRODUCT FACETS
+    temphack = {2: "triangle", 3: "tetrahedron"}
+    fiat_cell = reference_cell(temphack[dim])
 
     # Extract vertex coordinates from cell and map of facet index to
     # indicent vertex indices
