@@ -198,8 +198,11 @@ def _generate_integral_code(ir, prefix, parameters):
     else:
         error("Unknown representation: %s" % ir["representation"])
 
-    # Generate code
-    code = r.generate_integral_code(ir, prefix, parameters)
+    # Generate the PyOP2 IR or the actual code
+    if parameters["pyop2-ir"] and ir["representation"] == "quadrature":
+        code = r.generate_pyop2_ir(ir, prefix, parameters)
+    else:
+        code = r.generate_integral_code(ir, prefix, parameters)
 
     # Indent code (unused variables should already be removed)
     _indent_code(code)
