@@ -29,9 +29,12 @@ import numpy
 # UFL modules.
 from ufl.algorithms.printing import tree_format
 
-## FFC modules.
+# FFC modules.
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
+
+# PyOP2 IR modules.
+from pyop2.ir import ast_base, ast_builder
 
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
