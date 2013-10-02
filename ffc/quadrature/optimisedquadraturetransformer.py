@@ -503,8 +503,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
     # -------------------------------------------------------------------------
-    def _create_symbol(self, symbol, domain):
-        return {():create_symbol(symbol, domain)}
+    def _create_symbol(self, symbol, domain, _loop_index=[]):
+        return {():create_symbol(symbol, domain, loop_index=_loop_index)}
 
     def _create_product(self, symbols):
         return create_product(symbols)
@@ -561,7 +561,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
-        weight = self._create_symbol(weight, ACCESS)[()]
+        weight = self._create_symbol(weight, ACCESS, _loop_index=[format["integration points"]])[()]
 
         # Create value.
         if domain_type == "point":
