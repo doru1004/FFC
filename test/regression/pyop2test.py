@@ -70,7 +70,7 @@ def build_pyop2_programs(bench, permissive, debug=False):
     
     # Set compiler options
     if not permissive:
-        compiler_options += " -Werror"
+        compiler_options = " -Werror"
     if bench > 0:
         info("Benchmarking activated")
         compiler_options = "-Wall -Werror"
