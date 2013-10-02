@@ -338,6 +338,7 @@ def main(args):
     generate_only  = "--generate-only" in args
     fast           = "--fast" in args
     bench          = "--bench" in args
+    use_auto       = "--skip_auto" not in args
     use_quad       = "--skip_quad" not in args
     use_ext_quad   = "--ext_quad" in args
     use_ext_uflacs = "--ext_uflacs" in args
@@ -350,6 +351,7 @@ def main(args):
         "--generate-only",
         "--fast",
         "--bench",
+        "--skip_auto",
         "--skip_quad",
         "--ext_quad",
         "--ext_uflacs",
@@ -383,7 +385,9 @@ def main(args):
 
     # Adjust which test cases (combinations of compile arguments) to
     # run here
-    test_cases = ["-r auto"]
+    test_cases = []
+    if use_auto:
+        test_cases += ["-r auto"]
     if use_quad and (not bench and not fast):
         test_cases += ["-r quadrature", "-r quadrature -O"]
     if use_ext_quad:
