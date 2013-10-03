@@ -34,7 +34,7 @@ from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
 # PyOP2 IR modules.
-from pyop2.ir import ast_base, ast_builder
+from pyop2.ir import ast_base as pyop2, ast_builder
 
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
@@ -374,7 +374,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters, parameters)
+        integral_code, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
         ip_code += integral_code
@@ -463,7 +463,7 @@ def _generate_functions(functions, sets):
 
     return code, total_ops
 
-def _generate_integral_code(points, terms, sets, optimise_parameters, parameters):
+def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
 
     # For checking if the integral code is for a matrix
@@ -471,6 +471,21 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         loop_indices = [ l[0] for l in loop ]
         return (format["first free index"] in loop_indices and \
                 format["second free index"] in loop_indices)
+
+    # Convert FFC local assembly expression into a PYOP2's AST (sub)tree
+    def convert_ast(lhs, rhs):
+        local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
+        embed()
+        
+        #def travel_rhs(node):
+        #    if node._prec == 1:
+        #        return pyop2.Symbol()
+        #    for 
+        #    if node._prec == 3:
+        #        pyop2_node = pyop2.Prod()
+       
+        
+        print lhs 
 
     # Prefetch formats to speed up code generation.
     p_format        = parameters["format"]
@@ -480,11 +495,14 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
     f_iadd          = format["iadd"]
     f_add           = format["add"]
     f_A             = format["element tensor"][p_format]
+    f_j             = format["first free index"]
+    f_k             = format["second free index"]
     f_loop          = format["generate loop"]
     f_B             = format["basis constant"]
+    
 
     # Initialise return values.
-    code = []
+    code = [] # TODO: to be removed
     num_ops = 0
     loops = {}
 
@@ -526,6 +544,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
 
             # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
+            entry_ir = convert_ast((f_A(''), f_j, f_k), value)
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
