@@ -182,11 +182,11 @@ def _tabulate_tensor(ir, parameters):
         prim_idims = [d*2 for d in prim_idims]
 
         if p_format == 'pyop2':
-            common += ["unsigned int facet0 = facet_p[0];"]
-            common += ["unsigned int facet1 = facet_p[1];"]
-            common += ["double **x0 = x;"]
+            common += ["unsigned int facet_0 = facet_p[0];"]
+            common += ["unsigned int facet_1 = facet_p[1];"]
+            common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
             # Note that the following line is unsafe for isoparametric elements.
-            common += ["double **x1 = x + %d;" % num_vertices]
+            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % (num_vertices * gdim)]
 
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
