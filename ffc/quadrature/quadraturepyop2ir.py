@@ -34,7 +34,8 @@ from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused
 
 # PyOP2 IR modules.
-from pyop2.ir import ast_base as pyop2, ast_builder
+from pyop2.ir import ast_base as pyop2
+from pyop2.ir.ast_builder import c_sym
 
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
@@ -107,6 +108,7 @@ def _tabulate_tensor(ir, parameters):
     f_loop          = format["generate loop"]
     f_int           = format["int"]
     f_facet         = format["facet"]
+    f_weight        = format["weight"]
 
     # Get data.
     opt_par     = ir["optimise_parameters"]
@@ -140,10 +142,10 @@ def _tabulate_tensor(ir, parameters):
     operations = []
     if domain_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
-        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
+        tensor_code, nest_ir, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
                                          opt_par, parameters)
         tensor_code = "\n".join(tensor_code)
-
+        
         # Set operations equal to num_ops (for printing info on operations).
         operations.append([num_ops])
 
@@ -159,7 +161,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update treansformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
+            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -193,7 +195,7 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_facets):
             for j in range(num_facets):
                 # Update treansformer with facets and generate case code + set of used geometry terms.
-                c, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
+                c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
                                                             opt_par, parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
@@ -222,7 +224,7 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_vertices):
             # Update treansformer with vertices and generate case code +
             # set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i],
+            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
@@ -253,6 +255,11 @@ def _tabulate_tensor(ir, parameters):
     common += [remove_unused(jacobi_code, trans_set)]
     # @@@: const double W3[3] = {{...}}
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
+    for weights, points in quadrature_weights.items():
+        w_sym = pyop2.Symbol(f_weight(weights), (weights,))
+        values = "{%s}" % ", ".join(map(str, points[0]))
+        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["const"])
+    
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables)
@@ -374,7 +381,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        integral_code, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
+        integral_code, nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
         ip_code += integral_code
@@ -386,11 +393,14 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
             element_code += f_loop(ip_code, [(f_ip, 0, points)])
+            it_var = pyop2.Symbol(f_ip, ())
+            nest_ir = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
+                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest_ir], openscope=True))
         else:
             element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
             element_code += ip_code
 
-    return (element_code, members_code, tensor_ops_count)
+    return (element_code, nest_ir, members_code, tensor_ops_count)
 
 def _generate_functions(functions, sets):
     "Generate declarations for functions and code to compute values."
@@ -561,7 +571,6 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
 
             # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
             entry_ir = convert_ast((f_A(''), f_j, f_k), value)
-            embed()
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
@@ -573,13 +582,21 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        # @@@: for (j = 0; ...) for (k = 0; ...)
         if p_format=="pyop2":
             # Strip out primary indices from loop
             loop = [ l for l in loop if l[0] in format["free indices"] ]
         code += f_loop(lines, loop)
+    
+    # @@@: for (j = 0; ...) for (k = 0; ...)
+    loop_size = loops.keys()[0][1][2]
+    it_var = pyop2.Symbol(f_k, ())
+    nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
+                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], openscope=True))
+    it_var = pyop2.Symbol(f_j, ())
+    nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
+                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest], openscope=True))
 
-    return code, num_ops
+    return code, nest, num_ops
 
 def _tabulate_weights(quadrature_weights, parameters):
     "Generate table of quadrature weights."
