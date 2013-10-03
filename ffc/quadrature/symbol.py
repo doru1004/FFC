@@ -33,9 +33,9 @@ from symbolics import create_fraction
 from expr import Expr
 
 class Symbol(Expr):
-    __slots__ = ("v", "base_expr", "base_op", "exp", "cond", "identifier")
+    __slots__ = ("v", "base_expr", "base_op", "exp", "cond", "ide")
     def __init__(self, variable, symbol_type, base_expr=None, base_op=0, \
-                 expo=None, cond=(), loop_index=[], iden=None):
+                 expo=None, cond=(), loop_index=[], ide=None):
         """Initialise a Symbols object, it derives from Expr and contains
         the additional variables:
 
@@ -55,7 +55,7 @@ class Symbol(Expr):
 
         # Append the identifier and the iteration variables
         self.loop_index = loop_index
-        self.identifier = iden
+        self.ide = ide
 
         # Needed for symbols like std::cos(x*y + z),
         # where base_expr = x*y + z.

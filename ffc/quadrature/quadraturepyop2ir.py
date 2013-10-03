@@ -474,19 +474,35 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
 
     # Convert FFC local assembly expression into a PYOP2's AST (sub)tree
     def convert_ast(lhs, rhs):
-        local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
-        embed()
         
-        #def travel_rhs(node):
-        #    if node._prec == 1:
-        #        return pyop2.Symbol()
-        #    for 
-        #    if node._prec == 3:
-        #        pyop2_node = pyop2.Prod()
-       
-        
-        print lhs 
+        def create_pyop2_node(typ, exp1, exp2):
+            if typ == 2:
+                return pyop2.Prod(exp1, exp2)
+            if typ == 3:
+                return pyop2.Sum(exp1, exp2)
 
+        def create_nested_pyop2_node(typ, leaf, nodes):
+            if len(nodes) == 2:
+                return create_pyop2_node(typ, leaf, nodes[1])
+            else:
+                return create_pyop2_node(typ, nodes[0], \
+                        create_nested_pyop2_node(typ, nodes[1], nodes[1:]))
+
+        def travel_rhs(node):
+            if node._prec == 1:
+                return pyop2.Symbol(node.ide, tuple(node.loop_index))
+            children = []
+            for n in node.vrs:
+                children.append(travel_rhs(n))
+            # PyOP2's ast expr are binary, so we deal with this here
+            return create_nested_pyop2_node(node._prec, children[0], children)
+       
+        # left hand side
+        local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
+        # right hand side
+        pyop2_rhs = travel_rhs(rhs)
+        return pyop2.Incr(local_tensor, pyop2_rhs)
+        
     # Prefetch formats to speed up code generation.
     p_format        = parameters["format"]
     f_comment       = format["comment"]
@@ -545,6 +561,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
 
             # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
             entry_ir = convert_ast((f_A(''), f_j, f_k), value)
+            embed()
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]

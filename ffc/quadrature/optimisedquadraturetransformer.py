@@ -547,8 +547,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             f_scale_factor = format["scale factor"]
             trans_set = set([f_scale_factor])
             value = create_product([val, weight,
-                                    create_symbol(f_scale_factor, GEO)])
-
+                                    create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
+        
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
