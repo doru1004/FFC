@@ -1015,7 +1015,7 @@ class QuadratureTransformerBase(Transformer):
             basis = self._format_scalar_value(1.0)[()]
         else:
             # Add basis name to the psi tables map for later use.
-            basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc])[()]
+            basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc], _iden=name)[()]
             self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local element tensor.

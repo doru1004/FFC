@@ -503,8 +503,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
     # -------------------------------------------------------------------------
-    def _create_symbol(self, symbol, domain, _loop_index=[]):
-        return {():create_symbol(symbol, domain, loop_index=_loop_index)}
+    def _create_symbol(self, symbol, domain, _loop_index=[], _iden=None):
+        return {():create_symbol(symbol, domain, loop_index=_loop_index, iden=_iden)}
 
     def _create_product(self, symbols):
         return create_product(symbols)
@@ -558,11 +558,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Multiply value by weight and determinant
         ACCESS = GEO
         weight = format["weight"](self.points)
+        iden = weight
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
-        weight = self._create_symbol(weight, ACCESS, _loop_index=[format["integration points"]])[()]
-
+        weight = self._create_symbol(weight, ACCESS, _loop_index=[format["integration points"]], _iden=iden)[()]
         # Create value.
         if domain_type == "point":
             trans_set = set()
@@ -571,8 +571,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             f_scale_factor = format["scale factor"]
             trans_set = set([f_scale_factor])
             value = create_product([val, weight,
-                                    create_symbol(f_scale_factor, GEO)])
-
+                                    create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
+        
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
