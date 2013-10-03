@@ -197,11 +197,12 @@ def _create_fiat_element(ufl_element):
             element = ElementClass(A, B)
         
         # Create FIAT cell
-        fiat_cell = reference_cell(cell)
-        if degree is None:
-            element = ElementClass(fiat_cell)
         else:
-            element = ElementClass(fiat_cell, degree)
+            fiat_cell = reference_cell(cell)
+            if degree is None:
+                element = ElementClass(fiat_cell)
+            else:
+                element = ElementClass(fiat_cell, degree)
 
     return element
 
