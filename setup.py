@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import sys, platform
-from distutils.core import setup, Extension
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 from distutils.version import LooseVersion
 from os import chdir
 from os.path import join, split
