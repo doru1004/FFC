@@ -145,15 +145,6 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
     num_facets = cell_to_num_entities(cell)[-2]
     num_vertices = cell_to_num_entities(cell)[0]
 
-    # Add tables for weights, name_map and basis values.
-    ir["quadrature_weights"]  = quad_weights
-    ir["name_map"] = transformer.name_map
-    ir["unique_tables"] = transformer.unique_tables
-
-    # Add local tensor entry dimensions
-    num_sub_elements = [ a.num_sub_elements() for a in form_data.argument_elements ]
-    ir["tensor_entry_size"] = tuple([1 if n is 0 else n for n in num_sub_elements ])
-
     if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
