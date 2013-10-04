@@ -269,6 +269,8 @@ def _tabulate_tensor(ir, parameters):
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
+    jacobi_ir = pyop2.FunCall(common[0])
+    
     common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
     # @@@: const double W3[3] = {{...}}
     for weights, points in quadrature_weights.items():
@@ -324,7 +326,7 @@ def _tabulate_tensor(ir, parameters):
     
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
-    root = pyop2.Root(pyop2_tables + [nest_ir])
+    root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
     embed()
 
     return "\n".join(common) + "\n" + tensor_code
