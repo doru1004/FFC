@@ -531,13 +531,15 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
                         create_nested_pyop2_node(typ, nodes[1], nodes[1:]))
 
         def travel_rhs(node):
+            if node._prec == 0:
+                return pyop2.Symbol(node.val, ())
             if node._prec == 1:
                 return pyop2.Symbol(node.ide, tuple(node.loop_index))
             children = []
             for n in node.vrs:
                 children.append(travel_rhs(n))
             # PyOP2's ast expr are binary, so we deal with this here
-            return create_nested_pyop2_node(node._prec, children[0], children)
+            return pyop2.Par(create_nested_pyop2_node(node._prec, children[0], children))
        
         # left hand side
         local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))

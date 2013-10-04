@@ -302,7 +302,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
-
+        
         return {():create_symbol(volume, GEO)}
 
     def circumradius(self, o,  *operands):
@@ -496,7 +496,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for i, direction in enumerate(derivatives):
             ref = multi[i]
             t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            transforms.append(create_symbol(t, GEO))
+            transforms.append(create_symbol(t, GEO, iden=t))
         transforms.append(function)
         return create_product(transforms)
 
