@@ -130,6 +130,7 @@ from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code
 from ffc.wrappers import generate_wrapper_code
+from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
 
 def compile_form(forms, object_names={}, prefix="Form",\
                  parameters=default_parameters()):
@@ -161,24 +162,32 @@ def compile_form(forms, object_names={}, prefix="Form",\
     oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
 
-    # Stage 4: code generation
-    cpu_time = time()
-    code = generate_code(oir, prefix, parameters)
-    _print_timing(4, time() - cpu_time)
+    if parameters["pyop2-ir"] and parameters["representation"] in ["auto", "quadrature"]:
+        # Stage 4-A: build pyop2 intermediate representation
+        cpu_time = time()
+        pyop2_ir = generate_pyop2_ir(oir[2][0], prefix, parameters) #FIXME: make a cleaner interface
+        _print_timing(4, time() - cpu_time)
+        info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+        return pyop2_ir
+    else:
+        # Stage 4-B: code generation
+        cpu_time = time()
+        code = generate_code(oir, prefix, parameters)
+        _print_timing(4, time() - cpu_time)
 
-    # Stage 4.1: generate wrappers
-    cpu_time = time()
-    wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
-    _print_timing(4.1, time() - cpu_time)
+        # Stage 4.1-B: generate wrappers
+        cpu_time = time()
+        wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
+        _print_timing(4.1, time() - cpu_time)
 
-    # Stage 5: format code
-    cpu_time = time()
-    code = format_code(code, wrapper_code, prefix, parameters)
-    _print_timing(5, time() - cpu_time)
+        # Stage 5-B: format code
+        cpu_time = time()
+        code = format_code(code, wrapper_code, prefix, parameters)
+        _print_timing(5, time() - cpu_time)
+        
+        info_green("FFC finished in %g seconds.", time() - cpu_time_0)
 
-    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
-
-    return code
+        return code
 
 def compile_element(elements, prefix="Element", parameters=default_parameters()):
     """This function generates UFC code for a given UFL element or

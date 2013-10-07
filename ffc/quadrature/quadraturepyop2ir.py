@@ -49,12 +49,11 @@ from IPython import embed
 def generate_pyop2_ir(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
-    code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
-    code["arglist"] = _arglist(ir)
     code["metadata"] = ""
-
-    return code
+   
+    body_ir = _tabulate_tensor(ir, parameters)
+    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
@@ -327,9 +326,10 @@ def _tabulate_tensor(ir, parameters):
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
     root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
-    embed()
+    #embed()
 
-    return "\n".join(common) + "\n" + tensor_code
+    #return "\n".join(common) + "\n" + tensor_code
+    return root
 
 def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     "Construct quadrature code for element tensors."
