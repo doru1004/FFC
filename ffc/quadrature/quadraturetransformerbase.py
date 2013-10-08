@@ -433,7 +433,8 @@ class QuadratureTransformerBase(Transformer):
         # Let child class create constant symbol
         p_format = self.parameters["format"]
         coefficient = format["coefficient"][p_format](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
+        iden = format["coefficient"][p_format](o.count(), [])
+        return self._create_symbol(coefficient, CONST, [component, 0], _iden=iden)
 
     def vector_constant(self, o):
         #print("\n\nVisiting VectorConstant: " + repr(o))
