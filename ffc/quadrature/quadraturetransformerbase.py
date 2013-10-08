@@ -1177,7 +1177,7 @@ class QuadratureTransformerBase(Transformer):
 
         # TODO: This access stuff was changed subtly during my refactoring, the
         # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
-        return self._create_symbol(function_symbol_name, F_ACCESS)[()]
+        return self._create_symbol(function_symbol_name, F_ACCESS, _iden=function_symbol_name)[()]
 
     def _generate_affine_map(self):
         """Generate psi table for affine map, used by spatial coordinate to map
