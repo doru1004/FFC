@@ -403,8 +403,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                             dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
                             basis = create_product([dxdX, basis])
                         elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
+                            detJ = create_fraction(create_float(1), \
+                                        create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
+                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
+                                        loop_index=[local_comp*tdim + c], iden="J")
                             basis = create_product([detJ, dXdx, basis])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
@@ -474,7 +476,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                         # Add transformation if needed.
                         code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
-
+        
         if not code:
             return create_float(0.0)
         elif len(code) > 1:
