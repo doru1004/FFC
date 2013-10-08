@@ -326,7 +326,7 @@ def _tabulate_tensor(ir, parameters):
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
     root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
-    #embed()
+    embed()
 
     #return "\n".join(common) + "\n" + tensor_code
     return root
@@ -522,6 +522,8 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
                 return pyop2.Prod(exp1, exp2)
             if typ == 3:
                 return pyop2.Sum(exp1, exp2)
+            if typ == 4:
+                return pyop2.Div(exp1, exp2)
 
         def create_nested_pyop2_node(typ, leaf, nodes):
             if len(nodes) == 2:
@@ -536,8 +538,10 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             if node._prec == 1:
                 return pyop2.Symbol(node.ide, tuple(node.loop_index))
             children = []
-            for n in node.vrs:
-                children.append(travel_rhs(n))
+            if node._prec == 4:
+                children = [travel_rhs(node.num), travel_rhs(node.denom)]
+            else:
+                children = [travel_rhs(n) for n in node.vrs]
             # PyOP2's ast expr are binary, so we deal with this here
             return pyop2.Par(create_nested_pyop2_node(node._prec, children[0], children))
        
