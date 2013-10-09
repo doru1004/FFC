@@ -37,7 +37,7 @@ from ffc.cpp import format, remove_unused
 
 # PyOP2 IR modules.
 from pyop2.ir import ast_base as pyop2
-from pyop2.ir.ast_builder import c_sym
+from pyop2.ir.ast_base import c_sym
 
 from ffc.representationutils import initialize_integral_code
 
@@ -58,29 +58,32 @@ def generate_pyop2_ir(ir, prefix, parameters):
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
 
-    rank = len(ir['prim_idims'])
+    rank  = len(ir['prim_idims'])
+    f_j   = format["first free index"]
+    f_k   = format["second free index"]
     float = format['float declaration']
+    int   = format['int declaration']
 
-    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
-    localtensor = "%s A%s" % (float, extent)
+    localtensor = pyop2.Decl(float, pyop2.Symbol("A", ir["tensor_entry_size"])) 
 
-    coordinates = "%s **vertex_coordinates" % float
+    coordinates = pyop2.Decl(float, pyop2.Symbol("**vertex_coordinates", ()))
 
     coeffs = []
     for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
-        coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*",
-                                    n[1:] if e.family() == 'Real' else n))
+        coeffs.append(pyop2.Decl(float, pyop2.Symbol("*%s%s" % \
+            ("c" if e.family() == 'Real' else "*", n[1:] if e.family() == 'Real' else n), ())))
 
-    itindices = {0: "int j", 1: "int k"}
+    itindices = {0: pyop2.Decl(int, pyop2.Symbol(f_j, ())), \
+                    1: pyop2.Decl(int, pyop2.Symbol(f_k, ()))}
 
     arglist = [localtensor, coordinates] + coeffs
     if ir['domain_type'] == 'exterior_facet':
-        arglist.append( "unsigned int *facet_p")
+        arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
     if ir['domain_type'] == 'interior_facet':
-        arglist.append( "unsigned int facet_p[2]")
+        arglist.append(pyop2.Decl(int, pyop2.Symbol("facet_p", (2,)), qualifiers=["unsigned"]))
     arglist += [itindices[i] for i in range(rank)]
 
-    return ", ".join(arglist)
+    return arglist
 
 def _tabulate_tensor(ir, parameters):
     "Generate code for a single integral (tabulate_tensor())."
@@ -326,7 +329,7 @@ def _tabulate_tensor(ir, parameters):
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
     root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
-    embed()
+    #embed()
 
     #return "\n".join(common) + "\n" + tensor_code
     return root
@@ -534,13 +537,17 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
 
         def travel_rhs(node):
             if node._prec == 0:
+                # Float
                 return pyop2.Symbol(node.val, ())
             if node._prec == 1:
+                # Symbol
                 return pyop2.Symbol(node.ide, tuple(node.loop_index))
             children = []
             if node._prec == 4:
+                # Fraction
                 children = [travel_rhs(node.num), travel_rhs(node.denom)]
             else:
+                # Sum, Product
                 children = [travel_rhs(n) for n in node.vrs]
             # PyOP2's ast expr are binary, so we deal with this here
             return pyop2.Par(create_nested_pyop2_node(node._prec, children[0], children))
@@ -549,7 +556,9 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
         # right hand side
         pyop2_rhs = travel_rhs(rhs)
-        return pyop2.Incr(local_tensor, pyop2_rhs)
+
+        stmt = pyop2.Incr(local_tensor, pyop2_rhs, "#pragma pyop2 outerproduct(j,k)")
+        return stmt
     
     # Prefetch formats to speed up code generation.
     p_format        = parameters["format"]
