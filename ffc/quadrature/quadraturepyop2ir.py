@@ -521,7 +521,10 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         # right hand side
         pyop2_rhs = travel_rhs(rhs)
 
-        stmt = pyop2.Incr(local_tensor, pyop2_rhs, "#pragma pyop2 outerproduct(j,k)")
+        # TODO: at the present moment, outer product is not supported because j-k loops 
+        # are stripped out
+        # stmt = pyop2.Incr(local_tensor, pyop2_rhs, "#pragma pyop2 outerproduct(j,k)")
+        stmt = pyop2.Incr(local_tensor, pyop2_rhs)
         return stmt
     
     # Prefetch formats to speed up code generation.
@@ -585,26 +588,16 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
 
-    # Write all the loops of basis functions.
-    for loop, ops_lines in loops.items():
-        ops, lines = ops_lines
-        prim_ops = functools.reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
-        # Add number of operations for current loop to total count.
-        num_ops += prim_ops
-        code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if p_format=="pyop2":
-            # Strip out primary indices from loop
-            loop = [ l for l in loop if l[0] in format["free indices"] ]
-        code += f_loop(lines, loop)
-    
     # @@@: for (j = 0; ...) for (k = 0; ...)
-    loop_size = loops.keys()[0][1][2]
-    it_var = pyop2.Symbol(f_k, ())
-    nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
-                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True))
-    it_var = pyop2.Symbol(f_j, ())
-    nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
-                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest], open_scope=True))
+    # TODO: J and K loops temporarily switched off, for compatibility with pyop2's wrappers
+    #loop_size = loops.keys()[0][1][2]
+    #it_var = pyop2.Symbol(f_k, ())
+    #nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
+    #            pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True))
+    #it_var = pyop2.Symbol(f_j, ())
+    #nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(loop_size)), \
+    #            pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest], open_scope=True))
+    nest = entry_ir
 
     return nest, num_ops
 

@@ -176,6 +176,9 @@ def _generate_comment(parameters):
     else:
         error("Unable to format code, unknown format \"%s\".", parameters["format"])
 
+    # Remove extra keys from parameters for retrocompatibility of tests
+    parameters.pop("pyop2-ir", None)
+
     # Add parameter information
     comment += format["comment"]("") + "\n"
     comment += format["comment"]("This code was generated with the following parameters:") + "\n"

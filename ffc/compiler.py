@@ -174,7 +174,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
         cpu_time = time()
         code = generate_code(oir, prefix, parameters)
         _print_timing(4, time() - cpu_time)
-
+        
         # Stage 4.1-B: generate wrappers
         cpu_time = time()
         wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
