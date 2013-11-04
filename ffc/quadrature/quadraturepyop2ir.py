@@ -53,11 +53,7 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
    
     body_ir = _tabulate_tensor(ir, parameters)
-    a = pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
-    print a.gencode()
-    #embed()
-    return a
-    #return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
+    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
@@ -334,6 +330,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         element_code += ["", f_comment("Loop quadrature points for integral.")]
 
         ip_code = []
+        ip_ir = []
         num_ops = 0
 
         # Generate code to compute coordinates if used.
@@ -352,13 +349,14 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # Generate code to compute function values.
         if functions:
             func_code, ops = _generate_functions(functions, sets)
-            ip_code += func_code
+            ip_ir += func_code
             num_ops += ops
 
         # Generate code to compute conditionals (might depend on coordinates
         # and function values so put here).
         # TODO: Some conditionals might only depend on geometry so they
         # should be moved outside if possible.
+        # TODO: Currently NOT SUPPORTED
         if conditionals:
             ip_code += [f_decl(f_double, f_C(len(conditionals)))]
             # Sort conditionals (need to in case of nested conditionals).
@@ -371,8 +369,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
                 num_ops += ops
 
         # Generate code for ip constant declarations.
-#        ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
-#                                        format["const float declaration"], True)
+        # TODO: this code should be removable as only executed when ffc's optimisations are on
         ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
                                         format["assign"], True)
         num_ops += ip_const_ops
@@ -383,10 +380,9 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
         # Generate code to evaluate the element tensor.
         nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
-        integral_code = []
         num_ops += ops
         tensor_ops_count += num_ops*points
-        ip_code += integral_code
+        ip_ir += [nest_ir]
 
         element_code.append(f_comment\
             ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
@@ -397,12 +393,50 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             element_code += f_loop(ip_code, [(f_ip, 0, points)])
             it_var = pyop2.Symbol(f_ip, ())
             nest_ir = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
-                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block([nest_ir], open_scope=True))
+                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True))
         else:
             element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
             element_code += ip_code
 
     return (element_code, nest_ir, members_code, tensor_ops_count)
+
+
+def travel_rhs(node):
+    """Create a PyOP2 AST-conformed object starting from a FFC node. """
+
+    def create_pyop2_node(typ, exp1, exp2):
+        """Create an expr node starting from two FFC symbols."""
+        if typ == 2:
+            return pyop2.Prod(exp1, exp2)
+        if typ == 3:
+            return pyop2.Sum(exp1, exp2)
+        if typ == 4:
+            return pyop2.Div(exp1, exp2)
+
+    def create_nested_pyop2_node(typ, nodes):
+        """Create a subtree for the PyOP2 AST from a generic FFC expr. """
+        if len(nodes) == 2:
+            return create_pyop2_node(typ, nodes[0], nodes[1])
+        else:
+            return create_pyop2_node(typ, nodes[0], \
+                    create_nested_pyop2_node(typ, nodes[1:]))
+
+    if node._prec == 0:
+        # Float
+        return pyop2.Symbol(node.val, ())
+    if node._prec == 1:
+        # Symbol
+        return pyop2.Symbol(node.ide, tuple(node.loop_index))
+    children = []
+    if node._prec == 4:
+        # Fraction
+        children = [travel_rhs(node.num), travel_rhs(node.denom)]
+    else:
+        # Sum, Product
+        children = [travel_rhs(n) for n in node.vrs]
+    # PyOP2's ast expr are binary, so we deal with this here
+    return pyop2.Par(create_nested_pyop2_node(node._prec, children))
+       
 
 def _generate_functions(functions, sets):
     "Generate declarations for functions and code to compute values."
@@ -416,10 +450,14 @@ def _generate_functions(functions, sets):
     f_iadd         = format["iadd"]
     f_loop         = format["generate loop"]
 
+    ast_items = []
+    
     # Create the function declarations.
-    code = ["", f_comment("Coefficient declarations.")]
-    code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
-
+    # code = ["", f_comment("Coefficient declarations.")]
+    # code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
+    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
+                    for n in range(len(functions))]
+    
     # Get sets.
     used_psi_tables = sets[1]
     used_nzcs = sets[2]
@@ -453,18 +491,18 @@ def _generate_functions(functions, sets):
             ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
 
             # Convert function (that might be a symbol) to a simple string and save.
-            function = str(function)
+            function = travel_rhs(function)
             function_expr[number] = function
 
             # Get number of operations to compute entry and add to function operations count.
             func_ops += (ops + 1)*sum(range_i)
 
         # Add function operations to total count
-        total_ops += func_ops
-        code += ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
+        # total_ops += func_ops
+        # code += ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
 
         # Sort the functions according to name and create loop to compute the function values.
-        lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
+        lines = [pyop2.Incr(c_sym(f_F(n)), function_expr[n]) for n in sorted(function_expr.keys())]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
@@ -472,9 +510,12 @@ def _generate_functions(functions, sets):
         else:
             loop_vars = [(f_r[0], 0, loop_range)]
         # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
-        code += f_loop(lines, loop_vars)
+        it_var = c_sym(loop_vars[0][0])
+        loop_size = c_sym(loop_vars[0][2])
+        ast_items.append(pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, loop_size), \
+                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(lines, open_scope=True)))
 
-    return code, total_ops
+    return ast_items, total_ops
 
 def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
@@ -488,38 +529,6 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     # Convert FFC local assembly expression into a PYOP2's AST (sub)tree
     def convert_ast(lhs, rhs):
         
-        def create_pyop2_node(typ, exp1, exp2):
-            if typ == 2:
-                return pyop2.Prod(exp1, exp2)
-            if typ == 3:
-                return pyop2.Sum(exp1, exp2)
-            if typ == 4:
-                return pyop2.Div(exp1, exp2)
-
-        def create_nested_pyop2_node(typ, leaf, nodes):
-            if len(nodes) == 2:
-                return create_pyop2_node(typ, leaf, nodes[1])
-            else:
-                return create_pyop2_node(typ, nodes[0], \
-                        create_nested_pyop2_node(typ, nodes[1], nodes[1:]))
-
-        def travel_rhs(node):
-            if node._prec == 0:
-                # Float
-                return pyop2.Symbol(node.val, ())
-            if node._prec == 1:
-                # Symbol
-                return pyop2.Symbol(node.ide, tuple(node.loop_index))
-            children = []
-            if node._prec == 4:
-                # Fraction
-                children = [travel_rhs(node.num), travel_rhs(node.denom)]
-            else:
-                # Sum, Product
-                children = [travel_rhs(n) for n in node.vrs]
-            # PyOP2's ast expr are binary, so we deal with this here
-            return pyop2.Par(create_nested_pyop2_node(node._prec, children[0], children))
-       
         # left hand side
         local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
         # right hand side

@@ -1161,9 +1161,10 @@ class QuadratureTransformerBase(Transformer):
                 F_ACCESS = IP
 
             # Format expression for function
-            function_expr = self._create_product([self._create_symbol(basis_name, B_ACCESS)[()],
-                                                  self._create_symbol(coefficient, C_ACCESS)[()]])
-
+            function_expr = self._create_product(\
+                        [self._create_symbol(basis_name, B_ACCESS, _iden=basis_name)[()], \
+                         self._create_symbol(coefficient, C_ACCESS, _iden=coefficient)[()]])
+             
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
             data = self.function_data.get(function_expr)
@@ -1173,7 +1174,7 @@ class QuadratureTransformerBase(Transformer):
                         self._count_operations(function_expr),
                         psi_name, used_nzcs, ufl_function.element())
                 self.function_data[function_expr] = data
-            function_symbol_name = format["function value"](data[0])
+                function_symbol_name = format["function value"](data[0])
 
         # TODO: This access stuff was changed subtly during my refactoring, the
         # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
