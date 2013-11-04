@@ -53,7 +53,11 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
    
     body_ir = _tabulate_tensor(ir, parameters)
-    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
+    a = pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
+    print a.gencode()
+    #embed()
+    return a
+    #return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
@@ -271,7 +275,7 @@ def _tabulate_tensor(ir, parameters):
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
-    jacobi_ir = pyop2.FunCall(common[0])
+    jacobi_ir = pyop2.FunCall("\n".join(common))
     
     # @@@: const double W3[3] = {{...}}
     for weights, points in quadrature_weights.items():
