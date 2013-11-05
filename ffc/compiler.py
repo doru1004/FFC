@@ -161,14 +161,15 @@ def compile_form(forms, object_names={}, prefix="Form",\
     cpu_time = time()
     oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
-    
+   
     if parameters["pyop2-ir"] and parameters["representation"] in ["auto", "quadrature"]:
         # Stage 4-A: build pyop2 intermediate representation
         cpu_time = time()
-        pyop2_ir = generate_pyop2_ir(oir[2][0], prefix, parameters) #FIXME: make a cleaner interface
+        #FIXME: need a cleaner interface
+        pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[2]]
         _print_timing(4, time() - cpu_time)
         info_green("FFC finished in %g seconds.", time() - cpu_time_0)
-        return pyop2_ir
+        return "\n".join([ast.gencode() for ast in pyop2_ir])
     else:
         # Stage 4-B: code generation
         cpu_time = time()

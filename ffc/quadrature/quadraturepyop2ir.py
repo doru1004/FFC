@@ -51,6 +51,8 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
    
     body_ir = _tabulate_tensor(ir, parameters)
+    print pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir).gencode()
+    print ""
     return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
