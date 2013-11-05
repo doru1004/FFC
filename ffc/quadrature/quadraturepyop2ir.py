@@ -527,20 +527,6 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         return (format["first free index"] in loop_indices and \
                 format["second free index"] in loop_indices)
 
-    # Convert FFC local assembly expression into a PYOP2's AST (sub)tree
-    def convert_ast(lhs, rhs):
-        
-        # left hand side
-        local_tensor = pyop2.Symbol(lhs[0], (lhs[1], lhs[2]))
-        # right hand side
-        pyop2_rhs = travel_rhs(rhs)
-
-        # TODO: at the present moment, outer product is not supported because j-k loops 
-        # are stripped out
-        # stmt = pyop2.Incr(local_tensor, pyop2_rhs, "#pragma pyop2 outerproduct(j,k)")
-        stmt = pyop2.Incr(local_tensor, pyop2_rhs)
-        return stmt
-    
     # Prefetch formats to speed up code generation.
     p_format        = parameters["format"]
     f_comment       = format["comment"]
@@ -578,29 +564,14 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         used_psi_tables.update(u_psi_tables)
         used_nzcs.update(u_nzcs)
 
-        # Generate code for basis constant declarations.
-#        basis_const_ops, basis_const_code = generate_aux_constants(basis_consts, f_B,\
-#                                        format["const float declaration"], True)
-        basis_const_ops, basis_const_code = generate_aux_constants(basis_consts, f_B,\
-                                        format["assign"], True)
-        decl_code = []
-        if basis_consts:
-            decl_code = [format["declaration"](format["float declaration"], f_B(len(basis_consts)))]
-        loops[loop] = [basis_const_ops, decl_code + basis_const_code]
-
+        # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
         for entry, value, ops in entry_vals:
-            # Compute number of operations to compute entry
-            # (add 1 because of += in assignment).
-            entry_ops = ops + 1
-
-            # Create comment for number of operations
-            entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
-
-            # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
-            entry_ir = convert_ast((f_A(''), f_j, f_k), value)
-            entry_code = f_iadd(f_A(entry), value)
-            loops[loop][0] += entry_ops
-            loops[loop][1] += [entry_ops_comment, entry_code]
+            # Left hand side
+            it_vars = tuple([i for i, j in zip([f_j, f_k], list(entry))])
+            local_tensor = pyop2.Symbol(f_A(''), it_vars)
+            # Right hand side
+            pyop2_rhs = travel_rhs(value)
+            entry_ir = pyop2.Incr(local_tensor, pyop2_rhs)
 
     # @@@: for (j = 0; ...) for (k = 0; ...)
     # TODO: J and K loops temporarily switched off, for compatibility with pyop2's wrappers
