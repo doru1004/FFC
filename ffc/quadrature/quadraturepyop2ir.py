@@ -44,8 +44,6 @@ from ffc.representationutils import initialize_integral_code
 # Utility and optimisation functions for quadraturegenerator.
 from symbolics import generate_aux_constants
 
-from IPython import embed
-
 def generate_pyop2_ir(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)

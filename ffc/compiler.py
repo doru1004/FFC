@@ -161,7 +161,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
     cpu_time = time()
     oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
-
+    
     if parameters["pyop2-ir"] and parameters["representation"] in ["auto", "quadrature"]:
         # Stage 4-A: build pyop2 intermediate representation
         cpu_time = time()

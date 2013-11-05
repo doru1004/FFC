@@ -1174,7 +1174,7 @@ class QuadratureTransformerBase(Transformer):
                         self._count_operations(function_expr),
                         psi_name, used_nzcs, ufl_function.element())
                 self.function_data[function_expr] = data
-                function_symbol_name = format["function value"](data[0])
+            function_symbol_name = format["function value"](data[0])
 
         # TODO: This access stuff was changed subtly during my refactoring, the
         # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
