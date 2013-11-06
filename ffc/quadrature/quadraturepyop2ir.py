@@ -51,8 +51,6 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
    
     body_ir = _tabulate_tensor(ir, parameters)
-    print pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir).gencode()
-    print ""
     return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
@@ -64,7 +62,7 @@ def _arglist(ir):
     float = format['float declaration']
     int   = format['int declaration']
 
-    localtensor = pyop2.Decl(float, pyop2.Symbol("A", ir["tensor_entry_size"])) 
+    localtensor = pyop2.Decl(float, pyop2.Symbol("A", ir["tensor_entry_size"] or (1,)))
 
     coordinates = pyop2.Decl(float, pyop2.Symbol("**vertex_coordinates", ()))
 
@@ -276,8 +274,8 @@ def _tabulate_tensor(ir, parameters):
     
     # @@@: const double W3[3] = {{...}}
     for weights, points in quadrature_weights.items():
-        w_sym = pyop2.Symbol(f_weight(weights), (weights,))
-        values = "{%s}" % ", ".join(map(str, points[0]))
+        w_sym = pyop2.Symbol(f_weight(weights), () if weights == 1 else (weights,))
+        values = map(str, points[0])[0] if len(points[0]) == 1 else "{%s}" % ", ".join(map(str, points[0]))
         pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"])
     
     name_map = ir["name_map"]
@@ -398,6 +396,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         else:
             element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
             element_code += ip_code
+            nest_ir = pyop2.Block(ip_ir, open_scope=False)
 
     return (element_code, nest_ir, members_code, tensor_ops_count)
 
@@ -428,13 +427,16 @@ def travel_rhs(node):
     if node._prec == 1:
         # Symbol
         return pyop2.Symbol(node.ide, tuple(node.loop_index))
+    if node._prec in [2, 3] and len(node.vrs) == 1:
+        # "Fake" Product, "Fake" Sum
+        return pyop2.Symbol(node.vrs[0].ide, tuple(node.vrs[0].loop_index))
     children = []
     if node._prec == 4:
         # Fraction
         children = [travel_rhs(node.num), travel_rhs(node.denom)]
     else:
-        # Sum, Product
-        children = [travel_rhs(n) for n in node.vrs]
+        # Product, Sum
+        children = [travel_rhs(n) for n in reversed(node.vrs)]
     # PyOP2's ast expr are binary, so we deal with this here
     return pyop2.Par(create_nested_pyop2_node(node._prec, children))
        
@@ -567,7 +569,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
         for entry, value, ops in entry_vals:
             # Left hand side
-            it_vars = tuple([i for i, j in zip([f_j, f_k], list(entry))])
+            it_vars = tuple([j for i, j in zip([f_j, f_k], list(entry))])
             local_tensor = pyop2.Symbol(f_A(''), it_vars)
             # Right hand side
             pyop2_rhs = travel_rhs(value)

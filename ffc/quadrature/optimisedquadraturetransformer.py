@@ -561,10 +561,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         ACCESS = GEO
         weight = format["weight"](self.points)
         iden = weight
+        loop_index = ()
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
-        weight = self._create_symbol(weight, ACCESS, _loop_index=[format["integration points"]], _iden=iden)[()]
+            loop_index = [format["integration points"]]
+        weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
         if domain_type == "point":
             trans_set = set()
