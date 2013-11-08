@@ -108,6 +108,8 @@ def compute_ir(analysis, parameters):
 def _compute_element_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of element."
 
+    # This hits unimplemented FIAT functionality for OPEs; the IR
+    # is only required for function evaluation at a point, not integrals
     if isinstance(ufl_element, ufl.OuterProductElement) or isinstance(ufl_element, ufl.OuterProductVectorElement):
         return None
     # Create FIAT element
@@ -136,6 +138,8 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     "Compute intermediate representation of dofmap."
 
+    # This hits unimplemented FIAT functionality for OPEs; our
+    # dofmaps are not produced by FFC anyway, AFAIK
     if isinstance(ufl_element, ufl.OuterProductElement) or isinstance(ufl_element, ufl.OuterProductVectorElement):
         return None
     # Create FIAT element
