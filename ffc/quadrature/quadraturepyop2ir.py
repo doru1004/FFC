@@ -273,11 +273,13 @@ def _tabulate_tensor(ir, parameters):
     jacobi_ir = pyop2.FunCall("\n".join(common))
     
     # @@@: const double W3[3] = {{...}}
-    for weights, points in quadrature_weights.items():
-        w_sym = pyop2.Symbol(f_weight(weights), () if weights == 1 else (weights,))
-        values = map(str, points[0])[0] if len(points[0]) == 1 else "{%s}" % ", ".join(map(str, points[0]))
+    for weights, points in [quadrature_weights[p] for p in used_weights]:
+        n_points = len(points)
+        value = f_float(weights[0])
+        w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
+        values = f_float(weights[0]) if n_points == 1 else "{%s}" % ", ".join(map(str, [f_float(i) for i in weights]))
         pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"])
-    
+  
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
@@ -502,7 +504,6 @@ def _generate_functions(functions, sets):
 
         # Add function operations to total count
         # total_ops += func_ops
-        # code += ["", f_comment("Total number of operations to compute function values = %d" % func_ops)]
 
         # Sort the functions according to name and create loop to compute the function values.
         lines = [pyop2.Incr(c_sym(f_F(n)), function_expr[n]) for n in sorted(function_expr.keys())]
