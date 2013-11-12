@@ -48,7 +48,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, cell_to_num_entities, reference_cell
 from ffc.mixedelement import MixedElement
-from ffc.enrichedelement import EnrichedElement, SpaceOfReals
+from ffc.enrichedelement import SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
 
@@ -286,9 +286,6 @@ def _generate_reference_offsets(element, offset=0):
         for e in element.elements():
             offsets += _generate_reference_offsets(e, offset)
             offset += _value_size(e)
-    elif isinstance(element, EnrichedElement):
-        for e in element.elements():
-            offsets += _generate_reference_offsets(e, offset)
     else:
         offsets = [offset]*element.space_dimension()
     return offsets
@@ -309,9 +306,6 @@ def _generate_physical_offsets(ufl_element, offset=0):
         for e in ufl_element.sub_elements():
             offsets += _generate_physical_offsets(e, offset)
             offset += _value_size(e)
-    elif isinstance(ufl_element, ufl.EnrichedElement):
-        for e in ufl_element._elements:
-            offsets += _generate_physical_offsets(e, offset)
     elif isinstance(ufl_element, ufl.FiniteElement):
         element = create_element(ufl_element)
         offsets = [offset]*element.space_dimension()
@@ -344,7 +338,7 @@ def _evaluate_dof(ufl_element, element, cell):
 def _extract_elements(element):
 
     new_elements = []
-    if isinstance(element, (MixedElement, EnrichedElement)):
+    if isinstance(element, (MixedElement)):
         for e in element.elements():
             new_elements += _extract_elements(e)
     else:
@@ -365,7 +359,7 @@ def _extract_elements(element):
 def _evaluate_basis(ufl_element, element, cell):
     "Compute intermediate representation for evaluate_basis."
 
-    # Handle Mixed and EnrichedElements by extracting 'sub' elements.
+    # Handle MixedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
     offsets = _generate_reference_offsets(element) # Must check?
     mappings = element.mapping()
