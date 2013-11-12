@@ -162,7 +162,7 @@ def _tabulate_tensor(ir, parameters):
             # Update treansformer with facets and generate case code + set of used geometry terms.
             c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
-            case += c
+            case += [nest_ir.gencode()]
             cases[i] = "\n".join(case)
 
             # Save number of operations (for printing info on operations).
@@ -170,6 +170,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet(None), cases)
+        nest_ir = pyop2.FunCall(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -205,7 +206,7 @@ def _tabulate_tensor(ir, parameters):
                 c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
                                                             opt_par, parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
-                case += c
+                case += [nest_ir.gencode()]
                 cases[i][j] = "\n".join(case)
 
                 # Save number of operations (for printing info on operations).
@@ -213,6 +214,7 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate tensor code for all cases using a switch.
         tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
+        nest_ir = pyop2.FunCall(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
