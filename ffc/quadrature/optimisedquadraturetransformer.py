@@ -302,7 +302,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
-        
+
         return {():create_symbol(volume, GEO)}
 
     def circumradius(self, o,  *operands):
@@ -476,7 +476,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                         # Add transformation if needed.
                         code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
-        
+
         if not code:
             return create_float(0.0)
         elif len(code) > 1:

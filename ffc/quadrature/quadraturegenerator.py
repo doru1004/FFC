@@ -411,7 +411,7 @@ def _generate_functions(functions, sets):
     # Create the function declarations.
     code = ["", f_comment("Coefficient declarations.")]
     code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
-    
+
     # Get sets.
     used_psi_tables = sets[1]
     used_nzcs = sets[2]

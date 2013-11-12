@@ -796,7 +796,7 @@ class QuadratureTransformerBase(Transformer):
                 for i, s in enumerate(sets):
                     new_terms[loop][0][i].update(s)
                 new_terms[loop][1].append((entry, value, ops))
-        
+
         return new_terms
 
     def _create_loop_entry(self, key, f_nzc):
@@ -993,7 +993,7 @@ class QuadratureTransformerBase(Transformer):
             f_ip = "0"
         index_calc = loop_index
         basis_access = format["component"]("", [f_ip, index_calc])
-        
+
         # If we have a restricted function multiply space_dim by two.
         if self.restriction == "+" or self.restriction == "-":
             space_dim *= 2
