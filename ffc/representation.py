@@ -110,7 +110,7 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
 
     # This hits unimplemented FIAT functionality for OPEs; the IR
     # is only required for function evaluation at a point, not integrals
-    if isinstance(ufl_element, ufl.OuterProductElement) or isinstance(ufl_element, ufl.OuterProductVectorElement):
+    if isinstance(ufl_element.cell(), ufl.OuterProductCell):
         return None
     # Create FIAT element
     element = create_element(ufl_element)
@@ -140,7 +140,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
 
     # This hits unimplemented FIAT functionality for OPEs; our
     # dofmaps are not produced by FFC anyway, AFAIK
-    if isinstance(ufl_element, ufl.OuterProductElement) or isinstance(ufl_element, ufl.OuterProductVectorElement):
+    if isinstance(ufl_element.cell(), ufl.OuterProductCell):
         return None
     # Create FIAT element
     element = create_element(ufl_element)
