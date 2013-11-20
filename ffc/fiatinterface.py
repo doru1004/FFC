@@ -18,9 +18,10 @@
 # Modified by Garth N. Wells, 2009.
 # Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
+# Modified by Andrew T. T. McRae, 2013
 #
 # First added:  2009-03-06
-# Last changed: 2013-01-25
+# Last changed: 2013-11-03
 
 # Python modules
 from numpy import array, polymul
@@ -191,12 +192,14 @@ def _create_fiat_element(ufl_element):
         ElementClass = FIAT.supported_elements[family]
         
         # Tensor Product case
-        if family == "OuterProductElement":
+        if isinstance(ufl_element, ufl.HDiv):
+            element = FIAT.Hdiv(create_element(ufl_element._element))
+        elif isinstance(ufl_element, ufl.HCurl):
+            element = FIAT.Hcurl(create_element(ufl_element._element))
+        elif family == "OuterProductElement":
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
             element = ElementClass(A, B)
-        
-        # Create FIAT cell
         else:
             fiat_cell = reference_cell(cell)
             if degree is None:
