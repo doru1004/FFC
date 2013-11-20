@@ -51,7 +51,7 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code["metadata"] = ""
    
     body_ir = _tabulate_tensor(ir, parameters)
-    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
+    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir, ["static", "inline"])
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
