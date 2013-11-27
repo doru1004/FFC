@@ -1,6 +1,6 @@
-"Code generator for quadrature representation."
+"Build a PyOP2-conforming Abstract Syntax Tree for quadrature representation."
 
-# Copyright (C) 2009-2013 Kristian B. Oelgaard
+# Copyright (C) 2009-2013 Kristian B. Oelgaard and Imperial College London
 #
 # This file is part of FFC.
 #
@@ -20,9 +20,10 @@
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013
 # Modified by Martin Alnaes, 2013
+# Modified by Fabio Luporini, 2013
 #
 # First added:  2009-01-07
-# Last changed: 2013-02-20
+# Last changed: 2013-12-5
 
 # Python modules.
 import functools
@@ -435,7 +436,7 @@ def travel_rhs(node):
         return pyop2.Symbol(node.ide, tuple(node.loop_index))
     if node._prec in [2, 3] and len(node.vrs) == 1:
         # "Fake" Product, "Fake" Sum
-        return pyop2.Symbol(node.vrs[0].ide, tuple(node.vrs[0].loop_index))
+        return pyop2.Par(travel_rhs(node.vrs[0]))
     children = []
     if node._prec == 4:
         # Fraction
