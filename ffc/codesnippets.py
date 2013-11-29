@@ -37,7 +37,7 @@ __old__ = ["evaluate_f",
            "ufc_facet_determinant", "pyop2_facet_determinant", "map_onto_physical",
            "fiat_coordinate_map", "transform_snippet",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
-           "normal_direction",
+           "ufc_normal_direction", "pyop2_normal_direction",
            "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
            "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "orientation_snippet"]
@@ -351,12 +351,20 @@ _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
 """
 
-_normal_direction_2D = """\
+_ufc_normal_direction_2D = """\
 const bool direction = dx1*(vertex_coordinates%(restriction)s[2*%(facet)s] - vertex_coordinates%(restriction)s[2*v0]) - dx0*(vertex_coordinates%(restriction)s[2*%(facet)s + 1] - vertex_coordinates%(restriction)s[2*v0 + 1]) < 0;
 """
 
-_normal_direction_3D = """\
+_pyop2_normal_direction_2D = """\
+const bool direction = dx1*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) - dx0*(vertex_coordinates%(restriction)s[%(facet)s + 3][0] - vertex_coordinates%(restriction)s[v0 + 3][0]) < 0;
+"""
+
+_ufc_normal_direction_3D = """\
 const bool direction = a0*(vertex_coordinates%(restriction)s[3*%(facet)s] - vertex_coordinates%(restriction)s[3*v0]) + a1*(vertex_coordinates%(restriction)s[3*%(facet)s + 1] - vertex_coordinates%(restriction)s[3*v0 + 1])  + a2*(vertex_coordinates%(restriction)s[3*%(facet)s + 2] - vertex_coordinates%(restriction)s[3*v0 + 2]) < 0;
+"""
+
+_pyop2_normal_direction_3D = """\
+const bool direction = a0*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) + a1*(vertex_coordinates%(restriction)s[%(facet)s + 4][0] - vertex_coordinates%(restriction)s[v0 + 4][0]) + a2*(vertex_coordinates%(restriction)s[%(facet)s + 8][0] - vertex_coordinates%(restriction)s[v0 + 8][0]) < 0;
 """
 
 # MER: Coding all up in _facet_normal_ND_M_D for now; these are
@@ -834,12 +842,19 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
-normal_direction = {1: {1: _normal_direction_1D,
-                        2: _normal_direction_2D_1D,
-                        3: _normal_direction_3D_1D},
-                    2: {2: _normal_direction_2D,
-                        3: _normal_direction_3D_2D},
-                    3: {3: _normal_direction_3D}}
+ufc_normal_direction = {1: {1: _normal_direction_1D,
+                            2: _normal_direction_2D_1D,
+                            3: _normal_direction_3D_1D},
+                        2: {2: _ufc_normal_direction_2D,
+                            3: _normal_direction_3D_2D},
+                        3: {3: _ufc_normal_direction_3D}}
+
+pyop2_normal_direction = {1: {1: _normal_direction_1D,
+                              2: _normal_direction_2D_1D,
+                              3: _normal_direction_3D_1D},
+                          2: {2: _pyop2_normal_direction_2D,
+                              3: _normal_direction_3D_2D},
+                          3: {3: _pyop2_normal_direction_3D}}
 
 facet_normal = {1: {1: _facet_normal_1D,
                     2: _facet_normal_2D_1D,
