@@ -337,9 +337,9 @@ const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = vertex_coordinates%(restriction)s[v1 + 0] - vertex_coordinates%(restriction)s[v0 + 0];
-const double dx1 = vertex_coordinates%(restriction)s[v1 + 4] - vertex_coordinates%(restriction)s[v0 + 4];
-const double dx2 = vertex_coordinates%(restriction)s[v1 + 8] - vertex_coordinates%(restriction)s[v0 + 8];
+const double dx0 = vertex_coordinates%(restriction)s[v1 + 0][0] - vertex_coordinates%(restriction)s[v0 + 0][0];
+const double dx1 = vertex_coordinates%(restriction)s[v1 + 4][0] - vertex_coordinates%(restriction)s[v0 + 4][0];
+const double dx2 = vertex_coordinates%(restriction)s[v1 + 8][0] - vertex_coordinates%(restriction)s[v0 + 8][0];
 const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
