@@ -268,7 +268,8 @@ format.update({
     "facet determinant":        { "ufc": lambda gdim, tdim, r=None: ufc_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]},
                                   "pyop2": lambda gdim, tdim, r=None: pyop2_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]} },
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":          lambda tdim, gdim, i: _generate_normal(tdim, gdim, i),
+    "generate normal":          {"ufc": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, ufc_normal_direction, ufc_facet_normal),
+                                 "pyop2": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction, pyop2_facet_normal)},
     "generate cell volume":     lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i),
     "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
@@ -582,7 +583,7 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     return name
 
-def _generate_normal(tdim, gdim, domain_type, reference_normal=False):
+def _generate_normal(tdim, gdim, domain_type, normal_direction, facet_normal, reference_normal=False):
     "Generate code for computing normal"
 
     # Choose snippets

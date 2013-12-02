@@ -34,12 +34,13 @@ __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "compute_jacobian", "compute_jacobian_inverse"]
 
 __old__ = ["evaluate_f",
-           "ufc_facet_determinant", "pyop2_facet_determinant", "map_onto_physical",
-           "fiat_coordinate_map", "transform_snippet",
+           "ufc_facet_determinant", "pyop2_facet_determinant",
+           "map_onto_physical", "fiat_coordinate_map", "transform_snippet",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
-           "normal_direction",
-           "facet_normal", "ip_coordinates", "cell_volume", "circumradius",
-           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
+           "ufc_normal_direction", "pyop2_normal_direction",
+           "ufc_facet_normal", "pyop2_facet_normal", "ip_coordinates",
+           "cell_volume", "circumradius", "facet_area",
+           "min_facet_edge_length", "max_facet_edge_length",
            "orientation_snippet"]
 
 __all__ += __old__
@@ -336,9 +337,9 @@ const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = vertex_coordinates%(restriction)s[v1 + 0] - vertex_coordinates%(restriction)s[v0 + 0];
-const double dx1 = vertex_coordinates%(restriction)s[v1 + 4] - vertex_coordinates%(restriction)s[v0 + 4];
-const double dx2 = vertex_coordinates%(restriction)s[v1 + 8] - vertex_coordinates%(restriction)s[v0 + 8];
+const double dx0 = vertex_coordinates%(restriction)s[v1 + 0][0] - vertex_coordinates%(restriction)s[v0 + 0][0];
+const double dx1 = vertex_coordinates%(restriction)s[v1 + 4][0] - vertex_coordinates%(restriction)s[v0 + 4][0];
+const double dx2 = vertex_coordinates%(restriction)s[v1 + 8][0] - vertex_coordinates%(restriction)s[v0 + 8][0];
 const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
@@ -351,12 +352,20 @@ _normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
 """
 
-_normal_direction_2D = """\
+_ufc_normal_direction_2D = """\
 const bool direction = dx1*(vertex_coordinates%(restriction)s[2*%(facet)s] - vertex_coordinates%(restriction)s[2*v0]) - dx0*(vertex_coordinates%(restriction)s[2*%(facet)s + 1] - vertex_coordinates%(restriction)s[2*v0 + 1]) < 0;
 """
 
-_normal_direction_3D = """\
+_pyop2_normal_direction_2D = """\
+const bool direction = dx1*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) - dx0*(vertex_coordinates%(restriction)s[%(facet)s + 3][0] - vertex_coordinates%(restriction)s[v0 + 3][0]) < 0;
+"""
+
+_ufc_normal_direction_3D = """\
 const bool direction = a0*(vertex_coordinates%(restriction)s[3*%(facet)s] - vertex_coordinates%(restriction)s[3*v0]) + a1*(vertex_coordinates%(restriction)s[3*%(facet)s + 1] - vertex_coordinates%(restriction)s[3*v0 + 1])  + a2*(vertex_coordinates%(restriction)s[3*%(facet)s + 2] - vertex_coordinates%(restriction)s[3*v0 + 2]) < 0;
+"""
+
+_pyop2_normal_direction_3D = """\
+const bool direction = a0*(vertex_coordinates%(restriction)s[%(facet)s][0] - vertex_coordinates%(restriction)s[v0][0]) + a1*(vertex_coordinates%(restriction)s[%(facet)s + 4][0] - vertex_coordinates%(restriction)s[v0 + 4][0]) + a2*(vertex_coordinates%(restriction)s[%(facet)s + 8][0] - vertex_coordinates%(restriction)s[v0 + 8][0]) < 0;
 """
 
 # MER: Coding all up in _facet_normal_ND_M_D for now; these are
@@ -374,7 +383,7 @@ _facet_normal_2D = """\
 const double n%(restriction)s0 = %(direction)sdirection ? dx1 / det : -dx1 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? -dx0 / det : dx0 / det;"""
 
-_facet_normal_2D_1D = """
+_ufc_facet_normal_2D_1D = """
 // Compute facet normal
 double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
@@ -393,12 +402,31 @@ n%(restriction)s0 /= n%(restriction)s_length;
 n%(restriction)s1 /= n%(restriction)s_length;
 """
 
+_pyop2_facet_normal_2D_1D = """
+// Compute facet normal
+double n%(restriction)s0 = 0.0;
+double n%(restriction)s1 = 0.0;
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[0][0] - vertex_coordinates%(restriction)s[4][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0];
+}
+else
+{
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[4][0] - vertex_coordinates%(restriction)s[0][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[1][0] - vertex_coordinates%(restriction)s[2][0];
+}
+const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+"""
+
 _facet_normal_3D = """
 const double n%(restriction)s0 = %(direction)sdirection ? a0 / det : -a0 / det;
 const double n%(restriction)s1 = %(direction)sdirection ? a1 / det : -a1 / det;
 const double n%(restriction)s2 = %(direction)sdirection ? a2 / det : -a2 / det;"""
 
-_facet_normal_3D_2D = """
+_facet_normal_3D_2D_head = """
 // Compute facet normal for triangles in 3D
 const unsigned int vertex%(restriction)s0 = facet%(restriction)s;
 
@@ -408,13 +436,9 @@ const unsigned int vertex%(restriction)s1 = edge_vertices[facet%(restriction)s][
 const unsigned int vertex%(restriction)s2 = edge_vertices[facet%(restriction)s][1];
 
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
-double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
-double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
-double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+"""
 
-double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
-double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
-double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
+_facet_normal_3D_2D_tail = """
 const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
 t%(restriction)s1 /= t%(restriction)s_length;
@@ -433,11 +457,40 @@ n%(restriction)s1 /= n%(restriction)s_length;
 n%(restriction)s2 /= n%(restriction)s_length;
 """
 
-_facet_normal_3D_1D = """
+_ufc_facet_normal_3D_2D = _facet_normal_3D_2D_head + """
+double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+
+double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
+""" + _facet_normal_3D_2D_tail
+
+_pyop2_facet_normal_3D_2D = _facet_normal_3D_2D_head + """
+double n%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 0][0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 4][0];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 8][0];
+
+double t%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 0][0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 4][0];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 8][0];
+""" + _facet_normal_3D_2D_tail
+
+_facet_normal_3D_1D_head = """
 // Compute facet normal
 double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
 double n%(restriction)s2 = 0.0;
+"""
+
+_facet_normal_3D_1D_tail = """
+n%(restriction)s0 /= n%(restriction)s_length;
+n%(restriction)s1 /= n%(restriction)s_length;
+n%(restriction)s2 /= n%(restriction)s_length;
+"""
+
+_ufc_facet_normal_3D_1D = _facet_normal_3D_1D_head + """
 if (facet%(restriction)s == 0)
 {
   n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[3];
@@ -451,10 +504,23 @@ else
   n%(restriction)s1 = vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[2];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
-n%(restriction)s0 /= n%(restriction)s_length;
-n%(restriction)s1 /= n%(restriction)s_length;
-n%(restriction)s2 /= n%(restriction)s_length;
-"""
+""" + _facet_normal_3D_1D_tail
+
+_pyop2_facet_normal_3D_1D = _facet_normal_3D_1D_head + """
+if (facet%(restriction)s == 0)
+{
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[0][0] - vertex_coordinates%(restriction)s[1][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[3][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[4][0] - vertex_coordinates%(restriction)s[5][0];
+}
+else
+{
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[1][0] - vertex_coordinates%(restriction)s[0][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[2][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[5][0] - vertex_coordinates%(restriction)s[4][0];
+}
+const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+""" + _facet_normal_3D_1D_tail
 
 _cell_volume_1D = """\
 // Cell volume
@@ -834,19 +900,33 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
-normal_direction = {1: {1: _normal_direction_1D,
-                        2: _normal_direction_2D_1D,
-                        3: _normal_direction_3D_1D},
-                    2: {2: _normal_direction_2D,
-                        3: _normal_direction_3D_2D},
-                    3: {3: _normal_direction_3D}}
+ufc_normal_direction = {1: {1: _normal_direction_1D,
+                            2: _normal_direction_2D_1D,
+                            3: _normal_direction_3D_1D},
+                        2: {2: _ufc_normal_direction_2D,
+                            3: _normal_direction_3D_2D},
+                        3: {3: _ufc_normal_direction_3D}}
 
-facet_normal = {1: {1: _facet_normal_1D,
-                    2: _facet_normal_2D_1D,
-                    3: _facet_normal_3D_1D},
-                2: {2: _facet_normal_2D,
-                    3: _facet_normal_3D_2D},
-                3: {3: _facet_normal_3D}}
+pyop2_normal_direction = {1: {1: _normal_direction_1D,
+                              2: _normal_direction_2D_1D,
+                              3: _normal_direction_3D_1D},
+                          2: {2: _pyop2_normal_direction_2D,
+                              3: _normal_direction_3D_2D},
+                          3: {3: _pyop2_normal_direction_3D}}
+
+ufc_facet_normal = {1: {1: _facet_normal_1D,
+                        2: _ufc_facet_normal_2D_1D,
+                        3: _ufc_facet_normal_3D_1D},
+                    2: {2: _facet_normal_2D,
+                        3: _ufc_facet_normal_3D_2D},
+                    3: {3: _facet_normal_3D}}
+
+pyop2_facet_normal = {1: {1: _facet_normal_1D,
+                          2: _pyop2_facet_normal_2D_1D,
+                          3: _pyop2_facet_normal_3D_1D},
+                      2: {2: _facet_normal_2D,
+                          3: _pyop2_facet_normal_3D_2D},
+                      3: {3: _facet_normal_3D}}
 
 cell_volume = {1: {1: _cell_volume_1D,
                    2: _cell_volume_2D_1D,
