@@ -348,8 +348,12 @@ _facet_determinant_3D_1D = """\
 const double det = 1.0;
 """
 
-_normal_direction_1D = """\
+_ufc_normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
+"""
+
+_pyop2_normal_direction_1D = """\
+const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0][0] > vertex_coordinates%(restriction)s[1][0] : vertex_coordinates%(restriction)s[1][0] > vertex_coordinates%(restriction)s[0][0];
 """
 
 _ufc_normal_direction_2D = """\
@@ -900,14 +904,14 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
-ufc_normal_direction = {1: {1: _normal_direction_1D,
+ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
                             2: _normal_direction_2D_1D,
                             3: _normal_direction_3D_1D},
                         2: {2: _ufc_normal_direction_2D,
                             3: _normal_direction_3D_2D},
                         3: {3: _ufc_normal_direction_3D}}
 
-pyop2_normal_direction = {1: {1: _normal_direction_1D,
+pyop2_normal_direction = {1: {1: _pyop2_normal_direction_1D,
                               2: _normal_direction_2D_1D,
                               3: _normal_direction_3D_1D},
                           2: {2: _pyop2_normal_direction_2D,
