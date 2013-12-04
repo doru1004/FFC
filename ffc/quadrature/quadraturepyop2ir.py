@@ -184,7 +184,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["orientation"](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim)
-        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
@@ -229,7 +229,7 @@ def _tabulate_tensor(ir, parameters):
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"][p_format](gdim, tdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
@@ -295,26 +295,6 @@ def _tabulate_tensor(ir, parameters):
         rank, value = data
         feo_sym = pyop2.Symbol(name, rank)
         pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["static", "const"]))
-
-    # @@@: for (j = 0; ...) for (k = 0; ...) A[j][k] = 0.0
-    # TODO: J and K loops for resetting the local tensor are temporarily switched off, for compatibility with pyop2's wrappers
-    #val = c_sym(f_float(0.0))
-    #dim = len(prim_idims)
-    #if dim == 0:
-    #    tensor = pyop2.Symbol(f_A(''), (0,))
-    #if dim in [1, 2]:
-    #    it_var = pyop2.Symbol(f_j, ())
-    #    tensor = pyop2.Symbol(f_A(''), (f_j))
-    #    assign = pyop2.Assign(tensor, val)
-    #    reset_nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(prim_idims[0])), \
-    #                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([assign], open_scope=True))
-    #if dim == 2:
-    #    it_var = pyop2.Symbol(f_k, ())
-    #    tensor = pyop2.Symbol(f_A(''), (f_j, f_k))
-    #    assign = pyop2.Assign(tensor, val)
-    #    k_reset_nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(prim_idims[1])), \
-    #                pyop2.Incr(it_var, c_sym(1)), pyop2.Block([assign], open_scope=True))
-    #    reset_nest.children[0] = pyop2.Block([k_reset_nest], open_scope=True)
 
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
