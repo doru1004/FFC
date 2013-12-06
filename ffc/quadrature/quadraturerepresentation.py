@@ -70,7 +70,7 @@ def compute_integral_ir(itg_data,
     ir["optimise_parameters"] = _parse_optimise_parameters(parameters)
 
     # Create transformer.
-    if ir["optimise_parameters"]["optimisation"]:
+    if ir["optimise_parameters"]["optimisation"] or parameters["pyop2-ir"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer

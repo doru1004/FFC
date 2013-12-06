@@ -433,7 +433,8 @@ class QuadratureTransformerBase(Transformer):
         # Let child class create constant symbol
         p_format = self.parameters["format"]
         coefficient = format["coefficient"][p_format](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
+        iden = format["coefficient"][p_format](o.count(), [])
+        return self._create_symbol(coefficient, CONST, [component, 0], _iden=iden)
 
     def vector_constant(self, o):
         #print("\n\nVisiting VectorConstant: " + repr(o))
@@ -1015,7 +1016,7 @@ class QuadratureTransformerBase(Transformer):
             basis = self._format_scalar_value(1.0)[()]
         else:
             # Add basis name to the psi tables map for later use.
-            basis = self._create_symbol(name + basis_access, BASIS)[()]
+            basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc], _iden=name)[()]
             self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local element tensor.
@@ -1160,9 +1161,10 @@ class QuadratureTransformerBase(Transformer):
                 F_ACCESS = IP
 
             # Format expression for function
-            function_expr = self._create_product([self._create_symbol(basis_name, B_ACCESS)[()],
-                                                  self._create_symbol(coefficient, C_ACCESS)[()]])
-
+            function_expr = self._create_product(\
+                        [self._create_symbol(basis_name, B_ACCESS, _iden=basis_name)[()], \
+                         self._create_symbol(coefficient, C_ACCESS, _iden=coefficient)[()]])
+             
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
             data = self.function_data.get(function_expr)
@@ -1176,7 +1178,7 @@ class QuadratureTransformerBase(Transformer):
 
         # TODO: This access stuff was changed subtly during my refactoring, the
         # X_ACCESS vars is an attempt at making it right, make sure it is correct now!
-        return self._create_symbol(function_symbol_name, F_ACCESS)[()]
+        return self._create_symbol(function_symbol_name, F_ACCESS, _iden=function_symbol_name)[()]
 
     def _generate_affine_map(self):
         """Generate psi table for affine map, used by spatial coordinate to map

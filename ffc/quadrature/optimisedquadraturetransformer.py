@@ -289,7 +289,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             normal_component = format["normal component"](self.restriction, components[0])
         self.trans_set.add(normal_component)
 
-        return {(): create_symbol(normal_component, GEO)}
+        return {(): create_symbol(normal_component, GEO, iden=normal_component)}
 
     def cell_volume(self, o,  *operands):
         # Safety check.
@@ -303,7 +303,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
-        return {():create_symbol(volume, GEO)}
+        return {():create_symbol(volume, GEO, iden=volume)}
 
     def circumradius(self, o,  *operands):
         # Safety check.
@@ -313,7 +313,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
 
-        return {():create_symbol(circumradius, GEO)}
+        return {():create_symbol(circumradius, GEO, iden=circumradius)}
 
     def facet_area(self, o):
 
@@ -325,7 +325,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         area = format["facet area"]
         self.trans_set.add(area)
 
-        return {():create_symbol(area, GEO)}
+        return {():create_symbol(area, GEO, iden=area)}
 
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
@@ -336,7 +336,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         edgelen = format["min facet edge length"](self.restriction)
         self.trans_set.add(edgelen)
 
-        return {():create_symbol(edgelen, GEO)}
+        return {():create_symbol(edgelen, GEO, iden=edgelen)}
 
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
@@ -347,7 +347,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         edgelen = format["max facet edge length"](self.restriction)
         self.trans_set.add(edgelen)
 
-        return {():create_symbol(edgelen, GEO)}
+        return {():create_symbol(edgelen, GEO, iden=edgelen)}
 
     # -------------------------------------------------------------------------
 
@@ -400,11 +400,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     if basis is not None:
                         # Multiply basis by appropriate transform.
                         if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
+                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
+                                                 loop_index=[c*gdim + local_comp], iden="K")
                             basis = create_product([dxdX, basis])
                         elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
+                            detJ = create_fraction(create_float(1), \
+                                        create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
+                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
+                                        loop_index=[local_comp*tdim + c], iden="J")
                             basis = create_product([detJ, dXdx, basis])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
@@ -463,11 +466,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                     if function_name:
                         # Multiply basis by appropriate transform.
                         if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO)
+                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
+                                                 loop_index=[c*gdim + local_comp], iden="K")
                             function_name = create_product([dxdX, function_name])
                         elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO)
+                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
+                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
+                                        loop_index=[local_comp*tdim + c], iden="J")
                             function_name = create_product([detJ, dXdx, function_name])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
@@ -496,15 +501,15 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         for i, direction in enumerate(derivatives):
             ref = multi[i]
             t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            transforms.append(create_symbol(t, GEO))
+            transforms.append(create_symbol(t, GEO, iden=t))
         transforms.append(function)
         return create_product(transforms)
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
     # -------------------------------------------------------------------------
-    def _create_symbol(self, symbol, domain):
-        return {():create_symbol(symbol, domain)}
+    def _create_symbol(self, symbol, domain, _loop_index=[], _iden=None):
+        return {():create_symbol(symbol, domain, loop_index=_loop_index, iden=_iden)}
 
     def _create_product(self, symbols):
         return create_product(symbols)
@@ -558,11 +563,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Multiply value by weight and determinant
         ACCESS = GEO
         weight = format["weight"](self.points)
+        iden = weight
+        loop_index = ()
         if self.points > 1:
             weight += format["component"]("", format["integration points"])
             ACCESS = IP
-        weight = self._create_symbol(weight, ACCESS)[()]
-
+            loop_index = [format["integration points"]]
+        weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
         if domain_type == "point":
             trans_set = set()
@@ -571,8 +578,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             f_scale_factor = format["scale factor"]
             trans_set = set([f_scale_factor])
             value = create_product([val, weight,
-                                    create_symbol(f_scale_factor, GEO)])
-
+                                    create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
+        
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))

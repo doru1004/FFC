@@ -24,7 +24,7 @@
 from symbolics import create_float
 
 class Expr(object):
-    __slots__ = ("val", "t", "_prec", "_repr", "_hash")
+    __slots__ = ("val", "t", "_prec", "_repr", "_hash", "loop_index")
     def __init__(self):
         """An Expr object contains:
 

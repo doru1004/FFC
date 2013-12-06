@@ -595,7 +595,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
     # -------------------------------------------------------------------------
-    def _create_symbol(self, symbol, domain):
+    def _create_symbol(self, symbol, domain, loop_index=[], _iden=None):
         return {():symbol}
 
     def _create_product(self, symbols):

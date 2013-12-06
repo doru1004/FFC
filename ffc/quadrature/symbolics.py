@@ -46,12 +46,14 @@ def create_float(val):
     return float_val
 
 _symbol_cache = {}
-def create_symbol(variable, symbol_type, base_expr=None, base_op=0):
-    key = (variable, symbol_type, base_expr, base_op)
+def create_symbol(variable, symbol_type, base_expr=None, base_op=0, expo=None,\
+                  cond=(), loop_index=[], iden=None):
+    key = (variable, symbol_type, base_expr, base_op, expo, cond)
     if key in _symbol_cache:
 #        print "found %s in cache" %variable
         return _symbol_cache[key]
-    symbol = Symbol(variable, symbol_type, base_expr, base_op)
+    symbol = Symbol(variable, symbol_type, base_expr, base_op, \
+                    expo, cond, loop_index, iden)
     _symbol_cache[key] = symbol
     return symbol
 

@@ -50,6 +50,7 @@ FFC_PARAMETERS = {
   "log_level":                      INFO,    # log level, displaying only
                                              # messages with level >= log_level
   "log_prefix":                     "",      # log prefix
+  "pyop2-ir":                       False,   # produce a pyop2-conforming ir
   "error_control":                  False,   # with error control
   "write_file":                     True    # Write the output to file
 }
