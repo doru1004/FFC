@@ -50,9 +50,9 @@ def generate_pyop2_ir(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
     code["metadata"] = ""
-   
+
     body_ir = _tabulate_tensor(ir, parameters)
-    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir, ["static", "inline"])
+    return pyop2.FunDecl("void", code["classname"], _arglist(ir), body_ir)
 
 def _arglist(ir):
     "Generate argument list for tensor tabulation function (only for pyop2)"
@@ -276,26 +276,26 @@ def _tabulate_tensor(ir, parameters):
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
     jacobi_ir = pyop2.FunCall("\n".join(common))
-    
+
     # @@@: const double W3[3] = {{...}}
     for weights, points in [quadrature_weights[p] for p in used_weights]:
         n_points = len(points)
         value = f_float(weights[0])
         w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
         values = f_float(weights[0]) if n_points == 1 else "{%s}" % ", ".join(map(str, [f_float(i) for i in weights]))
-        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"])
-  
+        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["const"])
+
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
-    
+
     # @@@: const double FE0[] = {{...}}
     code, decl = _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
     pyop2_basis = []
     for name, data in decl.items():
         rank, value = data
         feo_sym = pyop2.Symbol(name, rank)
-        pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["static", "const"]))
+        pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["const"]))
 
     # Build the root of the PyOP2' ast
     pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
@@ -446,7 +446,7 @@ def travel_rhs(node):
         children = [travel_rhs(n) for n in reversed(node.vrs)]
     # PyOP2's ast expr are binary, so we deal with this here
     return pyop2.Par(create_nested_pyop2_node(node._prec, children))
-       
+
 
 def _generate_functions(functions, sets):
     "Generate declarations for functions and code to compute values."
@@ -461,13 +461,13 @@ def _generate_functions(functions, sets):
     f_loop         = format["generate loop"]
 
     ast_items = []
-    
+
     # Create the function declarations.
     # code = ["", f_comment("Coefficient declarations.")]
     # code += [f_decl(f_double, f_F(n), f_float(0)) for n in range(len(functions))]
     ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
                     for n in range(len(functions))]
-    
+
     # Get sets.
     used_psi_tables = sets[1]
     used_nzcs = sets[2]
@@ -733,7 +733,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
             # Generate array of values.
             value = f_tensor(vals)
             code += [f_decl(f_table, decl_name, f_new_line + value), ""]
-            
+
             # Store the information for creating PyOP2'ast declarations
             pyop2_decl[name] = ((ip, dofs), value)
 
@@ -749,7 +749,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         value = f_list([f_int(c) for c in list(cols)])
                         name_col = f_component(f_nzcolumns(i), len(cols))
                         code += [f_decl(f_const_uint, name_col, value), ""]
-                        
+
                         # Store the nzc info for creating PyOP2'ast declarations
                         # TODO: to be tested yet, and lack the size of the array
                         #pyop2_decl[name] = value
