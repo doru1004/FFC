@@ -162,7 +162,10 @@ def compile_form(forms, object_names={}, prefix="Form",\
     _print_timing(3, time() - cpu_time)
 
     if parameters["pyop2-ir"] and parameters["representation"] in ["auto", "quadrature"]:
-        from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
+        try:
+            from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
+        except ImportError:
+            raise ImportError("Format pyop2-ir depends on PyOP2, which is not available.")
         # Stage 4-A: build pyop2 intermediate representation
         cpu_time = time()
         #FIXME: need a cleaner interface
