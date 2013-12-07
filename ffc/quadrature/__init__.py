@@ -1,4 +1,3 @@
 from quadraturerepresentation import compute_integral_ir
 from quadratureoptimization import optimize_integral_ir
 from quadraturegenerator import generate_integral_code
-from quadraturepyop2ir import generate_pyop2_ir
