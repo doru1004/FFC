@@ -528,7 +528,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in operand.items():
-            new_val = create_symbol(format_function(str(val)), val.t, val, 1)
+            sym_name = format_function(str(val))
+            new_val = create_symbol(sym_name, val.t, val, 1, iden=sym_name)
             operand[key] = new_val
         return operand
 
