@@ -566,55 +566,55 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def sqrt(self, o, *operands):
         #print("\n\nVisiting Sqrt: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["sqrt"])
+        return self._math_function(operands, format["sqrt"][self.parameters["format"]])
 
     def exp(self, o, *operands):
         #print("\n\nVisiting Exp: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["exp"])
+        return self._math_function(operands, format["exp"][self.parameters["format"]])
 
     def ln(self, o, *operands):
         #print("\n\nVisiting Ln: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["ln"])
+        return self._math_function(operands, format["ln"][self.parameters["format"]])
 
     def cos(self, o, *operands):
         #print("\n\nVisiting Cos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["cos"])
+        return self._math_function(operands, format["cos"][self.parameters["format"]])
 
     def sin(self, o, *operands):
         #print("\n\nVisiting Sin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["sin"])
+        return self._math_function(operands, format["sin"][self.parameters["format"]])
 
     def tan(self, o, *operands):
         #print("\n\nVisiting Tan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["tan"])
+        return self._math_function(operands, format["tan"][self.parameters["format"]])
 
     def cosh(self, o, *operands):
         #print("\n\nVisiting Cosh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["cosh"])
+        return self._math_function(operands, format["cosh"][self.parameters["format"]])
 
     def sinh(self, o, *operands):
         #print("\n\nVisiting Sinh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["sinh"])
+        return self._math_function(operands, format["sinh"][self.parameters["format"]])
 
     def tanh(self, o, *operands):
         #print("\n\nVisiting Tanh: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["tanh"])
+        return self._math_function(operands, format["tanh"][self.parameters["format"]])
 
     def acos(self, o, *operands):
         #print("\n\nVisiting Acos: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["acos"])
+        return self._math_function(operands, format["acos"][self.parameters["format"]])
 
     def asin(self, o, *operands):
         #print("\n\nVisiting Asin: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["asin"])
+        return self._math_function(operands, format["asin"][self.parameters["format"]])
 
     def atan(self, o, *operands):
         #print("\n\nVisiting Atan: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["atan"])
+        return self._math_function(operands, format["atan"][self.parameters["format"]])
 
     def erf(self, o, *operands):
         #print("\n\nVisiting Erf: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
-        return self._math_function(operands, format["erf"])
+        return self._math_function(operands, format["erf"][self.parameters["format"]])
 
     def bessel_i(self, o, *operands):
         #print("\n\nVisiting Bessel_I: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
