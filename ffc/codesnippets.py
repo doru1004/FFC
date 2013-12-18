@@ -135,6 +135,7 @@ compute_jacobian[Cell("triangle")] = _compute_jacobian_triangle_2d
 compute_jacobian[Cell("triangle", 3)] = _compute_jacobian_triangle_3d
 compute_jacobian[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_3d
 compute_jacobian[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_prism_3d
+compute_jacobian[OuterProductCell(Cell("triangle", 3),Cell("interval"))] = _compute_jacobian_prism_3d
 
 # Code snippets for computing Jacobian inverses
 
@@ -195,6 +196,7 @@ compute_jacobian_inverse[Cell("triangle")] = _compute_jacobian_inverse_triangle_
 compute_jacobian_inverse[Cell("triangle", 3)] = _compute_jacobian_inverse_triangle_3d
 compute_jacobian_inverse[Cell("tetrahedron")] = _compute_jacobian_inverse_tetrahedron_3d
 compute_jacobian_inverse[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_inverse_prism_3d
+compute_jacobian_inverse[OuterProductCell(Cell("triangle", 3),Cell("interval"))] = _compute_jacobian_inverse_prism_3d
 
 # Code snippet for scale factor
 
