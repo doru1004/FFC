@@ -450,7 +450,7 @@ const unsigned int vertex%(restriction)s2 = edge_vertices[facet%(restriction)s][
 """
 
 _facet_normal_3D_2D_tail = """
-const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
+const double t%(restriction)s_length = {sqrt}(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
 t%(restriction)s1 /= t%(restriction)s_length;
 t%(restriction)s2 /= t%(restriction)s_length;
@@ -460,7 +460,7 @@ const double ndott%(restriction)s = t%(restriction)s0*n%(restriction)s0 + t%(res
 n%(restriction)s0 -= ndott%(restriction)s*t%(restriction)s0;
 n%(restriction)s1 -= ndott%(restriction)s*t%(restriction)s1;
 n%(restriction)s2 -= ndott%(restriction)s*t%(restriction)s2;
-const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
+const double n%(restriction)s_length = {sqrt}(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 
 // Normalize
 n%(restriction)s0 /= n%(restriction)s_length;
@@ -476,7 +476,7 @@ double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restricti
 double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
 double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
 double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
-""" + _facet_normal_3D_2D_tail
+""" + _facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
 
 _pyop2_facet_normal_3D_2D = _facet_normal_3D_2D_head + """
 double n%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 0][0];
@@ -486,7 +486,7 @@ double n%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction
 double t%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 0][0];
 double t%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 4][0];
 double t%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 8][0];
-""" + _facet_normal_3D_2D_tail
+""" + _facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
 
 _facet_normal_3D_1D_head = """
 // Compute facet normal
