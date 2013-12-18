@@ -272,7 +272,8 @@ format.update({
                                  "pyop2": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction, pyop2_facet_normal)},
     "generate cell volume":     {"ufc": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume),
                                  "pyop2": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume)},
-    "generate circumradius":    lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i),
+    "generate circumradius":    {"ufc": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, ufc_circumradius),
+                                 "pyop2": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, pyop2_circumradius)},
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
@@ -622,7 +623,7 @@ def _generate_cell_volume(tdim, gdim, domain_type, cell_volume):
         error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
-def _generate_circumradius(tdim, gdim, domain_type):
+def _generate_circumradius(tdim, gdim, domain_type, circumradius):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
