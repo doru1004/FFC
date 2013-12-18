@@ -39,8 +39,8 @@ __old__ = ["evaluate_f",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "ufc_normal_direction", "pyop2_normal_direction",
            "ufc_facet_normal", "pyop2_facet_normal", "ip_coordinates",
-           "cell_volume", "circumradius", "facet_area",
-           "min_facet_edge_length", "max_facet_edge_length",
+           "ufc_cell_volume", "pyop2_cell_volume", "circumradius",
+           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "orientation_snippet"]
 
 __all__ += __old__
@@ -535,27 +535,39 @@ const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 
 
 _cell_volume_1D = """\
 // Cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+_ufc_cell_volume_1D = _cell_volume_1D.format(abs='std::abs')
+_pyop2_cell_volume_1D = _cell_volume_1D.format(abs='fabs')
 
 _cell_volume_2D = """\
 // Cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+_ufc_cell_volume_2D = _cell_volume_2D.format(abs='std::abs')
+_pyop2_cell_volume_2D = _cell_volume_2D.format(abs='fabs')
 
 _cell_volume_2D_1D = """\
 // Cell volume of interval in 2D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+_ufc_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='std::abs')
+_pyop2_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='fabs')
 
 _cell_volume_3D = """\
 // Cell volume
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/6.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;"""
+_ufc_cell_volume_3D = _cell_volume_3D.format(abs='std::abs')
+_pyop2_cell_volume_3D = _cell_volume_3D.format(abs='fabs')
 
 _cell_volume_3D_1D = """\
 // Cell volume of interval in 3D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+_ufc_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='std::abs')
+_pyop2_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='fabs')
 
 _cell_volume_3D_2D = """\
 // Cell volume of triangle in 3D
-const double volume%(restriction)s = std::abs(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+_ufc_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='std::abs')
+_pyop2_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='fabs')
 
 _circumradius_1D = """\
 // Compute circumradius; in 1D it is equal to half the cell length
