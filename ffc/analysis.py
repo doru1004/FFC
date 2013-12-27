@@ -205,7 +205,7 @@ def _attach_integral_metadata(form_data, parameters):
                                                     r,
                                                     form_data.unique_sub_elements,
                                                     form_data.element_replace_map)
-                info("quadrature_degree: auto --> %d" % qd)
+                info("quadrature_degree: auto --> " + str(qd))
                 integral_metadata["quadrature_degree"] = qd
             else:
                 info("quadrature_degree: %d" % qd)
@@ -342,8 +342,12 @@ def _auto_select_quadrature_degree(integrand, representation, elements, element_
 
 def _check_quadrature_degree(degree, top_dim):
     """Check that quadrature degree does not result in a unreasonable high
-    number of integration points."""
-    num_points = ((degree + 1 + 1) // 2)**top_dim
+    number of integration points - non-OPE case only"""
+    if isinstance(degree, tuple):
+        num_points = 0
+    else:
+        num_points = ((degree + 1 + 1) // 2)**top_dim
+
     if num_points >= 100:
         warning_blue("WARNING: The number of integration points for each cell will be: %d" % num_points)
         warning_blue("         Consider using the option 'quadrature_degree' to reduce the number of points")
