@@ -121,7 +121,7 @@ def create_element(ufl_element):
         return _cache[element_signature]
 
     # Create regular FIAT finite element
-    if isinstance(ufl_element, ufl.FiniteElement) or isinstance(ufl_element, ufl.OuterProductElement) or isinstance(ufl_element, ufl.EnrichedElement):
+    if isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement)):
         element = _create_fiat_element(ufl_element)
 
     # Create mixed element (implemented by FFC)

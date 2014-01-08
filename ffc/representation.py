@@ -81,14 +81,20 @@ def compute_ir(analysis, parameters):
     form_datas, elements, element_numbers = analysis
 
     # Compute representation of elements
-    info("Computing representation of %d elements" % len(elements))
-    ir_elements = [_compute_element_ir(e, i, element_numbers) \
-                       for (i, e) in enumerate(elements)]
+    if not parameters["format"] == "pyop2":
+        info("Computing representation of %d elements" % len(elements))
+        ir_elements = [_compute_element_ir(e, i, element_numbers) \
+                           for (i, e) in enumerate(elements)]
+    else:
+        ir_elements = [None]
 
     # Compute representation of dofmaps
-    info("Computing representation of %d dofmaps" % len(elements))
-    ir_dofmaps = [_compute_dofmap_ir(e, i, element_numbers)
-                      for (i, e) in enumerate(elements)]
+    if not parameters["format"] == "pyop2":
+        info("Computing representation of %d dofmaps" % len(elements))
+        ir_dofmaps = [_compute_dofmap_ir(e, i, element_numbers)
+                          for (i, e) in enumerate(elements)]
+    else:
+        ir_dofmaps = [None]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
@@ -97,9 +103,12 @@ def compute_ir(analysis, parameters):
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
     # Compute representation of forms
-    info("Computing representation of forms")
-    ir_forms = [_compute_form_ir(fd, i, element_numbers) \
-                    for (i, fd) in enumerate(form_datas)]
+    if not parameters["format"] == "pyop2":
+        info("Computing representation of forms")
+        ir_forms = [_compute_form_ir(fd, i, element_numbers) \
+                        for (i, fd) in enumerate(form_datas)]
+    else:
+        ir_forms = [None]
 
     end()
 
