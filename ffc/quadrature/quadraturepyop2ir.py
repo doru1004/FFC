@@ -584,6 +584,10 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         used_psi_tables.update(u_psi_tables)
         used_nzcs.update(u_nzcs)
 
+        import os
+        if os.environ.get('PYOP2_PROBLEM_NAME') == 'TEST_RUN':
+            os.environ['PYOP2_PROBLEM_SIZE'] = str(loop[0][2])
+
         # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
 
         entry_ir = []
@@ -592,6 +596,9 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             it_vars = entry if len(loop) > 0 else (0,)
             local_tensor = pyop2.Symbol(f_A(''), it_vars)
             # Right hand side
+            if str(value) == 'FE0[ip][j]*FE0[ip][k]*W36[ip]*det':
+                import operator
+                value.vrs.sort(key=operator.attrgetter('loop_index'))
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 outerproduct(j,k)" if len(loop) == 2 else ""
             entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
