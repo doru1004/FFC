@@ -260,10 +260,10 @@ class QuadratureTransformer(QuadratureTransformerBase):
         if isinstance(expo, IntValue):
             return {(): format["power"](val, expo.value())}
         elif isinstance(expo, FloatValue):
-            return {(): format["std power"](val, format["floating point"](expo.value()))}
+            return {(): format["std power"][self.parameters["format"]](val, format["floating point"](expo.value()))}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)
-            return {(): format["std power"](val, exp[()])}
+            return {(): format["std power"][self.parameters["format"]](val, exp[()])}
         else:
             error("power does not support this exponent: " + repr(expo))
 
@@ -271,7 +271,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
         #print("\n\nVisiting Abs: " + repr(o) + "with operands: " + "\n".join(map(repr,operands)))
 
         # Prefetch formats to speed up code generation.
-        f_abs = format["absolute value"]
+        f_abs = format["absolute value"][self.parameters["format"]]
 
         # TODO: Are these safety checks needed? Need to check for None?
         ffc_assert(len(operands) == 1 and () in operands[0] and len(operands[0]) == 1, \

@@ -173,13 +173,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
-            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
+            sym = create_symbol(format["std power"][self.parameters["format"]](str(val), exp), val.t, val, 1)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)[()]
 #            print "pow exp: ", exp
 #            print "pow val: ", val
-            sym = create_symbol(format["std power"](str(val), exp), val.t, val, 1)
+            sym = create_symbol(format["std power"][self.parameters["format"]](str(val), exp), val.t, val, 1)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -193,7 +193,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        new_val = create_symbol(format["absolute value"](str(val)), val.t, val, 1)
+        new_val = create_symbol(format["absolute value"][self.parameters["format"]](str(val)), val.t, val, 1)
         return {():new_val}
 
     # -------------------------------------------------------------------------
@@ -580,7 +580,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             trans_set = set([f_scale_factor])
             value = create_product([val, weight,
                                     create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
-        
+
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).
         trans_set.update(map(lambda x: str(x), value.get_unique_vars(GEO)))
