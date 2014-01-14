@@ -33,7 +33,7 @@ form representation type.
 # UFL modules
 from ufl.common import istr, tstr
 #from ufl.integral import Measure
-from ufl.finiteelement import MixedElement, EnrichedElement
+from ufl.finiteelement import MixedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 
@@ -276,9 +276,6 @@ def _get_sub_elements(element):
     sub_elements = [element]
     if isinstance(element, MixedElement):
         for e in element.sub_elements():
-            sub_elements += _get_sub_elements(e)
-    elif isinstance(element, EnrichedElement):
-        for e in element._elements:
             sub_elements += _get_sub_elements(e)
     return sub_elements
 

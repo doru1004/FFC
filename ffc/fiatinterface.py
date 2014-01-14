@@ -38,7 +38,7 @@ from ffc.timeelements import RadauElement as FFCRadauElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
-from ffc.enrichedelement import EnrichedElement, SpaceOfReals
+from ffc.enrichedelement import SpaceOfReals
 
 # Dictionary mapping from cell to dimension
 from ufl.geometry import cell2dim
@@ -83,7 +83,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Real",
                       "Bubble",
                       "Quadrature",
-                      "OuterProductElement")
+                      "OuterProductElement",
+                      "EnrichedElement")
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
 # cellname_to_num_entities contains the same information, but with string keys.)
@@ -120,18 +121,13 @@ def create_element(ufl_element):
         return _cache[element_signature]
 
     # Create regular FIAT finite element
-    if isinstance(ufl_element, ufl.FiniteElement) or isinstance(ufl_element, ufl.OuterProductElement):
+    if isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement)):
         element = _create_fiat_element(ufl_element)
 
     # Create mixed element (implemented by FFC)
     elif isinstance(ufl_element, ufl.MixedElement):
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
-
-    # Create element union (implemented by FFC)
-    elif isinstance(ufl_element, ufl.EnrichedElement):
-        elements = [create_element(e) for e in ufl_element._elements]
-        element = EnrichedElement(elements)
 
     # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.RestrictedElement):
@@ -175,14 +171,6 @@ def _create_fiat_element(ufl_element):
     elif family == "Quadrature":
         element = FFCQuadratureElement(ufl_element)
 
-    elif family == "Bubble":
-    # Handle Bubble element as RestrictedElement of P_{k} to interior
-        # Create FIAT cell
-        fiat_cell = reference_cell(cell)
-        V = FIAT.supported_elements["Lagrange"](fiat_cell, degree)
-        dim = cell.geometric_dimension()
-        element =  RestrictedElement(V, _indices(V, "interior", dim), None)
-
     else:
         # Check if finite element family is supported by FIAT
         if not family in FIAT.supported_elements:
@@ -191,8 +179,13 @@ def _create_fiat_element(ufl_element):
         # Create FIAT finite element
         ElementClass = FIAT.supported_elements[family]
         
+        # Enriched case
+        if isinstance(ufl_element, ufl.EnrichedElement):
+            A = create_element(ufl_element._elements[0])
+            B = create_element(ufl_element._elements[1])
+            element = ElementClass(A, B)
         # Tensor Product case
-        if isinstance(ufl_element, ufl.HDiv):
+        elif isinstance(ufl_element, ufl.HDiv):
             element = FIAT.Hdiv(create_element(ufl_element._element))
         elif isinstance(ufl_element, ufl.HCurl):
             element = FIAT.Hcurl(create_element(ufl_element._element))
