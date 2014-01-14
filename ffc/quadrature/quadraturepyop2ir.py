@@ -269,8 +269,8 @@ def _tabulate_tensor(ir, parameters):
     # Add common (for cell, exterior and interior) geo code.
     # @@@: adding circumradius, area, ... after the jacobian
     if domain_type != "point":
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
