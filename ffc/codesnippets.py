@@ -573,7 +573,7 @@ _circumradius_1D = """\
 // Compute circumradius; in 1D it is equal to half the cell length
 const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
 _ufc_circumradius_1D = _circumradius_1D.format(abs='std::abs')
-_pyop2_circumradius_1D = _circumradius_1D.format(abs='abs')
+_pyop2_circumradius_1D = _circumradius_1D.format(abs='fabs')
 
 _ufc_circumradius_2D = """\
 // Compute circumradius of triangle in 2D
@@ -595,7 +595,7 @@ _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
 const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
 _ufc_circumradius_2D_1D = _circumradius_2D_1D.format(abs='std::abs')
-_pyop2_circumradius_2D_1D = _circumradius_2D_1D.format(abs='abs')
+_pyop2_circumradius_2D_1D = _circumradius_2D_1D.format(abs='fabs')
 
 _ufc_circumradius_3D = """\
 // Compute circumradius
@@ -633,7 +633,7 @@ _circumradius_3D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
 const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
 _ufc_circumradius_3D_1D = _circumradius_3D_1D.format(abs='std::abs')
-_pyop2_circumradius_3D_1D = _circumradius_3D_1D.format(abs='abs')
+_pyop2_circumradius_3D_1D = _circumradius_3D_1D.format(abs='fabs')
 
 _ufc_circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
