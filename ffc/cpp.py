@@ -1,4 +1,4 @@
-"Thisd module defines rules and algorithms for generating C++ code."
+"This module defines rules and algorithms for generating C++ code."
 
 # Copyright (C) 2009-2013 Anders Logg
 #
@@ -272,6 +272,16 @@ format.update({
                                   "pyop2": lambda tdim, gdim, r=None: pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]} },
     "facet determinant interior":    lambda tdim, gdim, r=None: \
                                 pyop2_facet_determinant_interior[tdim][gdim] % {"restriction": _choose_map[r]},
+    "bottom facet determinant":  lambda cell, r=None: \
+                                bottom_facet_determinant[cell] % {"restriction": _choose_map[r]},
+    "top facet determinant":  lambda cell, r=None: \
+                                top_facet_determinant[cell] % {"restriction": _choose_map[r]},
+    "top facet determinant interior":  lambda cell, r=None: \
+                                top_facet_determinant_interior[cell] % {"restriction": _choose_map[r]},
+    "vert facet determinant":   lambda cell, r=None: \
+                                vert_facet_determinant[cell] % {"restriction": _choose_map[r]},
+    "vert facet determinant interior":lambda cell, r=None: \
+                                vert_facet_determinant_interior[cell] % {"restriction": _choose_map[r]},
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          {"ufc": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, ufc_normal_direction, ufc_facet_normal),
                                  "pyop2": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction, pyop2_facet_normal)},
@@ -311,8 +321,23 @@ format.update({
     "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
               "%s_exterior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
+    "classname exterior_facet_bottom_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_exterior_facet_bottom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname exterior_facet_top_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_exterior_facet_top_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname exterior_facet_vert_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_exterior_facet_vert_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
     "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
               "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname interior_facet_horiz_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_interior_facet_horiz_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname interior_facet_vert_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_interior_facet_vert_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
@@ -561,6 +586,8 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     f   - denotes facets if applicable, range(element.num_facets()).
 
+    fh, fv - denotes horiz_facets and vert_facets
+
     v   - denotes vertices if applicable, range(num_vertices).
 
     C   - is the component number if any (flattened in the case of tensor valued functions)
@@ -575,6 +602,10 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     if entitytype == "facet":
         name += "_f%d" % entity
+    elif entitytype == "horiz_facet":
+        name += "_fh%d" % entity
+    elif entitytype == "vert_facet":
+        name += "_fv%d" % entity
     elif entitytype == "vertex":
         name += "_v%d" % entity
 

@@ -69,10 +69,10 @@ def _arglist(ir):
     itindices = {0: "int j", 1: "int k"}
 
     arglist = [localtensor, coordinates] + coeffs
-    if ir['domain_type'] == 'exterior_facet':
-        arglist.append( "unsigned int *facet_p")
-    if ir['domain_type'] == 'interior_facet':
-        arglist.append( "unsigned int facet_p[2]")
+    if ir["domain_type"] in ("exterior_facet", "exterior_facet_vert"):
+        arglist.append("unsigned int *facet_p")
+    if ir["domain_type"] in ("interior_facet", "interior_facet_vert"):
+        arglist.append("unsigned int facet_p[2]")
     arglist += [itindices[i] for i in range(rank)]
 
     return ", ".join(arglist)

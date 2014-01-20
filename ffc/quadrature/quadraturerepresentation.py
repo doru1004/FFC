@@ -142,16 +142,15 @@ def _parse_optimise_parameters(parameters):
     return optimise_parameters
 
 def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
-    num_facets = cell_to_num_entities(cell)[-2]
-    num_vertices = cell_to_num_entities(cell)[0]
-
+    num_vertices = ir["num_vertices"]
+    num_facets = ir["num_facets"]
     if domain_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, domain_type)
 
-    elif domain_type == "exterior_facet":
+    elif domain_type in ("exterior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert"):
         # Compute transformed integrals.
         terms = [None]*num_facets
         for i in range(num_facets):
@@ -159,7 +158,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, c
             transformer.update_facets(i, None)
             terms[i] = _transform_integrals(transformer, integrals_dict, domain_type)
 
-    elif domain_type == "interior_facet":
+    elif domain_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
@@ -184,6 +183,14 @@ def _create_quadrature_points_and_weights(domain_type, cell, degree, rule):
         (points, weights) = create_quadrature(cell, degree, rule)
     elif domain_type == "exterior_facet" or domain_type == "interior_facet":
         (points, weights) = create_quadrature(cell.facet_cellname(), degree, rule)
+    elif domain_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
+        (points, weights) = create_quadrature(cell.facet_horiz, degree[0], rule)
+    elif domain_type in ("exterior_facet_vert", "interior_facet_vert"):
+        if cell.topological_dimension() == 2:
+            # extruded interval, so the vertical facet is a line, not an OP cell
+            (points, weights) = create_quadrature(cell.facet_vert, degree[1], rule)
+        else:
+            (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
     elif domain_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     else:
@@ -216,7 +223,7 @@ def domain_to_entity_dim(domain_type, cell):
     tdim = cell.topological_dimension()
     if domain_type == "cell":
         entity_dim = tdim
-    elif (domain_type == "exterior_facet" or domain_type == "interior_facet"):
+    elif (domain_type in ("exterior_facet", "interior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert", "interior_facet_horiz", "interior_facet_vert")):
         entity_dim = tdim - 1
     elif domain_type == "point":
         entity_dim = 0
@@ -224,13 +231,18 @@ def domain_to_entity_dim(domain_type, cell):
         error("Unknown domain_type: %s" % domain_type)
     return entity_dim
 
-def _map_entity_points(cell, points, entity_dim, entity):
+def _map_entity_points(cell, points, entity_dim, entity, domain_type):
     # Not sure if this is useful anywhere else than in _tabulate_psi_table!
     tdim = cell.topological_dimension()
     if entity_dim == tdim:
         return points
     elif entity_dim == tdim-1:
-        return map_facet_points(points, entity)
+        if domain_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
+            return map_facet_points(points, entity, "horiz_facet")
+        elif domain_type in ("exterior_facet_vert", "interior_facet_vert"):
+            return map_facet_points(points, entity, "vert_facet")
+        else:
+            return map_facet_points(points, entity, "facet")
     elif entity_dim == 0:
         return (reference_cell_vertices(cell.cellname())[entity],)
 
@@ -239,10 +251,15 @@ def _tabulate_psi_table(domain_type, cell, element, deriv_order, points):
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
     entity_dim = domain_to_entity_dim(domain_type, cell)
-    num_entities = cell_to_num_entities(cell)[entity_dim]
+    if domain_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
+        num_entities = 2  # top and bottom
+    elif domain_type in ("exterior_facet_vert", "interior_facet_vert"):
+        num_entities = cell_to_num_entities(cell._A)[-2]  # number of "base cell" facets
+    else:
+        num_entities = cell_to_num_entities(cell)[entity_dim]
     psi_table = {}
     for entity in range(num_entities):
-        entity_points = _map_entity_points(cell, points, entity_dim, entity)
+        entity_points = _map_entity_points(cell, points, entity_dim, entity, domain_type)
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if domain_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)

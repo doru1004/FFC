@@ -24,7 +24,7 @@
 # Last changed: 2013-11-03
 
 # Python modules
-from numpy import array, polymul
+from numpy import array, polymul, zeros, ones
 
 # UFL and FIAT modules
 import ufl
@@ -53,8 +53,11 @@ def cell_to_num_entities(cell):
         if isinstance(cell, ufl.OuterProductCell):
             temp_a = cell_to_num_entities(cell._A)
             temp_b = cell_to_num_entities(cell._B)
-            # this is both correct and useless
-            return tuple(polymul(temp_a, temp_b))
+            temp_list = polymul(temp_a, temp_b)
+            # set number of facets to 0 for safety -- we will
+            # deal with OP facets separately
+            temp_list[-2] = 0
+            return tuple(temp_list)
         else:
             return cellname_to_num_entities[cell.cellname()]
 
@@ -224,7 +227,7 @@ def create_quadrature(cell, num_points):
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
-def map_facet_points(points, facet):
+def map_facet_points(points, facet, facet_type):
     """
     Map points from the e (UFC) reference simplex of dimension d - 1
     to a given facet on the (UFC) reference simplex of dimension d.
@@ -240,33 +243,64 @@ def map_facet_points(points, facet):
     if dim == 1:
         return [[(0.0,), (1.0,)][facet]]
 
-    # Get the FIAT reference cell for this dimension
-    # TEMPORARY HACK! WILL NEED TO BE CHANGED FOR OUTER PRODUCT FACETS
-    temphack = {2: "triangle", 3: "tetrahedron"}
-    fiat_cell = reference_cell(temphack[dim])
+    if facet_type == "facet":
+        # Get the FIAT reference cell for this dimension
+        # This was a temporary hack that doesn't work with
+        # facets on OuterProduct cells!
+        # However, facets on OP cells we have facet_type "horiz_facet"
+        # or "vert_facet", so don't reach here
+        temphack = {2: "triangle", 3: "tetrahedron"}
+        fiat_cell = reference_cell(temphack[dim])
 
-    # Extract vertex coordinates from cell and map of facet index to
-    # indicent vertex indices
-    vertex_coordinates = fiat_cell.get_vertices()
-    facet_vertices = fiat_cell.get_topology()[dim-1]
+        # Extract vertex coordinates from cell and map of facet index to
+        # indicent vertex indices
+        vertex_coordinates = fiat_cell.get_vertices()
+        facet_vertices = fiat_cell.get_topology()[dim-1]
 
-    #vertex_coordinates = \
-    #    {1: ((0.,), (1.,)),
-    #     2: ((0., 0.), (1., 0.), (0., 1.)),
-    #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
+        #vertex_coordinates = \
+        #    {1: ((0.,), (1.,)),
+        #     2: ((0., 0.), (1., 0.), (0., 1.)),
+        #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
 
-    # Facet vertices
-    #facet_vertices = \
-    #    {2: ((1, 2), (0, 2), (0, 1)),
-    #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
+        # Facet vertices
+        #facet_vertices = \
+        #    {2: ((1, 2), (0, 2), (0, 1)),
+        #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
 
-    # Compute coordinates and map the points
-    coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
-    new_points = []
-    for point in points:
-        w = (1.0 - sum(point),) + tuple(point)
-        x = tuple(sum([w[i]*array(coordinates[i]) for i in range(len(w))]))
-        new_points += [x]
+        # Compute coordinates and map the points
+        coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
+        new_points = []
+        for point in points:
+            w = (1.0 - sum(point),) + tuple(point)
+            x = tuple(sum([w[i]*array(coordinates[i]) for i in range(len(w))]))
+            new_points += [x]
+
+    elif facet_type == "horiz_facet":
+        # A horiz_facet must be on the bottom (0) or top (1) of an
+        # extruded cell. Simply take the point and append a final
+        # coordinate of 0.0 or 1.0, as appropriate.
+        if facet == 0:
+            new_points = zeros((points.shape[0], points.shape[1]+1))
+            new_points[:,:-1] = points
+        elif facet == 1:
+            new_points = ones((points.shape[0], points.shape[1]+1))
+            new_points[:,:-1] = points
+        else:
+            raise Exception("facet number must be 0 or 1 for horiz_facet")
+
+    elif facet_type == "vert_facet":
+        # A vert_facet is one of the sides of the extruded cell. In particular,
+        # the vertical facets are themselves OuterProductCells.
+        # To do the mapping, we temporarily ignore the last coordinate
+        # of each point. We send the remaining coordinates back through
+        # this function as a normal facet of one degree less,
+        # then append the last coordinate back on.
+        temp_points = map_facet_points(points[:,:-1], facet, "facet")
+        new_points = zeros((points.shape[0], points.shape[1]+1))
+        new_points[:,:-1] = temp_points
+        new_points[:,-1] = points[:,-1]
+    else:
+        raise Exception("facet type not recognised")
 
     return new_points
 
