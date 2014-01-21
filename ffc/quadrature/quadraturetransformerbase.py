@@ -796,7 +796,7 @@ class QuadratureTransformerBase(Transformer):
                 for i, s in enumerate(sets):
                     new_terms[loop][0][i].update(s)
                 new_terms[loop][1].append((entry, value, ops))
-
+        
         return new_terms
 
     def _create_loop_entry(self, key, f_nzc):
@@ -805,6 +805,10 @@ class QuadratureTransformerBase(Transformer):
 
         # Whether we're generating PyOP2 code
         pyop2 = self.parameters["format"]=="pyop2"
+        
+        import os
+        from ast import literal_eval
+        nozeros = literal_eval(os.environ.get('PYOP2_NOZEROS'))
 
         # Create appropriate entries.
         # FIXME: We only support rank 0, 1 and 2.
@@ -857,7 +861,8 @@ class QuadratureTransformerBase(Transformer):
                 if pyop2:
                     entry = (entry_j, entry_k)
                 else:
-                    entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
+                    #entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
+                    entry = (entry_j, entry_k)
                 loop = tuple(loop)
         elif len(key) == 4:
             # PyOP2 mixed element case only.

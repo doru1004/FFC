@@ -73,7 +73,7 @@ format.update({
     "float declaration":              "double",
     "int declaration":                "int",
     "uint declaration":               "unsigned int",
-    "static const uint declaration":  { "ufc": "static const unsigned int", "pyop2": "const unsigned uint" },
+    "static const uint declaration":  { "ufc": "static const unsigned int", "pyop2": "static const unsigned int" },
     "static const float declaration": { "ufc": "static const double", "pyop2": "const double" },
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
@@ -157,6 +157,7 @@ def _pyop2_element_tensor(entries):
 
 def _ufc_element_tensor(i):
     return "A[%s]" % i
+    #return "A" + "".join(["[%s]" % j for j in i])
 
 def _ufc_coefficient(count, index):
     return format["component"]("w", [count, index])

@@ -55,8 +55,13 @@ def _arglist(ir):
 
     rank = len(ir['prim_idims'])
     float = format['float declaration']
+    prim_idims  = ir["prim_idims"]
+    domain_type = ir["domain_type"]
 
-    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
+    if domain_type == 'interior_facet':
+        prim_idims = [d*2 for d in prim_idims]
+
+    extent = "".join(map(lambda x: "[%s]" % x, prim_idims or (1,)))
     localtensor = "%s A%s" % (float, extent)
 
     coordinates = "%s **vertex_coordinates" % float
@@ -73,7 +78,7 @@ def _arglist(ir):
         arglist.append( "unsigned int *facet_p")
     if ir['domain_type'] == 'interior_facet':
         arglist.append( "unsigned int facet_p[2]")
-    arglist += [itindices[i] for i in range(rank)]
+    #arglist += [itindices[i] for i in range(rank)]
 
     return ", ".join(arglist)
 
@@ -484,7 +489,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
     f_scale_factor  = format["scale factor"]
     f_iadd          = format["iadd"]
     f_add           = format["add"]
-    f_A             = format["element tensor"][p_format]
+    f_A             = format["element tensor"][p_format]  # [p_format]
     f_loop          = format["generate loop"]
     f_B             = format["basis constant"]
 
@@ -529,7 +534,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
 
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
-
+            
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
@@ -541,9 +546,9 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if p_format=="pyop2":
+        #if p_format=="pyop2":
             # Strip out primary indices from loop
-            loop = [ l for l in loop if l[0] in format["free indices"] ]
+        #    loop = [ l for l in loop if l[0] in format["free indices"] ]
         code += f_loop(lines, loop)
 
     return code, num_ops

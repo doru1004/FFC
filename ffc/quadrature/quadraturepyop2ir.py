@@ -596,9 +596,6 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             it_vars = entry if len(loop) > 0 else (0,)
             local_tensor = pyop2.Symbol(f_A(''), it_vars)
             # Right hand side
-            if str(value) == 'FE0[ip][j]*FE0[ip][k]*W36[ip]*det':
-                import operator
-                value.vrs.sort(key=operator.attrgetter('loop_index'))
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 outerproduct(j,k)" if len(loop) == 2 else ""
             entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
