@@ -97,6 +97,18 @@ double J%(restriction)s[2];
 compute_jacobian_interval_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
+_compute_jacobian_quad_2d = """\
+// Compute Jacobian
+double J%(restriction)s[2];
+compute_jacobian_quad_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_quad_3d = """\
+// Compute Jacobian
+double J%(restriction)s[2];
+compute_jacobian_quad_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
 _compute_jacobian_interval_3d = """\
 // Compute Jacobian
 double J%(restriction)s[3];
@@ -130,6 +142,9 @@ compute_jacobian_prism_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 compute_jacobian = {}
 compute_jacobian[Cell("interval")] = _compute_jacobian_interval_1d
 compute_jacobian[Cell("interval", 2)] = _compute_jacobian_interval_2d
+compute_jacobian[OuterProductCell(Cell("interval"),Cell("interval"))] = _compute_jacobian_quad_2d
+compute_jacobian[OuterProductCell(Cell("interval", 2),Cell("interval"))] = _compute_jacobian_quad_2d
+compute_jacobian[OuterProductCell(Cell("interval", 3),Cell("interval"))] = _compute_jacobian_quad_3d
 compute_jacobian[Cell("interval", 3)] = _compute_jacobian_interval_3d
 compute_jacobian[Cell("triangle")] = _compute_jacobian_triangle_2d
 compute_jacobian[Cell("triangle", 3)] = _compute_jacobian_triangle_3d
@@ -151,6 +166,20 @@ _compute_jacobian_inverse_interval_2d = """\
 double K%(restriction)s[2];
 double detJ%(restriction)s;
 compute_jacobian_inverse_interval_2d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
+"""
+
+_compute_jacobian_inverse_quad_2d = """\
+// Compute Jacobian inverse and determinant
+double K%(restriction)s[2];
+double detJ%(restriction)s;
+compute_jacobian_inverse_quad_2d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
+"""
+
+_compute_jacobian_inverse_quad_3d = """\
+// Compute Jacobian inverse and determinant
+double K%(restriction)s[2];
+double detJ%(restriction)s;
+compute_jacobian_inverse_quad_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
 """
 
 _compute_jacobian_inverse_interval_3d = """\
@@ -192,6 +221,9 @@ compute_jacobian_inverse = {}
 compute_jacobian_inverse[Cell("interval")] = _compute_jacobian_inverse_interval_1d
 compute_jacobian_inverse[Cell("interval", 2)] = _compute_jacobian_inverse_interval_2d
 compute_jacobian_inverse[Cell("interval", 3)] = _compute_jacobian_inverse_interval_3d
+compute_jacobian_inverse[OuterProductCell(Cell("interval"),Cell("interval"))] = _compute_jacobian_quad_2d
+compute_jacobian_inverse[OuterProductCell(Cell("interval", 2),Cell("interval"))] = _compute_jacobian_quad_2d
+compute_jacobian_inverse[OuterProductCell(Cell("interval", 3),Cell("interval"))] = _compute_jacobian_quad_3d
 compute_jacobian_inverse[Cell("triangle")] = _compute_jacobian_inverse_triangle_2d
 compute_jacobian_inverse[Cell("triangle", 3)] = _compute_jacobian_inverse_triangle_3d
 compute_jacobian_inverse[Cell("tetrahedron")] = _compute_jacobian_inverse_tetrahedron_3d
