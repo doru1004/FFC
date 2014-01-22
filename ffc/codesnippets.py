@@ -386,13 +386,8 @@ _ufc_normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
 """
 
-# The facet check is different from the ufc case because
-# PyOP2/Firedrake uses UFC numbering for intervals:
-# e1 v0 ---- v1 e0
-# whereas DOLFIN uses
-# e0 v0 ---- v1 e1
 _pyop2_normal_direction_1D = """\
-const bool direction = facet%(restriction)s == 1 ? vertex_coordinates%(restriction)s[0][0] > vertex_coordinates%(restriction)s[1][0] : vertex_coordinates%(restriction)s[1][0] > vertex_coordinates%(restriction)s[0][0];
+const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0][0] > vertex_coordinates%(restriction)s[1][0] : vertex_coordinates%(restriction)s[1][0] > vertex_coordinates%(restriction)s[0][0];
 """
 
 _ufc_normal_direction_2D = """\
