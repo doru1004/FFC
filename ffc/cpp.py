@@ -265,8 +265,8 @@ format.update({
     "compute_jacobian_inverse": lambda cell, r=None: \
                                 compute_jacobian_inverse[cell] % {"restriction": _choose_map[r]},
     "orientation":              lambda tdim, gdim, r=None: orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
-    "facet determinant":        { "ufc": lambda gdim, tdim, r=None: ufc_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]},
-                                  "pyop2": lambda gdim, tdim, r=None: pyop2_facet_determinant[gdim][tdim] % {"restriction": _choose_map[r]} },
+    "facet determinant":        { "ufc": lambda tdim, gdim, r=None: ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]},
+                                  "pyop2": lambda tdim, gdim, r=None: pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]} },
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          {"ufc": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, ufc_normal_direction, ufc_facet_normal),
                                  "pyop2": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction, pyop2_facet_normal)},

@@ -513,7 +513,7 @@ double n%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction
 double t%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 0][0];
 double t%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 4][0];
 double t%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 8][0];
-""" + _facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
+""" + _facet_normal_3D_2D_tail.format(sqrt='sqrt')
 
 _facet_normal_3D_1D_head = """
 // Compute facet normal
