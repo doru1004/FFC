@@ -200,7 +200,7 @@ def _tabulate_tensor(ir, parameters):
             common += ["unsigned int facet_1 = facet_p[1];"]
             common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
             # Note that the following line is unsafe for isoparametric elements.
-            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % (num_vertices * gdim)]
+            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % (num_vertices)]
 
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
@@ -223,13 +223,16 @@ def _tabulate_tensor(ir, parameters):
         # @@@: Jacobian snippet
         jacobi_code  = ""
         for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian"](cell, r=_r)
+            jacobi_code += format["compute_jacobian_int"](cell, r=_r)
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
+        if p_format == "pyop2" and gdim >= 2:
+            jacobi_code += "\n\n" + format["facet determinant int"](cell, r="+")
+        else:
+            jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
         jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:

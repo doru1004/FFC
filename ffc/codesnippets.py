@@ -31,7 +31,8 @@ from ufl import Cell, OuterProductCell
 
 __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "header_h", "header_c", "footer",
-           "compute_jacobian", "compute_jacobian_inverse"]
+           "compute_jacobian", "compute_jacobian_int",
+           "compute_jacobian_inverse", "pyop2_facet_determinant_int"]
 
 __old__ = ["evaluate_f",
            "ufc_facet_determinant", "pyop2_facet_determinant",
@@ -152,6 +153,75 @@ compute_jacobian[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_3d
 compute_jacobian[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_prism_3d
 compute_jacobian[OuterProductCell(Cell("triangle", 3),Cell("interval"))] = _compute_jacobian_prism_3d
 
+# Code snippets for computing Jacobians for interior facets
+
+_compute_jacobian_interval_int_1d = """\
+// Compute Jacobian
+double J%(restriction)s[1];
+compute_jacobian_interval_int_1d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_interval_int_2d = """\
+// Compute Jacobian
+double J%(restriction)s[2];
+compute_jacobian_interval_int_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_quad_int_2d = """\
+// Compute Jacobian
+double J%(restriction)s[4];
+compute_jacobian_quad_int_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_quad_int_3d = """\
+// Compute Jacobian
+double J%(restriction)s[6];
+compute_jacobian_quad_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_interval_int_3d = """\
+// Compute Jacobian
+double J%(restriction)s[3];
+compute_jacobian_interval_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_triangle_int_2d = """\
+// Compute Jacobian
+double J%(restriction)s[4];
+compute_jacobian_triangle_int_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_triangle_int_3d = """\
+// Compute Jacobian
+double J%(restriction)s[6];
+compute_jacobian_triangle_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_tetrahedron_int_3d = """\
+// Compute Jacobian
+double J%(restriction)s[9];
+compute_jacobian_tetrahedron_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+_compute_jacobian_prism_int_3d = """\
+// Compute Jacobian
+double J%(restriction)s[9];
+compute_jacobian_prism_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
+compute_jacobian_int = {}
+compute_jacobian_int[Cell("interval")] = _compute_jacobian_interval_int_1d
+compute_jacobian_int[Cell("interval", 2)] = _compute_jacobian_interval_int_2d
+compute_jacobian_int[OuterProductCell(Cell("interval"),Cell("interval"))] = _compute_jacobian_quad_int_2d
+compute_jacobian_int[OuterProductCell(Cell("interval", 2),Cell("interval"))] = _compute_jacobian_quad_int_2d
+compute_jacobian_int[OuterProductCell(Cell("interval", 3),Cell("interval"))] = _compute_jacobian_quad_int_3d
+compute_jacobian_int[Cell("interval", 3)] = _compute_jacobian_interval_int_3d
+compute_jacobian_int[Cell("triangle")] = _compute_jacobian_triangle_int_2d
+compute_jacobian_int[Cell("triangle", 3)] = _compute_jacobian_triangle_int_3d
+compute_jacobian_int[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_int_3d
+compute_jacobian_int[OuterProductCell(Cell("triangle"),Cell("interval"))] = _compute_jacobian_prism_int_3d
+compute_jacobian_int[OuterProductCell(Cell("triangle", 3),Cell("interval"))] = _compute_jacobian_prism_int_3d
+
 # Code snippets for computing Jacobian inverses
 
 _compute_jacobian_inverse_interval_1d = """\
@@ -271,12 +341,12 @@ const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 _pyop2_facet_determinant_2D = """\
 // Get vertices on edge
 unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
-const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
-const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = vertex_coordinates%(restriction)s[v1 + 0][0] - vertex_coordinates%(restriction)s[v0 + 0][0];
-const double dx1 = vertex_coordinates%(restriction)s[v1 + 3][0] - vertex_coordinates%(restriction)s[v0 + 3][0];
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
 const double det = sqrt(dx0*dx0 + dx1*dx1);
 """
 
@@ -320,31 +390,31 @@ const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 _pyop2_facet_determinant_3D = """\
 // Get vertices on face
 unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
-const unsigned int v0 = face_vertices[facet%(restriction)s][0];
-const unsigned int v1 = face_vertices[facet%(restriction)s][1];
-const unsigned int v2 = face_vertices[facet%(restriction)s][2];
+const unsigned int v0 = face_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = face_vertices[facet%%(restriction)s][1];
+const unsigned int v2 = face_vertices[facet%%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
-const double a0 = (vertex_coordinates%(restriction)s[v0 + 4][0]*vertex_coordinates%(restriction)s[v1 + 8][0] +
-                   vertex_coordinates%(restriction)s[v0 + 8][0]*vertex_coordinates%(restriction)s[v2 + 4][0] +
-                   vertex_coordinates%(restriction)s[v1 + 4][0]*vertex_coordinates%(restriction)s[v2 + 8][0])
-                - (vertex_coordinates%(restriction)s[v2 + 4][0]*vertex_coordinates%(restriction)s[v1 + 8][0] +
-                   vertex_coordinates%(restriction)s[v2 + 8][0]*vertex_coordinates%(restriction)s[v0 + 4][0] +
-                   vertex_coordinates%(restriction)s[v1 + 4][0]*vertex_coordinates%(restriction)s[v0 + 8][0]);
+const double a0 = (vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
 
-const double a1 = (vertex_coordinates%(restriction)s[v0 + 8][0]*vertex_coordinates%(restriction)s[v1 + 0][0] +
-                   vertex_coordinates%(restriction)s[v0 + 0][0]*vertex_coordinates%(restriction)s[v2 + 8][0] +
-                   vertex_coordinates%(restriction)s[v1 + 8][0]*vertex_coordinates%(restriction)s[v2 + 0][0])
-                - (vertex_coordinates%(restriction)s[v2 + 8][0]*vertex_coordinates%(restriction)s[v1 + 0][0] +
-                   vertex_coordinates%(restriction)s[v2 + 0][0]*vertex_coordinates%(restriction)s[v0 + 8][0] +
-                   vertex_coordinates%(restriction)s[v1 + 8][0]*vertex_coordinates%(restriction)s[v0 + 0][0]);
+const double a1 = (vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0]);
 
-const double a2 = (vertex_coordinates%(restriction)s[v0 + 0][0]*vertex_coordinates%(restriction)s[v1 + 4][0] +
-                   vertex_coordinates%(restriction)s[v0 + 4][0]*vertex_coordinates%(restriction)s[v2 + 0][0] +
-                   vertex_coordinates%(restriction)s[v1 + 0][0]*vertex_coordinates%(restriction)s[v2 + 4][0])
-                - (vertex_coordinates%(restriction)s[v2 + 0][0]*vertex_coordinates%(restriction)s[v1 + 4][0] +
-                   vertex_coordinates%(restriction)s[v2 + 4][0]*vertex_coordinates%(restriction)s[v0 + 0][0] +
-                   vertex_coordinates%(restriction)s[v1 + 0][0]*vertex_coordinates%(restriction)s[v0 + 4][0]);
+const double a2 = (vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0]);
 
 const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
 """
@@ -355,6 +425,43 @@ _ufc_facet_determinant_3D_2D = """\
 static unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
 const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%(restriction)s[3*v1 + 0] - vertex_coordinates%(restriction)s[3*v0 + 0];
+const double dx1 = vertex_coordinates%(restriction)s[3*v1 + 1] - vertex_coordinates%(restriction)s[3*v0 + 1];
+const double dx2 = vertex_coordinates%(restriction)s[3*v1 + 2] - vertex_coordinates%(restriction)s[3*v0 + 2];
+const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+_pyop2_facet_determinant_3D_2D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+_facet_determinant_3D_1D = """\
+// Facet determinant 1D in 3D (vertex)
+const double det = 1.0;
+"""
+
+pyop2_facet_determinant_int = {}
+pyop2_facet_determinant_int[Cell("tetrahedron", 3)] = _pyop2_facet_determinant_3D %{'x':0, 'y':8, 'z':16}
+pyop2_facet_determinant_int[Cell("triangle", 2)] = _pyop2_facet_determinant_2D % {'x':0, 'y':6}
+pyop2_facet_determinant_int[Cell("triangle", 3)] = _pyop2_facet_determinant_3D_2D % {'x':0, 'y':6, 'z':12}
+pyop2_facet_determinant_int[Cell("interval", 2)] = _facet_determinant_2D_1D
+pyop2_facet_determinant_int[Cell("interval", 3)] = _facet_determinant_3D_1D
+
+_pyop2_facet_determinant_prism_tb_3D = """\
+// Get vertices on face
+unsigned int face_vertices[2][3] = {{0, 2, 4}, {1, 3, 5}};
 
 // Compute scale factor (length of edge scaled by length of reference interval)
 const double dx0 = vertex_coordinates%(restriction)s[3*v1 + 0] - vertex_coordinates%(restriction)s[3*v0 + 0];
