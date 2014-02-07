@@ -861,8 +861,7 @@ class QuadratureTransformerBase(Transformer):
                 if pyop2:
                     entry = (entry_j, entry_k)
                 else:
-                    #entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
-                    entry = (entry_j, entry_k)
+                    entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
                 loop = tuple(loop)
         elif len(key) == 4:
             # PyOP2 mixed element case only.

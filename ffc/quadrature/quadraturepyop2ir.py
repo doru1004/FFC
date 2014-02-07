@@ -585,8 +585,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         used_nzcs.update(u_nzcs)
 
         import os
-        if os.environ.get('PYOP2_PROBLEM_NAME') == 'TEST_RUN':
-            os.environ['PYOP2_PROBLEM_SIZE'] = str(loop[0][2])
+        os.environ['PYOP2_PROBLEM_SIZE'] = str(loop[0][2])
 
         # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
 
