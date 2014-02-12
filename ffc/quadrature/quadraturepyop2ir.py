@@ -223,14 +223,14 @@ def _tabulate_tensor(ir, parameters):
         # @@@: Jacobian snippet
         jacobi_code  = ""
         for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian_int"](cell, r=_r)
+            jacobi_code += format["compute_jacobian_interior"](cell, r=_r)
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
         if p_format == "pyop2" and gdim >= 2:
-            jacobi_code += "\n\n" + format["facet determinant int"](cell, r="+")
+            jacobi_code += "\n\n" + format["facet determinant interior"](tdim, gdim, r="+")
         else:
             jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
         jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
