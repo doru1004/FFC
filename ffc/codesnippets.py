@@ -446,13 +446,13 @@ double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[0][0] - vertex_coordinates%(restriction)s[4][0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[0][0] - vertex_coordinates%(restriction)s[1][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[3][0];
 }
 else
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[4][0] - vertex_coordinates%(restriction)s[0][0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[1][0] - vertex_coordinates%(restriction)s[2][0];
+  n%(restriction)s0 = vertex_coordinates%(restriction)s[1][0] - vertex_coordinates%(restriction)s[0][0];
+  n%(restriction)s1 = vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[2][0];
 }
 const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
 n%(restriction)s0 /= n%(restriction)s_length;
@@ -507,12 +507,12 @@ double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restricti
 
 _pyop2_facet_normal_3D_2D = _facet_normal_3D_2D_head + """
 double n%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 0][0];
-double n%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 4][0];
-double n%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 8][0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 3][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 3][0];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 6][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s0 + 6][0];
 
 double t%(restriction)s0 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 0][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 0][0];
-double t%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 4][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 4][0];
-double t%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 8][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 8][0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 3][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 3][0];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[vertex%(restriction)s2 + 6][0] - vertex_coordinates%(restriction)s[vertex%(restriction)s1 + 6][0];
 """ + _facet_normal_3D_2D_tail.format(sqrt='sqrt')
 
 _facet_normal_3D_1D_head = """
@@ -533,13 +533,13 @@ if (facet%(restriction)s == 0)
 {
   n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[3];
   n%(restriction)s1 = vertex_coordinates%(restriction)s[1] - vertex_coordinates%(restriction)s[4];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[5];
+  n%(restriction)s2 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[5];
 }
 else
 {
   n%(restriction)s0 = vertex_coordinates%(restriction)s[3] - vertex_coordinates%(restriction)s[0];
   n%(restriction)s1 = vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[1];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[2];
+  n%(restriction)s2 = vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[2];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 """ + _facet_normal_3D_1D_tail
@@ -549,13 +549,13 @@ if (facet%(restriction)s == 0)
 {
   n%(restriction)s0 = vertex_coordinates%(restriction)s[0][0] - vertex_coordinates%(restriction)s[1][0];
   n%(restriction)s1 = vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[3][0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[4][0] - vertex_coordinates%(restriction)s[5][0];
+  n%(restriction)s2 = vertex_coordinates%(restriction)s[4][0] - vertex_coordinates%(restriction)s[5][0];
 }
 else
 {
   n%(restriction)s0 = vertex_coordinates%(restriction)s[1][0] - vertex_coordinates%(restriction)s[0][0];
   n%(restriction)s1 = vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[2][0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[5][0] - vertex_coordinates%(restriction)s[4][0];
+  n%(restriction)s2 = vertex_coordinates%(restriction)s[5][0] - vertex_coordinates%(restriction)s[4][0];
 }
 const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 """ + _facet_normal_3D_1D_tail
