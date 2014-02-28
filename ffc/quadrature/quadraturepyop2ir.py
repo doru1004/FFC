@@ -193,14 +193,15 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
         if domain_type == "exterior_facet":
-            jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim)
-            jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
             jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
             if tdim == 3:
                 jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
                 jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
         elif domain_type == "exterior_facet_vert":
-            jacobi_code += "\n\n" + format["vert facet determinant"](cell)
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
             # OTHER THINGS NOT IMPLEMENTED YET
         else:
             raise RuntimeError("Invalid domain_type")
@@ -229,12 +230,8 @@ def _tabulate_tensor(ir, parameters):
             # NEED TO THINK ABOUT THIS FOR EXTRUSION
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
-        if domain_type == "exterior_facet_bottom":
-            jacobi_code += "\n\n" + format["bottom facet determinant"](cell)
-        elif domain_type == "exterior_facet_top":
-            jacobi_code += "\n\n" + format["top facet determinant"](cell)
-        else:
-            raise RuntimeError("Invalid domain_type")
+        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
         # THE REST IS NOT IMPLEMENTED YET
 
     elif domain_type in ("interior_facet", "interior_facet_vert"):
@@ -279,12 +276,8 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
 
         if domain_type == "interior_facet":
-            if p_format == "pyop2":
-                jacobi_code += "\n\n" + format["facet determinant interior"](tdim, gdim, r="+")
-                jacobi_code += "\n\n" + format["generate normal interior"](tdim, gdim, domain_type)
-            else:
-                jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
-                jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
 
             jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
             if tdim == 3:
@@ -293,7 +286,8 @@ def _tabulate_tensor(ir, parameters):
 
         elif domain_type == "interior_facet_vert":
             # THE REST IS NOT IMPLEMENTED YET
-            jacobi_code += "\n\n" + format["vert facet determinant interior"](cell, r="+")
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
         else:
             raise RuntimeError("Invalid domain_type")
 
@@ -325,7 +319,8 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
 
         # TODO: verify that this is correct (we think it is)
-        jacobi_code += "\n\n" + format["top facet determinant interior"](cell, r="+")
+        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
         # THE REST IS NOT IMPLEMENTED YET
 
     elif domain_type == "point":

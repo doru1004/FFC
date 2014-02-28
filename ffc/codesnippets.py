@@ -41,8 +41,14 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "map_onto_physical", "fiat_coordinate_map", "transform_snippet",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "ufc_normal_direction", "pyop2_normal_direction",
-           "ufc_facet_normal", "pyop2_facet_normal", "ip_coordinates",
-           "pyop2_normal_direction_interior", "pyop2_facet_normal_interior",
+           "pyop2_normal_direction_interior", "bottom_normal_direction",
+           "top_normal_direction", "top_normal_direction_interior",
+           "vert_normal_direction", "vert_normal_direction_interior",
+           "ufc_facet_normal", "pyop2_facet_normal",
+           "pyop2_facet_normal_interior", "bottom_facet_normal",
+           "top_facet_normal", "top_facet_normal_interior",
+           "vert_facet_normal", "vert_facet_normal_interior",
+           "ip_coordinates",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
            "pyop2_circumradius", "facet_area", "min_facet_edge_length",
            "max_facet_edge_length", "ufc_orientation_snippet", "pyop2_orientation_snippet"]
@@ -602,59 +608,39 @@ const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_co
 const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
+# Go back to a wonky facet determinant for better normal compatibility
+# (we need the quantities a0, a1, a2).  Pick three vertices from each
+# vertical facet to calculate the determinant, ignoring the 4th.
 _vert_facet_determinant_prism = """\
 // Get vertices on face
-unsigned int face_vertices[3][4] = {{2, 3, 4, 5}, {0, 1, 4, 5}, {0, 1, 2, 3}};
+unsigned int face_vertices[3][3] = {{2, 3, 4}, {0, 1, 4}, {0, 1, 2}};
 const unsigned int v0 = face_vertices[facet%%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%%(restriction)s][2];
-const unsigned int v3 = face_vertices[facet%%(restriction)s][3];
 
-// Compute the area of the side facet which is a quadrilateral cell
-// Using Bretschneider's formula compute the squared lengths of the sides and diagonals
-const double d1_sq = (vertex_coordinates%%(restriction)s[v2 + %(x)s][0] - vertex_coordinates%%(restriction)s[v1 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(x)s][0] - vertex_coordinates%%(restriction)s[v1 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v2 + %(y)s][0] - vertex_coordinates%%(restriction)s[v1 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(y)s][0] - vertex_coordinates%%(restriction)s[v1 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v2 + %(z)s][0] - vertex_coordinates%%(restriction)s[v1 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(z)s][0] - vertex_coordinates%%(restriction)s[v1 + %(z)s][0]);
+// Compute scale factor (area of face scaled by area of reference facet)
+const double a0 = (vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
 
-const double d2_sq = (vertex_coordinates%%(restriction)s[v0 + %(x)s][0] - vertex_coordinates%%(restriction)s[v3 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(x)s][0] - vertex_coordinates%%(restriction)s[v3 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v0 + %(y)s][0] - vertex_coordinates%%(restriction)s[v3 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(y)s][0] - vertex_coordinates%%(restriction)s[v3 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v0 + %(z)s][0] - vertex_coordinates%%(restriction)s[v3 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(z)s][0] - vertex_coordinates%%(restriction)s[v3 + %(z)s][0]);
+const double a1 = (vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0]);
 
-const double a_sq =  (vertex_coordinates%%(restriction)s[v3 + %(x)s][0] - vertex_coordinates%%(restriction)s[v1 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v3 + %(x)s][0] - vertex_coordinates%%(restriction)s[v1 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v3 + %(y)s][0] - vertex_coordinates%%(restriction)s[v1 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v3 + %(y)s][0] - vertex_coordinates%%(restriction)s[v1 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v3 + %(z)s][0] - vertex_coordinates%%(restriction)s[v1 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v3 + %(z)s][0] - vertex_coordinates%%(restriction)s[v1 + %(z)s][0]);
+const double a2 = (vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0]);
 
-const double b_sq =  (vertex_coordinates%%(restriction)s[v2 + %(x)s][0] - vertex_coordinates%%(restriction)s[v3 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(x)s][0] - vertex_coordinates%%(restriction)s[v3 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v2 + %(y)s][0] - vertex_coordinates%%(restriction)s[v3 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(y)s][0] - vertex_coordinates%%(restriction)s[v3 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v2 + %(z)s][0] - vertex_coordinates%%(restriction)s[v3 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v2 + %(z)s][0] - vertex_coordinates%%(restriction)s[v3 + %(z)s][0]);
-
-const double c_sq =  (vertex_coordinates%%(restriction)s[v0 + %(x)s][0] - vertex_coordinates%%(restriction)s[v2 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(x)s][0] - vertex_coordinates%%(restriction)s[v2 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v0 + %(y)s][0] - vertex_coordinates%%(restriction)s[v2 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(y)s][0] - vertex_coordinates%%(restriction)s[v2 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v0 + %(z)s][0] - vertex_coordinates%%(restriction)s[v2 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v0 + %(z)s][0] - vertex_coordinates%%(restriction)s[v2 + %(z)s][0]);
-
-const double d_sq =  (vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) +
-                     (vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]) *
-                     (vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
-
-const double det = 0.25 * sqrt(4 * d1_sq * d2_sq - (a_sq + c_sq - b_sq - d_sq)*(a_sq + c_sq - b_sq - d_sq));
+const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
 """
 
 vert_facet_determinant = {}
@@ -723,6 +709,73 @@ pyop2_normal_direction_interior = {1: {1: _pyop2_normal_direction_1D,
                           2: {2: _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
                               3: _normal_direction_3D_2D},
                           3: {3: _pyop2_normal_direction_3D % {'y': 8, 'z': 16}}}
+
+# Extruded facet normals
+
+# this is like the above 2d case with 'facet' replaced by the index of a vertex
+# not on the facet ('other')
+_horiz_normal_direction_quad_2d = """\
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[%(other)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[%(other)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+"""
+# like the immersed thing above, leave blank
+_horiz_normal_direction_quad_3d = ""
+
+# this is like the above 3d case with 'facet' replaced by the index of a vertex
+# not on the facet ('other')
+_horiz_normal_direction_prism_3d = """\
+const bool direction = a0*(vertex_coordinates%%(restriction)s[%(other)s][0] - vertex_coordinates%%(restriction)s[v0][0]) + a1*(vertex_coordinates%%(restriction)s[%(other)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) + a2*(vertex_coordinates%%(restriction)s[%(other)s + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]) < 0;
+"""
+
+bottom_normal_direction = {}
+bottom_normal_direction[OuterProductCell(Cell("interval"), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 1}
+bottom_normal_direction[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 1}
+bottom_normal_direction[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_normal_direction_quad_3d
+bottom_normal_direction[OuterProductCell(Cell("triangle"), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 1}
+bottom_normal_direction[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 1}
+
+top_normal_direction = {}
+top_normal_direction[OuterProductCell(Cell("interval"), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 0}
+top_normal_direction[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 0}
+top_normal_direction[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_normal_direction_quad_3d
+top_normal_direction[OuterProductCell(Cell("triangle"), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 0}
+top_normal_direction[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 0}
+
+top_normal_direction_interior = {}
+top_normal_direction_interior[OuterProductCell(Cell("interval"), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 8, 'other': 0}
+top_normal_direction_interior[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _horiz_normal_direction_quad_2d % {'x': 0, 'y': 8, 'other': 0}
+top_normal_direction_interior[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_normal_direction_quad_3d
+top_normal_direction_interior[OuterProductCell(Cell("triangle"), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24, 'other': 0}
+top_normal_direction_interior[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _horiz_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24, 'other': 0}
+
+# This is like the above 2d case.  We need the index of a vertex not on the facet,
+# which we don't know until runtime.  In the simplex case, the facet is numbered
+# by the vertex *not* on the facet.  Here, NASTY HACK, 2*'facet' works.
+_vert_normal_direction_quad_2d = """\
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+"""
+# like the immersed thing above, leave blank
+_vert_normal_direction_quad_3d = ""
+
+# This is like the above 3d case.  We need the index of a vertex not on the facet,
+# which we don't know until runtime.  In the simplex case, the facet is numbered
+# by the vertex *not* on the facet.  Here, NASTY HACK, 2*'facet' works.
+_vert_normal_direction_prism_3d = """\
+const bool direction = a0*(vertex_coordinates%%(restriction)s[2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) + a1*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) + a2*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]) < 0;
+"""
+
+vert_normal_direction = {}
+vert_normal_direction[OuterProductCell(Cell("interval"), Cell("interval"))] = _vert_normal_direction_quad_2d % {'x': 0, 'y': 4}
+vert_normal_direction[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _vert_normal_direction_quad_2d % {'x': 0, 'y': 4}
+vert_normal_direction[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _vert_normal_direction_quad_3d
+vert_normal_direction[OuterProductCell(Cell("triangle"), Cell("interval"))] = _vert_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12}
+vert_normal_direction[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _vert_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12}
+
+vert_normal_direction_interior = {}
+vert_normal_direction_interior[OuterProductCell(Cell("interval"), Cell("interval"))] = _vert_normal_direction_quad_2d % {'x': 0, 'y': 8}
+vert_normal_direction_interior[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _vert_normal_direction_quad_2d % {'x': 0, 'y': 8}
+vert_normal_direction_interior[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _vert_normal_direction_quad_3d
+vert_normal_direction_interior[OuterProductCell(Cell("triangle"), Cell("interval"))] = _vert_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24}
+vert_normal_direction_interior[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _vert_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24}
 
 # Facet normals
 
@@ -802,6 +855,26 @@ const unsigned int vertex%%(restriction)s2 = edge_vertices[facet%%(restriction)s
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
 """
 
+_ufc_facet_normal_3D_2D_middle = """
+double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+
+double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
+"""
+
+_pyop2_facet_normal_3D_2D_middle = """
+double n%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + 0][0];
+double n%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(y)s][0];
+double n%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(z)s][0];
+
+double t%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + 0][0];
+double t%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(y)s][0];
+double t%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(z)s][0];
+"""
+
 _ufc_facet_normal_3D_2D_tail = """
 const double t%(restriction)s_length = {sqrt}(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
@@ -840,25 +913,9 @@ n%%(restriction)s1 /= n%%(restriction)s_length;
 n%%(restriction)s2 /= n%%(restriction)s_length;
 """
 
-_ufc_facet_normal_3D_2D = _ufc_facet_normal_3D_2D_head + """
-double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
-double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
-double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+_ufc_facet_normal_3D_2D = _ufc_facet_normal_3D_2D_head + _ufc_facet_normal_3D_2D_middle + _ufc_facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
 
-double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
-double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
-double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
-""" + _ufc_facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
-
-_pyop2_facet_normal_3D_2D = _pyop2_facet_normal_3D_2D_head + """
-double n%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + 0][0];
-double n%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(y)s][0];
-double n%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(z)s][0];
-
-double t%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + 0][0];
-double t%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(y)s][0];
-double t%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(z)s][0];
-""" + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+_pyop2_facet_normal_3D_2D = _pyop2_facet_normal_3D_2D_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
 
 _ufc_facet_normal_3D_1D_head = """
 // Compute facet normal
@@ -938,6 +995,69 @@ pyop2_facet_normal_interior = {1: {1: _facet_normal_1D,
                       2: {2: _facet_normal_2D,
                           3: _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12}},
                       3: {3: _facet_normal_3D}}
+
+# This code snippet needs modifying for the 'quad-in-3D' case
+_horiz_facet_normal_quad_head = """
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%%(restriction)s0 = %(other)s;
+
+// Get coordinates corresponding the vertex opposite this
+const unsigned int vertex%%(restriction)s1 = v0;
+const unsigned int vertex%%(restriction)s2 = v1;
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+"""
+
+_horiz_facet_normal_quad = _horiz_facet_normal_quad_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+
+# Same 2*facet hack
+_vert_facet_normal_quad_head = """
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%%(restriction)s0 = 2*facet%%(restriction)s;
+
+// Get coordinates corresponding the vertex opposite this
+const unsigned int vertex%%(restriction)s1 = v0;
+const unsigned int vertex%%(restriction)s2 = v1;
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+"""
+
+_vert_facet_normal_quad = _vert_facet_normal_quad_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+
+bottom_facet_normal = {}
+bottom_facet_normal[OuterProductCell(Cell("interval"), Cell("interval"))] = _facet_normal_2D
+bottom_facet_normal[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _facet_normal_2D
+bottom_facet_normal[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8, 'other': 1}
+bottom_facet_normal[OuterProductCell(Cell("triangle"), Cell("interval"))] = _facet_normal_3D
+bottom_facet_normal[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _facet_normal_3D
+
+top_facet_normal = {}
+top_facet_normal[OuterProductCell(Cell("interval"), Cell("interval"))] = _facet_normal_2D
+top_facet_normal[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _facet_normal_2D
+top_facet_normal[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8, 'other': 0}
+top_facet_normal[OuterProductCell(Cell("triangle"), Cell("interval"))] = _facet_normal_3D
+top_facet_normal[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _facet_normal_3D
+
+top_facet_normal_interior = {}
+top_facet_normal_interior[OuterProductCell(Cell("interval"), Cell("interval"))] = _facet_normal_2D
+top_facet_normal_interior[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _facet_normal_2D
+top_facet_normal_interior[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _horiz_facet_normal_quad % {'x': 0, 'y': 8, 'z': 16, 'other': 0}
+top_facet_normal_interior[OuterProductCell(Cell("triangle"), Cell("interval"))] = _facet_normal_3D
+top_facet_normal_interior[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _facet_normal_3D
+
+vert_facet_normal = {}
+vert_facet_normal[OuterProductCell(Cell("interval"), Cell("interval"))] = _facet_normal_2D
+vert_facet_normal[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _facet_normal_2D
+vert_facet_normal[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _vert_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8}
+vert_facet_normal[OuterProductCell(Cell("triangle"), Cell("interval"))] = _facet_normal_3D
+vert_facet_normal[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _facet_normal_3D
+
+vert_facet_normal_interior = {}
+vert_facet_normal_interior[OuterProductCell(Cell("interval"), Cell("interval"))] = _facet_normal_2D
+vert_facet_normal_interior[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _facet_normal_2D
+vert_facet_normal_interior[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _vert_facet_normal_quad % {'x': 0, 'y': 8, 'z': 16}
+vert_facet_normal_interior[OuterProductCell(Cell("triangle"), Cell("interval"))] = _facet_normal_3D
+vert_facet_normal_interior[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _facet_normal_3D
 
 _cell_volume_1D = """\
 // Cell volume
