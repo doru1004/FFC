@@ -233,7 +233,10 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["facet determinant interior"](tdim, gdim, r="+")
         else:
             jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+        if p_format == 'pyop2':
+            jacobi_code += "\n\n" + format["generate normal interior"](tdim, gdim, domain_type)
+        else:
+            jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")

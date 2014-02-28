@@ -274,6 +274,7 @@ format.update({
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          {"ufc": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, ufc_normal_direction, ufc_facet_normal),
                                  "pyop2": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction, pyop2_facet_normal)},
+    "generate normal interior": lambda tdim, gdim, i: _generate_normal(tdim, gdim, i, pyop2_normal_direction_interior, pyop2_facet_normal_interior),
     "generate cell volume":     {"ufc": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume),
                                  "pyop2": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume)},
     "generate circumradius":    {"ufc": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, ufc_circumradius),
