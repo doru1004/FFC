@@ -40,6 +40,7 @@ __old__ = ["evaluate_f", "ufc_facet_determinant",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "ufc_normal_direction", "pyop2_normal_direction",
            "ufc_facet_normal", "pyop2_facet_normal", "ip_coordinates",
+           "pyop2_normal_direction_interior", "pyop2_facet_normal_interior",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
            "pyop2_circumradius", "facet_area", "min_facet_edge_length",
            "max_facet_edge_length", "orientation_snippet"]
@@ -517,6 +518,20 @@ _normal_direction_2D_1D = ""
 _normal_direction_3D_2D = ""
 _normal_direction_3D_1D = ""
 
+ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
+                            2: _normal_direction_2D_1D,
+                            3: _normal_direction_3D_1D},
+                        2: {2: _ufc_normal_direction_2D,
+                            3: _normal_direction_3D_2D},
+                        3: {3: _ufc_normal_direction_3D}}
+
+pyop2_normal_direction = {1: {1: _pyop2_normal_direction_1D,
+                              2: _normal_direction_2D_1D,
+                              3: _normal_direction_3D_1D},
+                          2: {2: _pyop2_normal_direction_2D,
+                              3: _normal_direction_3D_2D},
+                          3: {3: _pyop2_normal_direction_3D}}
+
 # Facet normals
 
 _facet_normal_1D = """
@@ -666,6 +681,20 @@ else
 }
 const double n%(restriction)s_length = sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 """ + _facet_normal_3D_1D_tail
+
+ufc_facet_normal = {1: {1: _facet_normal_1D,
+                        2: _ufc_facet_normal_2D_1D,
+                        3: _ufc_facet_normal_3D_1D},
+                    2: {2: _facet_normal_2D,
+                        3: _ufc_facet_normal_3D_2D},
+                    3: {3: _facet_normal_3D}}
+
+pyop2_facet_normal = {1: {1: _facet_normal_1D,
+                          2: _pyop2_facet_normal_2D_1D,
+                          3: _pyop2_facet_normal_3D_1D},
+                      2: {2: _facet_normal_2D,
+                          3: _pyop2_facet_normal_3D_2D},
+                      3: {3: _facet_normal_3D}}
 
 _cell_volume_1D = """\
 // Cell volume
@@ -1080,34 +1109,6 @@ ip_coordinates = {1: (3, _ip_coordinates_1D),
                   3: (21, _ip_coordinates_3D)}
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
-
-ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
-                            2: _normal_direction_2D_1D,
-                            3: _normal_direction_3D_1D},
-                        2: {2: _ufc_normal_direction_2D,
-                            3: _normal_direction_3D_2D},
-                        3: {3: _ufc_normal_direction_3D}}
-
-pyop2_normal_direction = {1: {1: _pyop2_normal_direction_1D,
-                              2: _normal_direction_2D_1D,
-                              3: _normal_direction_3D_1D},
-                          2: {2: _pyop2_normal_direction_2D,
-                              3: _normal_direction_3D_2D},
-                          3: {3: _pyop2_normal_direction_3D}}
-
-ufc_facet_normal = {1: {1: _facet_normal_1D,
-                        2: _ufc_facet_normal_2D_1D,
-                        3: _ufc_facet_normal_3D_1D},
-                    2: {2: _facet_normal_2D,
-                        3: _ufc_facet_normal_3D_2D},
-                    3: {3: _facet_normal_3D}}
-
-pyop2_facet_normal = {1: {1: _facet_normal_1D,
-                          2: _pyop2_facet_normal_2D_1D,
-                          3: _pyop2_facet_normal_3D_1D},
-                      2: {2: _facet_normal_2D,
-                          3: _pyop2_facet_normal_3D_2D},
-                      3: {3: _facet_normal_3D}}
 
 ufc_cell_volume = {1: {1: _ufc_cell_volume_1D,
                        2: _ufc_cell_volume_2D_1D,
