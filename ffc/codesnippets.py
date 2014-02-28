@@ -43,7 +43,7 @@ __old__ = ["evaluate_f", "ufc_facet_determinant",
            "pyop2_normal_direction_interior", "pyop2_facet_normal_interior",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
            "pyop2_circumradius", "facet_area", "min_facet_edge_length",
-           "max_facet_edge_length", "orientation_snippet"]
+           "max_facet_edge_length", "ufc_orientation_snippet", "pyop2_orientation_snippet"]
 
 __all__ += __old__
 
@@ -320,13 +320,19 @@ const double det = fabs(detJ);"""
 
 # FIXME: Old stuff below that should be cleaned up or moved to ufc_geometry.h
 
-orientation_snippet = """
+ufc_orientation_snippet = """
 // Check orientation
 if (cell_orientation == -1)
   throw std::runtime_error("cell orientation must be defined (not -1)");
 // (If cell_orientation == 1 = down, multiply det(J) by -1)
 else if (cell_orientation == 1)
   detJ%(restriction)s *= -1;
+"""
+pyop2_orientation_snippet = """
+if (cell_orientation == -1)
+   abort();
+else if (cell_orientation == 1)
+   detJ%(restriction)s *= -1;
 """
 
 evaluate_f = "f.evaluate(vals, y, c);"

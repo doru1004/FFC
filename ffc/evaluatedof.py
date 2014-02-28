@@ -152,7 +152,7 @@ def _required_declarations(ir):
         code.append("")
         code.append(format["compute_jacobian_inverse"](cell))
         code.append("")
-        code.append(format["orientation"](tdim, gdim))
+        code.append(format["orientation"]["ufc"](tdim, gdim))
 
     return "\n".join(code)
 

@@ -149,7 +149,7 @@ def _evaluate_basis_derivatives(data):
     code += [format["compute_jacobian"](cell)]
     code += [format["compute_jacobian_inverse"](cell)]
     if data["needs_oriented"]:
-        code += [format["orientation"](tdim, gdim)]
+        code += [format["orientation"]["ufc"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]
 
     # Compute number of derivatives that has to be computed, and
