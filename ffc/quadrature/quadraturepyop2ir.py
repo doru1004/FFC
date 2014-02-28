@@ -223,20 +223,25 @@ def _tabulate_tensor(ir, parameters):
         # @@@: Jacobian snippet
         jacobi_code  = ""
         for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian_interior"](cell, r=_r)
+
+            if p_format == "pyop2":
+                jacobi_code += format["compute_jacobian_interior"](cell, r=_r)
+            else:
+                jacobi_code += format["compute_jacobian"](cell, r=_r)
+
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
                 jacobi_code += format["orientation"](tdim, gdim)
             jacobi_code += "\n"
-        if p_format == "pyop2" and gdim >= 2:
+
+        if p_format == "pyop2":
             jacobi_code += "\n\n" + format["facet determinant interior"](tdim, gdim, r="+")
-        else:
-            jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
-        if p_format == 'pyop2':
             jacobi_code += "\n\n" + format["generate normal interior"](tdim, gdim, domain_type)
         else:
+            jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
@@ -276,7 +281,9 @@ def _tabulate_tensor(ir, parameters):
     # @@@: adding circumradius, area, ... after the jacobian
     if domain_type != "point":
         jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
+        if not (domain_type == "interior_facet" and p_format == "pyop2"):
+            # I can't be bothered to special-case another batch of codesnippets
+            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
