@@ -57,7 +57,7 @@ def interpolate_vertex_values(ir):
         code.append(format["compute_jacobian_inverse"](cell))
         if ir["needs_oriented"]:
             code.append("")
-            code.append(format["orientation"](tdim, gdim))
+            code.append(format["orientation"]["ufc"](tdim, gdim))
 
     # Compute total value dimension for (mixed) element
     total_dim = ir["physical_value_size"]
