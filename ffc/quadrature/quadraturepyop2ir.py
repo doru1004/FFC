@@ -78,7 +78,9 @@ def _arglist(ir):
 
     arglist = [localtensor, coordinates]
     # embedded manifold, passing in cell_orientation
-    if ir['needs_oriented'] and ir['cell'].topological_dimension() != ir['cell'].geometric_dimension():
+    if ir['needs_oriented'] and \
+        ir['cell'].topological_dimension() != ir['cell'].geometric_dimension() and \
+        domain_type == 'cell':
         cell_orientation = pyop2.Decl(int, pyop2.Symbol("*cell_orientation_", ()))
         arglist.append(cell_orientation)
     arglist += coeffs
@@ -291,7 +293,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
 
     # Embedded manifold, need to pass in cell orientations
-    if oriented and tdim != gdim and p_format == 'pyop2':
+    if oriented and tdim != gdim and p_format == 'pyop2' and domain_type == 'cell':
         common += ["const int cell_orientation = *cell_orientation_;"]
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
