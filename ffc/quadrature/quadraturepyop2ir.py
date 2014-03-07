@@ -76,7 +76,12 @@ def _arglist(ir):
         coeffs.append(pyop2.Decl(float, pyop2.Symbol("*%s%s" % \
             ("c" if e.family() == 'Real' else "*", n[1:] if e.family() == 'Real' else n), ())))
 
-    arglist = [localtensor, coordinates] + coeffs
+    arglist = [localtensor, coordinates]
+    # embedded manifold, passing in cell_orientation
+    if ir['needs_oriented'] and ir['cell'].topological_dimension() != ir['cell'].geometric_dimension():
+        cell_orientation = pyop2.Decl(int, pyop2.Symbol("*cell_orientation_", ()))
+        arglist.append(cell_orientation)
+    arglist += coeffs
     if ir['domain_type'] == 'exterior_facet':
         arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
     if ir['domain_type'] == 'interior_facet':
@@ -151,8 +156,8 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented:
-            jacobi_code += format["orientation"](tdim, gdim)
+        if oriented and tdim != gdim:
+            jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"][p_format]
 
@@ -181,8 +186,8 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented:
-            jacobi_code += format["orientation"](tdim, gdim)
+        if oriented and tdim != gdim:
+            jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim)
         jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
@@ -231,8 +236,8 @@ def _tabulate_tensor(ir, parameters):
 
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
-            if oriented:
-                jacobi_code += format["orientation"](tdim, gdim)
+            if oriented and tdim != gdim:
+                jacobi_code += format["orientation"][p_format](tdim, gdim)
             jacobi_code += "\n"
 
         if p_format == "pyop2":
@@ -270,8 +275,8 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += format["compute_jacobian"](cell)
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented:
-            jacobi_code += format["orientation"](tdim, gdim)
+        if oriented and tdim != gdim:
+            jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
 
     else:
@@ -285,6 +290,9 @@ def _tabulate_tensor(ir, parameters):
             # I can't be bothered to special-case another batch of codesnippets
             jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
 
+    # Embedded manifold, need to pass in cell orientations
+    if oriented and tdim != gdim and p_format == 'pyop2':
+        common += ["const int cell_orientation = *cell_orientation_;"]
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
