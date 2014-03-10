@@ -109,7 +109,7 @@ format.update({
     "bessel_j":       lambda v, n: "boost::math::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
     "bessel_k":       lambda v, n: "boost::math::cyl_bessel_k(%s, %s)" % (str(n), str(v)),
     "bessel_y":       lambda v, n: "boost::math::cyl_neumann(%s, %s)" % (str(n), str(v)),
-    "absolute value": {'ufc': lambda v: "std::abs(%s)" % str(v), 'pyop2': lambda v: "abs(%s)" % str(v)},
+    "absolute value": {'ufc': lambda v: "std::abs(%s)" % str(v), 'pyop2': lambda v: "fabs(%s)" % str(v)},
     "sqrt":           {'ufc': lambda v: "std::sqrt(%s)" % str(v), 'pyop2': lambda v: "sqrt(%s)" % str(v)},
     "addition":       lambda v: _add(v),
     "multiply":       lambda v: _multiply(v),
