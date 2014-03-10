@@ -249,8 +249,7 @@ def map_facet_points(points, facet, facet_type):
         # facets on OuterProduct cells!
         # However, facets on OP cells we have facet_type "horiz_facet"
         # or "vert_facet", so don't reach here
-        temphack = {2: "triangle", 3: "tetrahedron"}
-        fiat_cell = reference_cell(temphack[dim])
+        fiat_cell = reference_cell({2: "triangle", 3: "tetrahedron"}[dim])
 
         # Extract vertex coordinates from cell and map of facet index to
         # indicent vertex indices

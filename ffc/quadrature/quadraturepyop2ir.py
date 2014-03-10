@@ -356,8 +356,11 @@ def _tabulate_tensor(ir, parameters):
     # Add common (for cell, exterior and interior) geo code.
     # @@@: adding circumradius, area, ... after the jacobian
     if domain_type in ("cell", "exterior_facet", "interior_facet"):
-        # I can't be bothered to write another batch of codesnippets
-        # Cell volume isn't too difficult, but circumradius is bleurgh.
+        # In the other cases, these snippets are just not included
+        # in the kernel code (i.e. unsupported), as I can't be
+        # bothered to write another batch of codesnippets for a
+        # short-term fix.  Cell volume isn't actually too
+        # difficult (just points at det), but circumradius is bleurgh.
         jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, domain_type)
         if domain_type in ("cell", "exterior_facet") or p_format != "pyop2":
             # pyop2+interior has different coord layout
