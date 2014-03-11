@@ -195,7 +195,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        new_val = create_symbol(format["absolute value"][self.parameters["format"]](str(val)), val.t, val, 1)
+        var = format["absolute value"][self.parameters["format"]](str(val))
+        new_val = create_symbol(var, val.t, val, 1, iden=var)
         return {():new_val}
 
     # -------------------------------------------------------------------------
