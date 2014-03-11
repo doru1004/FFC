@@ -199,9 +199,6 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
     elif domain_type == "interior_facet":
-        # Modify the dimensions of the primary indices because we have a macro element
-        prim_idims = [d*2 for d in prim_idims]
-
         if p_format == 'pyop2':
             common += ["unsigned int facet_0 = facet_p[0];"]
             common += ["unsigned int facet_1 = facet_p[1];"]
@@ -214,7 +211,7 @@ def _tabulate_tensor(ir, parameters):
             for j in range(num_facets):
                 # Update transformer with facets and generate case code + set of used geometry terms.
                 c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                            opt_par, parameters, prim_idims)
+                                                            opt_par, parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += [nest_ir.gencode()]
                 cases[i][j] = "\n".join(case)
@@ -589,27 +586,29 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, 
         used_nzcs.update(u_nzcs)
 
         # @@@: A[0][0] += FE0[ip][j]*FE0[ip][k]*W24[ip]*det;
+
+        entry_ir = []
         for entry, value, ops in entry_vals:
             # Left hand side
-            it_vars = tuple([i for i, j in zip([f_j, f_k], list(entry))]) if len(loop) > 0 else (0,)
+            it_vars = entry if len(loop) > 0 else (0,)
             local_tensor = pyop2.Symbol(f_A(''), it_vars)
             # Right hand side
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 outerproduct(j,k)" if len(loop) == 2 else ""
-            entry_ir = pyop2.Incr(local_tensor, pyop2_rhs, pragma)
+            entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
 
     if len(loop) == 0:
-        nest = entry_ir
+        nest = pyop2.Block(entry_ir, open_scope=True)
     elif len(loop) in [1, 2]:
         it_var = c_sym(loop[0][0])
         end = c_sym(loop[0][2]) if not prim_idims else c_sym(loop[0][2]*prim_idims[0])
         nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True), "#pragma pyop2 itspace")
+                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
     if len(loop) == 2:
         it_var = c_sym(loop[1][0])
         end = c_sym(loop[1][2]) if not prim_idims else c_sym(loop[1][2]*prim_idims[1])
         nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block([entry_ir], open_scope=True), "#pragma pyop2 itspace")
+                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
         nest.children[0] = pyop2.Block([nest_k], open_scope=True)
 
     return nest, num_ops
