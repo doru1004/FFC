@@ -119,7 +119,6 @@ def _tabulate_tensor(ir, parameters):
     tdim        = cell.topological_dimension()
     num_facets  = ir["num_facets"]
     num_vertices= ir["num_vertices"]
-    prim_idims  = ir["prim_idims"]
     integrals   = ir["trans_integrals"]
     geo_consts  = ir["geo_consts"]
     oriented    = ir["needs_oriented"]
@@ -323,7 +322,7 @@ def _tabulate_tensor(ir, parameters):
 
     return root
 
-def _generate_element_tensor(integrals, sets, optimise_parameters, parameters, prim_idims=None):
+def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -404,7 +403,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters, p
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, prim_idims)
+        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
         ip_ir += [nest_ir]
@@ -540,7 +539,7 @@ def _generate_functions(functions, sets):
 
     return ast_items, total_ops
 
-def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, prim_idims=None):
+def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
 
     # For checking if the integral code is for a matrix
@@ -601,12 +600,12 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters, 
         nest = pyop2.Block(entry_ir, open_scope=True)
     elif len(loop) in [1, 2]:
         it_var = c_sym(loop[0][0])
-        end = c_sym(loop[0][2]) if not prim_idims else c_sym(loop[0][2]*prim_idims[0])
+        end = c_sym(loop[0][2])
         nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
                     pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
     if len(loop) == 2:
         it_var = c_sym(loop[1][0])
-        end = c_sym(loop[1][2]) if not prim_idims else c_sym(loop[1][2]*prim_idims[1])
+        end = c_sym(loop[1][2])
         nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
                     pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
         nest.children[0] = pyop2.Block([nest_k], open_scope=True)
