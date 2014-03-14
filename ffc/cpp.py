@@ -253,7 +253,7 @@ format.update({
     "list separator":   ", ",
     "block separator":  ",\n",
     "new line":         "\\\n",
-    "tabulate tensor":  lambda m: _tabulate_tensor(m),
+    "tabulate tensor":  lambda m, n=None: _tabulate_tensor(m, n),
 })
 
 # Code snippets
@@ -475,8 +475,9 @@ def _generate_switch(variable, cases, default=None, numbers=None):
 
     return code
 
-def _tabulate_tensor(vals):
-    "Tabulate a multidimensional tensor. (Replace tabulate_matrix and tabulate_vector)."
+def _tabulate_tensor(vals, _format=None):
+    """Tabulate a multidimensional tensor. (Replace tabulate_matrix and tabulate_vector).
+    If _format is True, generate a 1D tensor instead."""
 
     # Prefetch formats to speed up code generation
     f_block     = format["block"]
@@ -498,6 +499,15 @@ def _tabulate_tensor(vals):
             else:
                 values.append(f_float(v))
         # Format values.
+        return f_block(f_list_sep.join(values))
+    elif len(shape) == 2 and _format:
+        values = []
+        for v in tensor:
+            for c in v:
+                if abs(c) < f_epsilon:
+                    values.append(f_float(0.0))
+                else:
+                    values.append(f_float(c))
         return f_block(f_list_sep.join(values))
     elif len(shape) > 1:
         return f_block(f_block_sep.join([_tabulate_tensor(tensor[i]) for i in range(shape[0])]))

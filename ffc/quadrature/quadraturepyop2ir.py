@@ -752,10 +752,11 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
             # Generate array of values.
             value = f_tensor(vals)
+            value_1D = f_tensor(vals, True)
             code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
             # Store the information for creating PyOP2'ast declarations
-            pyop2_decl[name] = ((ip, dofs), value)
+            pyop2_decl[name] = ((ip, dofs), (value_1D, value))
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:
