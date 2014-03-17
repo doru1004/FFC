@@ -819,11 +819,11 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(key[0] == -2 or key[0] == 0, \
                         "Linear forms must be defined using test functions only: " + repr(key))
             index_j, entry, range_j, space_dim_j = key
-            if pyop2:
-                entry = ('0')
             loop = ((indices[index_j], 0, range_j),)
             if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
                 loop = ()
+            if pyop2:
+                entry = (entry, )
         elif len(key) == 2:
             # PyOP2 mixed element assembling a rank-1 form
             if key[0][0]==key[1][0]:
@@ -855,7 +855,7 @@ class QuadratureTransformerBase(Transformer):
                 if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
                     loop.append((indices[index_k], 0, range_k))
                 if pyop2:
-                    entry = ('0', '0')
+                    entry = (entry_j, entry_k)
                 else:
                     entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
                 loop = tuple(loop)
