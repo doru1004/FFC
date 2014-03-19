@@ -584,7 +584,7 @@ OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_facet_determinan
 
 _vert_facet_determinant_quad = """\
 // Get vertices on edge
-unsigned int edge_vertices[2][2] = {{2, 3}, {0, 1}};
+unsigned int edge_vertices[2][2] = {{0, 1}, {2, 3}};
 const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
 
@@ -597,7 +597,7 @@ const double det = sqrt(dx0*dx0 + dx1*dx1);
 _vert_facet_determinant_quad_3D = """\
 // Facet determinant 2D in 3D (edge)
 // Get vertices on edge
-unsigned int edge_vertices[2][2] = {{2, 3}, {0, 1}};
+unsigned int edge_vertices[2][2] = {{0, 1}, {2, 3}};
 const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
 
@@ -757,8 +757,10 @@ OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_normal_direction
 # is numbered by the vertex *not* on the facet.  In the OP case, 2*'facet'
 # works. This is slightly hacky, but is basically because there are two
 # vertices per base-cell-vertex.
+# EDIT: this needs to be changed because facet numbers are swapped in the
+# 1D case.  The base cell is 1D, so this affects us here too.
 _vert_normal_direction_quad_2d = """\
-const bool direction = dx1*(vertex_coordinates%%(restriction)s[2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[2 - 2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[2 - 2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
 """
 # like the immersed thing above, leave blank
 _vert_normal_direction_quad_3d = ""
@@ -1024,7 +1026,7 @@ _horiz_facet_normal_quad = _horiz_facet_normal_quad_head + _pyop2_facet_normal_3
 # Same 2*facet thing going on (longer comments above)
 _vert_facet_normal_quad_head = """
 // Compute facet normal for triangles in 3D
-const unsigned int vertex%%(restriction)s0 = 2*facet%%(restriction)s;
+const unsigned int vertex%%(restriction)s0 = 2 - 2*facet%%(restriction)s;
 
 // Get coordinates corresponding the vertex opposite this
 const unsigned int vertex%%(restriction)s1 = v0;
