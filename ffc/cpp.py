@@ -712,9 +712,11 @@ def _generate_cell_volume(tdim, gdim, domain_type, cell_volume):
     volume = cell_volume[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet"):
+    if domain_type in ("cell", "exterior_facet", "exterior_facet_bottom",
+                       "exterior_facet_top", "exterior_facet_vert"):
         code = volume % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif domain_type in ("interior_facet", "interior_facet_horiz",
+                         "interior_facet_vert"):
         code = volume % {"restriction": _choose_map["+"]}
         code += volume % {"restriction": _choose_map["-"]}
     else:
