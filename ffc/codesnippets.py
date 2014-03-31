@@ -34,13 +34,21 @@ __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "compute_jacobian", "compute_jacobian_interior",
            "compute_jacobian_inverse"]
 
-__old__ = ["evaluate_f", "ufc_facet_determinant",
-           "pyop2_facet_determinant", "pyop2_facet_determinant_interior",
+__old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
+           "pyop2_facet_determinant_interior", "top_facet_determinant",
+           "top_facet_determinant_interior", "bottom_facet_determinant",
+           "vert_facet_determinant", "vert_facet_determinant_interior",
            "map_onto_physical", "fiat_coordinate_map", "transform_snippet",
            "ufc_scale_factor", "pyop2_scale_factor", "combinations_snippet",
            "ufc_normal_direction", "pyop2_normal_direction",
-           "ufc_facet_normal", "pyop2_facet_normal", "ip_coordinates",
-           "pyop2_normal_direction_interior", "pyop2_facet_normal_interior",
+           "pyop2_normal_direction_interior", "bottom_normal_direction",
+           "top_normal_direction", "top_normal_direction_interior",
+           "vert_normal_direction", "vert_normal_direction_interior",
+           "ufc_facet_normal", "pyop2_facet_normal",
+           "pyop2_facet_normal_interior", "bottom_facet_normal",
+           "top_facet_normal", "top_facet_normal_interior",
+           "vert_facet_normal", "vert_facet_normal_interior",
+           "ip_coordinates",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
            "pyop2_circumradius", "facet_area", "min_facet_edge_length",
            "max_facet_edge_length", "ufc_orientation_snippet", "pyop2_orientation_snippet"]
@@ -141,20 +149,19 @@ double J%(restriction)s[9];
 compute_jacobian_prism_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
-compute_jacobian = {}
-# existing things
-compute_jacobian[Cell("interval")] = _compute_jacobian_interval_1d
-compute_jacobian[Cell("interval", 2)] = _compute_jacobian_interval_2d
-compute_jacobian[Cell("interval", 3)] = _compute_jacobian_interval_3d
-compute_jacobian[Cell("triangle")] = _compute_jacobian_triangle_2d
-compute_jacobian[Cell("triangle", 3)] = _compute_jacobian_triangle_3d
-compute_jacobian[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_3d
-# extruded things
-compute_jacobian[OuterProductCell(Cell("interval"), Cell("interval"))] = _compute_jacobian_quad_2d
-compute_jacobian[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _compute_jacobian_quad_2d
-compute_jacobian[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _compute_jacobian_quad_3d
-compute_jacobian[OuterProductCell(Cell("triangle"), Cell("interval"))] = _compute_jacobian_prism_3d
-compute_jacobian[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _compute_jacobian_prism_3d
+compute_jacobian = {
+Cell("interval"): _compute_jacobian_interval_1d,
+Cell("interval", 2): _compute_jacobian_interval_2d,
+Cell("interval", 3): _compute_jacobian_interval_3d,
+Cell("triangle"): _compute_jacobian_triangle_2d,
+Cell("triangle", 3): _compute_jacobian_triangle_3d,
+Cell("tetrahedron"): _compute_jacobian_tetrahedron_3d,
+OuterProductCell(Cell("interval"), Cell("interval")): _compute_jacobian_quad_2d,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _compute_jacobian_quad_2d,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _compute_jacobian_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_prism_3d,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_prism_3d
+}
 
 # Code snippets for computing Jacobians within interior facet integrals
 # (PyOP2 only -- this is required due to different coordinate ordering)
@@ -213,20 +220,19 @@ double J%(restriction)s[9];
 compute_jacobian_prism_int_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
-compute_jacobian_interior = {}
-# existing things
-compute_jacobian_interior[Cell("interval")] = _compute_jacobian_interval_interior_1d
-compute_jacobian_interior[Cell("interval", 2)] = _compute_jacobian_interval_interior_2d
-compute_jacobian_interior[Cell("interval", 3)] = _compute_jacobian_interval_interior_3d
-compute_jacobian_interior[Cell("triangle")] = _compute_jacobian_triangle_interior_2d
-compute_jacobian_interior[Cell("triangle", 3)] = _compute_jacobian_triangle_interior_3d
-compute_jacobian_interior[Cell("tetrahedron")] = _compute_jacobian_tetrahedron_interior_3d
-# extruded things
-compute_jacobian_interior[OuterProductCell(Cell("interval"), Cell("interval"))] = _compute_jacobian_quad_interior_2d
-compute_jacobian_interior[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _compute_jacobian_quad_interior_2d
-compute_jacobian_interior[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _compute_jacobian_quad_interior_3d
-compute_jacobian_interior[OuterProductCell(Cell("triangle"), Cell("interval"))] = _compute_jacobian_prism_interior_3d
-compute_jacobian_interior[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _compute_jacobian_prism_interior_3d
+compute_jacobian_interior = {
+Cell("interval"): _compute_jacobian_interval_interior_1d,
+Cell("interval", 2): _compute_jacobian_interval_interior_2d,
+Cell("interval", 3): _compute_jacobian_interval_interior_3d,
+Cell("triangle"): _compute_jacobian_triangle_interior_2d,
+Cell("triangle", 3): _compute_jacobian_triangle_interior_3d,
+Cell("tetrahedron"): _compute_jacobian_tetrahedron_interior_3d,
+OuterProductCell(Cell("interval"), Cell("interval")): _compute_jacobian_quad_interior_2d,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _compute_jacobian_quad_interior_2d,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _compute_jacobian_quad_interior_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_prism_interior_3d,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_prism_interior_3d
+}
 
 # Code snippets for computing Jacobian inverses.  Only uses Jacobian entries, so don't
 # need a separate set for interior facets.
@@ -294,20 +300,19 @@ double detJ%(restriction)s;
 compute_jacobian_inverse_prism_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
 """
 
-compute_jacobian_inverse = {}
-# existing things
-compute_jacobian_inverse[Cell("interval")] = _compute_jacobian_inverse_interval_1d
-compute_jacobian_inverse[Cell("interval", 2)] = _compute_jacobian_inverse_interval_2d
-compute_jacobian_inverse[Cell("interval", 3)] = _compute_jacobian_inverse_interval_3d
-compute_jacobian_inverse[Cell("triangle")] = _compute_jacobian_inverse_triangle_2d
-compute_jacobian_inverse[Cell("triangle", 3)] = _compute_jacobian_inverse_triangle_3d
-compute_jacobian_inverse[Cell("tetrahedron")] = _compute_jacobian_inverse_tetrahedron_3d
-# extruded things
-compute_jacobian_inverse[OuterProductCell(Cell("interval"), Cell("interval"))] = _compute_jacobian_inverse_quad_2d
-compute_jacobian_inverse[OuterProductCell(Cell("interval", 2), Cell("interval"))] = _compute_jacobian_inverse_quad_2d
-compute_jacobian_inverse[OuterProductCell(Cell("interval", 3), Cell("interval"))] = _compute_jacobian_inverse_quad_3d
-compute_jacobian_inverse[OuterProductCell(Cell("triangle"), Cell("interval"))] = _compute_jacobian_inverse_prism_3d
-compute_jacobian_inverse[OuterProductCell(Cell("triangle", 3), Cell("interval"))] = _compute_jacobian_inverse_prism_3d
+compute_jacobian_inverse = {
+Cell("interval"): _compute_jacobian_inverse_interval_1d,
+Cell("interval", 2): _compute_jacobian_inverse_interval_2d,
+Cell("interval", 3): _compute_jacobian_inverse_interval_3d,
+Cell("triangle"): _compute_jacobian_inverse_triangle_2d,
+Cell("triangle", 3): _compute_jacobian_inverse_triangle_3d,
+Cell("tetrahedron"): _compute_jacobian_inverse_tetrahedron_3d,
+OuterProductCell(Cell("interval"), Cell("interval")): _compute_jacobian_inverse_quad_2d,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _compute_jacobian_inverse_quad_2d,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _compute_jacobian_inverse_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_inverse_prism_3d,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_inverse_prism_3d
+}
 
 # Code snippet for scale factor
 
@@ -482,17 +487,179 @@ ufc_facet_determinant = {1: {1: _facet_determinant_1D,
 pyop2_facet_determinant = {1: {1: _facet_determinant_1D,
                                2: _facet_determinant_2D_1D,
                                3: _facet_determinant_3D_1D},
-                           2: {2: _pyop2_facet_determinant_2D % {'x':0, 'y':3},
-                               3: _pyop2_facet_determinant_3D_2D % {'x':0, 'y':3, 'z':6}},
-                           3: {3: _pyop2_facet_determinant_3D % {'x':0, 'y':4, 'z':8}}}
+                           2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 3},
+                               3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 3, 'z': 6}},
+                           3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 4, 'z': 8}}}
 
 pyop2_facet_determinant_interior = {1: {1: _facet_determinant_1D,
                                         2: _facet_determinant_2D_1D,
                                         3: _facet_determinant_3D_1D},
-                                    2: {2: _pyop2_facet_determinant_2D % {'x':0, 'y':6},
-                                        3: _pyop2_facet_determinant_3D_2D % {'x':0, 'y':6, 'z':12}},
-                                    3: {3: _pyop2_facet_determinant_3D % {'x':0, 'y':8, 'z':16}}}
+                                    2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 6},
+                                        3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 6, 'z': 12}},
+                                    3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 8, 'z': 16}}}
 
+# Horizontal facet determinants in extruded meshes
+
+_horiz_facet_determinant_quad = """\
+// Get vertices on edge
+const unsigned int v0 = %(v0)s;
+const unsigned int v1 = %(v1)s;
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1);
+"""
+
+_horiz_facet_determinant_quad_3D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+const unsigned int v0 = %(v0)s;
+const unsigned int v1 = %(v1)s;
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+_horiz_facet_determinant_prism = """\
+// Get vertices on edge
+const unsigned int v0 = %(v0)s;
+const unsigned int v1 = %(v1)s;
+const unsigned int v2 = %(v2)s;
+
+// Compute the area of the correct triangle
+const double a0 = (vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
+
+const double a1 = (vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0]);
+
+const double a2 = (vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0]);
+const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
+"""
+
+# For an interior horizontal facet, we can consider it to be the
+# top facet of the 'bottom cell'.
+bottom_facet_determinant = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 0, 'v1': 2, 'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 0, 'v1': 2, 'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_determinant_quad_3D % {'v0': 0, 'v1': 2, 'x': 0, 'y': 4, 'z': 8},
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 0, 'v1': 2, 'v2': 4, 'x': 0, 'y': 6, 'z': 12},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 0, 'v1': 2, 'v2': 4, 'x': 0, 'y': 6, 'z': 12}
+}
+
+top_facet_determinant = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 1, 'v1': 3, 'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 1, 'v1': 3, 'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_determinant_quad_3D % {'v0': 1, 'v1': 3, 'x': 0, 'y': 4, 'z': 8},
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 1, 'v1': 3, 'v2': 5, 'x': 0, 'y': 6, 'z': 12},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 1, 'v1': 3, 'v2': 5, 'x': 0, 'y': 6, 'z': 12}
+}
+
+top_facet_determinant_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 1, 'v1': 3, 'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_facet_determinant_quad % {'v0': 1, 'v1': 3, 'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_determinant_quad_3D % {'v0': 1, 'v1': 3, 'x': 0, 'y': 8, 'z': 16},
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 1, 'v1': 3, 'v2': 5, 'x': 0, 'y': 12, 'z': 24},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_facet_determinant_prism % {'v0': 1, 'v1': 3, 'v2': 5, 'x': 0, 'y': 12, 'z': 24}
+}
+
+# Side facet determinants in extruded meshes
+
+_vert_facet_determinant_quad = """\
+// Get vertices on edge
+unsigned int edge_vertices[2][2] = {{0, 1}, {2, 3}};
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1);
+"""
+
+_vert_facet_determinant_quad_3D = """\
+// Facet determinant 2D in 3D (edge)
+// Get vertices on edge
+unsigned int edge_vertices[2][2] = {{0, 1}, {2, 3}};
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+# Go back to a wonky facet determinant for better normal compatibility
+# (we need the quantities a0, a1, a2).  Pick three vertices from each
+# vertical facet to calculate the determinant, ignoring the 4th.
+_vert_facet_determinant_prism = """\
+// Get vertices on face
+unsigned int face_vertices[3][3] = {{2, 3, 4}, {0, 1, 4}, {0, 1, 2}};
+const unsigned int v0 = face_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = face_vertices[facet%%(restriction)s][1];
+const unsigned int v2 = face_vertices[facet%%(restriction)s][2];
+
+// Compute scale factor (area of face scaled by area of reference facet)
+const double a0 = (vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
+
+const double a1 = (vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v1 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0]);
+
+const double a2 = (vertex_coordinates%%(restriction)s[v0 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0])
+                - (vertex_coordinates%%(restriction)s[v2 + %(x)s][0]*vertex_coordinates%%(restriction)s[v1 + %(y)s][0] +
+                   vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(x)s][0] +
+                   vertex_coordinates%%(restriction)s[v1 + %(x)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0]);
+
+const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
+"""
+
+vert_facet_determinant = {
+OuterProductCell(Cell("interval"), Cell("interval")): _vert_facet_determinant_quad % {'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _vert_facet_determinant_quad % {'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_facet_determinant_quad_3D % {'x': 0, 'y': 4, 'z': 8},
+OuterProductCell(Cell("triangle"), Cell("interval")): _vert_facet_determinant_prism % {'x': 0, 'y': 6, 'z': 12},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _vert_facet_determinant_prism % {'x': 0, 'y': 6, 'z': 12}
+}
+
+vert_facet_determinant_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _vert_facet_determinant_quad % {'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _vert_facet_determinant_quad % {'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_facet_determinant_quad_3D % {'x': 0, 'y': 8, 'z': 16},
+OuterProductCell(Cell("triangle"), Cell("interval")): _vert_facet_determinant_prism % {'x': 0, 'y': 12, 'z': 24},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _vert_facet_determinant_prism % {'x': 0, 'y': 12, 'z': 24}
+}
+
+# Facet normal directions
 
 _ufc_normal_direction_1D = """\
 const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
@@ -544,6 +711,84 @@ pyop2_normal_direction_interior = {1: {1: _pyop2_normal_direction_1D,
                           2: {2: _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
                               3: _normal_direction_3D_2D},
                           3: {3: _pyop2_normal_direction_3D % {'y': 8, 'z': 16}}}
+
+# Extruded facet normals
+
+# this is like the above 2d case with 'facet' replaced by the index of a vertex
+# not on the facet ('other')
+_horiz_normal_direction_quad_2d = """\
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[%(other)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[%(other)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+"""
+# like the immersed thing above, leave blank
+_horiz_normal_direction_quad_3d = ""
+
+# this is like the above 3d case with 'facet' replaced by the index of a vertex
+# not on the facet ('other')
+_horiz_normal_direction_prism_3d = """\
+const bool direction = a0*(vertex_coordinates%%(restriction)s[%(other)s][0] - vertex_coordinates%%(restriction)s[v0][0]) + a1*(vertex_coordinates%%(restriction)s[%(other)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) + a2*(vertex_coordinates%%(restriction)s[%(other)s + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]) < 0;
+"""
+
+bottom_normal_direction = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 1},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 1},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_normal_direction_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 1},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 1}
+}
+
+top_normal_direction = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 0},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 4, 'other': 0},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_normal_direction_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 0},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12, 'other': 0}
+}
+
+top_normal_direction_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 8, 'other': 0},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _horiz_normal_direction_quad_2d % {'x': 0, 'y': 8, 'other': 0},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_normal_direction_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24, 'other': 0},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _horiz_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24, 'other': 0}
+}
+
+# This is like the above 2d case.  We need the index of a vertex not on the
+# facet, which we don't know until runtime.  In the simplex case, the facet
+# is numbered by the vertex *not* on the facet.  In the OP case, 2*'facet'
+# works. This is slightly hacky, but is basically because there are two
+# vertices per base-cell-vertex.
+# EDIT: this needs to be changed because facet numbers are swapped in the
+# 1D case.  The base cell is 1D, so this affects us here too.
+_vert_normal_direction_quad_2d = """\
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[2 - 2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[2 - 2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+"""
+# like the immersed thing above, leave blank
+_vert_normal_direction_quad_3d = ""
+
+# This is like the above 3d case.  We need the index of a vertex not on the
+# facet, which we don't know until runtime.  In the simplex case, the facet
+# is numbered by the vertex *not* on the facet.  In the OP case, 2*'facet'
+# works. This is slightly hacky, but is basically because there are two
+# vertices per base-cell-vertex.
+_vert_normal_direction_prism_3d = """\
+const bool direction = a0*(vertex_coordinates%%(restriction)s[2*%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) + a1*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) + a2*(vertex_coordinates%%(restriction)s[2*%%(facet)s + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0]) < 0;
+"""
+
+vert_normal_direction = {
+OuterProductCell(Cell("interval"), Cell("interval")): _vert_normal_direction_quad_2d % {'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _vert_normal_direction_quad_2d % {'x': 0, 'y': 4},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_normal_direction_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _vert_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _vert_normal_direction_prism_3d % {'x': 0, 'y': 6, 'z': 12}
+}
+
+vert_normal_direction_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _vert_normal_direction_quad_2d % {'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 2), Cell("interval")): _vert_normal_direction_quad_2d % {'x': 0, 'y': 8},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_normal_direction_quad_3d,
+OuterProductCell(Cell("triangle"), Cell("interval")): _vert_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24},
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _vert_normal_direction_prism_3d % {'x': 0, 'y': 12, 'z': 24}
+}
 
 # Facet normals
 
@@ -623,6 +868,26 @@ const unsigned int vertex%%(restriction)s2 = edge_vertices[facet%%(restriction)s
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
 """
 
+_ufc_facet_normal_3D_2D_middle = """
+double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
+double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
+double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+
+double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
+double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
+double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
+"""
+
+_pyop2_facet_normal_3D_2D_middle = """
+double n%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + 0][0];
+double n%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(y)s][0];
+double n%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(z)s][0];
+
+double t%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + 0][0];
+double t%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(y)s][0];
+double t%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(z)s][0];
+"""
+
 _ufc_facet_normal_3D_2D_tail = """
 const double t%(restriction)s_length = {sqrt}(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 t%(restriction)s0 /= t%(restriction)s_length;
@@ -661,25 +926,9 @@ n%%(restriction)s1 /= n%%(restriction)s_length;
 n%%(restriction)s2 /= n%%(restriction)s_length;
 """
 
-_ufc_facet_normal_3D_2D = _ufc_facet_normal_3D_2D_head + """
-double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
-double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
-double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
+_ufc_facet_normal_3D_2D = _ufc_facet_normal_3D_2D_head + _ufc_facet_normal_3D_2D_middle + _ufc_facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
 
-double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
-double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
-double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
-""" + _ufc_facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
-
-_pyop2_facet_normal_3D_2D = _pyop2_facet_normal_3D_2D_head + """
-double n%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + 0][0];
-double n%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(y)s][0];
-double n%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s0 + %(z)s][0];
-
-double t%%(restriction)s0 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + 0][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + 0][0];
-double t%%(restriction)s1 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(y)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(y)s][0];
-double t%%(restriction)s2 = vertex_coordinates%%(restriction)s[vertex%%(restriction)s2 + %(z)s][0] - vertex_coordinates%%(restriction)s[vertex%%(restriction)s1 + %(z)s][0];
-""" + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+_pyop2_facet_normal_3D_2D = _pyop2_facet_normal_3D_2D_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
 
 _ufc_facet_normal_3D_1D_head = """
 // Compute facet normal
@@ -759,6 +1008,74 @@ pyop2_facet_normal_interior = {1: {1: _facet_normal_1D,
                       2: {2: _facet_normal_2D,
                           3: _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12}},
                       3: {3: _facet_normal_3D}}
+
+# This code snippet has been modified for the 'quad-in-3D' case
+_horiz_facet_normal_quad_head = """
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%%(restriction)s0 = %(other)s;
+
+// Get coordinates corresponding the vertex opposite this
+const unsigned int vertex%%(restriction)s1 = v0;
+const unsigned int vertex%%(restriction)s2 = v1;
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+"""
+
+_horiz_facet_normal_quad = _horiz_facet_normal_quad_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+
+# Same 2*facet thing going on (longer comments above)
+_vert_facet_normal_quad_head = """
+// Compute facet normal for triangles in 3D
+const unsigned int vertex%%(restriction)s0 = 2 - 2*facet%%(restriction)s;
+
+// Get coordinates corresponding the vertex opposite this
+const unsigned int vertex%%(restriction)s1 = v0;
+const unsigned int vertex%%(restriction)s2 = v1;
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+"""
+
+_vert_facet_normal_quad = _vert_facet_normal_quad_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+
+bottom_facet_normal = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8, 'other': 1},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
+
+top_facet_normal = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8, 'other': 0},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
+
+top_facet_normal_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_normal_quad % {'x': 0, 'y': 8, 'z': 16, 'other': 0},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
+
+vert_facet_normal = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_facet_normal_quad % {'x': 0, 'y': 4, 'z': 8},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
+
+vert_facet_normal_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _vert_facet_normal_quad % {'x': 0, 'y': 8, 'z': 16},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
 
 _cell_volume_1D = """\
 // Cell volume

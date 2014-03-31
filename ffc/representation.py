@@ -483,6 +483,7 @@ def _tabulate_facet_dofs(element, cell):
 
     # Get the number of facets
     num_facets = cell_to_num_entities(cell)[-2]
+    # Doesn't need fixing for extrusion/PyOP2, since this is for dofmaps
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]

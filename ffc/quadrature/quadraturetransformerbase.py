@@ -120,7 +120,7 @@ class QuadratureTransformerBase(Transformer):
         self.conditionals = {}
 
     def update_facets(self, facet0, facet1):
-        ffc_assert(self.entitytype == "facet", "Not expecting update_facet on a %s." % self.entitytype)
+        ffc_assert(self.entitytype in ("facet", "horiz_facet", "vert_facet"), "Not expecting update_facets on a %s." % self.entitytype)
         self.facet0 = facet0
         self.facet1 = facet1
         self.vertex = None
@@ -952,7 +952,7 @@ class QuadratureTransformerBase(Transformer):
         if self.entitytype == "cell":
             # If we add macro cell integration, I guess the 'current cell number' would go here?
             return 0
-        elif self.entitytype == "facet":
+        elif self.entitytype in ("facet", "horiz_facet", "vert_facet"):
             # Handle restriction through facet.
             return {"+": self.facet0, "-": self.facet1, None: self.facet0}[self.restriction]
         elif self.entitytype == "vertex":
@@ -1197,7 +1197,7 @@ class QuadratureTransformerBase(Transformer):
         w, points = self.quad_weights[num_ip]
 
         if self.facet0 is not None:
-            points = map_facet_points(points, self.facet0)
+            points = map_facet_points(points, self.facet0, self.entity_type)
             name = f_FEA(num_ip, self.facet0)
         elif self.vertex is not None:
             error("Spatial coordinates (x) not implemented for point measure (dP)") # TODO: Implement this, should be just the point.

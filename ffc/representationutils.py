@@ -102,8 +102,20 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     entitytype = { "cell": "cell",
                    "exterior_facet": "facet",
                    "interior_facet": "facet",
+                   "exterior_facet_top": "horiz_facet",
+                   "exterior_facet_bottom": "horiz_facet",
+                   "exterior_facet_vert": "vert_facet",
+                   "interior_facet_horiz": "horiz_facet",
+                   "interior_facet_vert": "vert_facet",
                    "point": "vertex",
                    }[itg_data.domain_type]
+    if entitytype == "horiz_facet":
+        num_facets = 2  # top and bottom
+    elif entitytype == "vert_facet":
+        num_facets = cell_to_num_entities(form_data.cell._A)[-2]  # number of facets on base
+    else:
+        num_facets = cell_to_num_entities(form_data.cell)[-2]
+        
     return { "representation":       representation,
              "domain_type":          itg_data.domain_type,
              "domain_id":            itg_data.domain_id,
@@ -111,7 +123,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
              "rank":                 form_data.rank,
              "cell":                 form_data.cell,
              "entitytype":           entitytype,
-             "num_facets":           cell_to_num_entities(form_data.cell)[-2],
+             "num_facets":           num_facets,
              "num_vertices":         cell_to_num_entities(form_data.cell)[0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
