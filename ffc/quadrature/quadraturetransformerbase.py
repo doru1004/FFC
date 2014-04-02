@@ -1125,17 +1125,58 @@ class QuadratureTransformerBase(Transformer):
 
         # Offset by element space dimension in case of negative restriction.
         offset = {"+": "", "-": str(ffc_element.space_dimension()), None: ""}[self.restriction]
-        if offset:
-            coefficient_access = format["add"]([coefficient_access, offset])
+
+        # If we are in PyOP2 mode with mixed elements on interior facets, the
+        # offsets are totally different, since the coefficient passed in to the
+        # kernel contains data for both cells, interleaved. This means we need
+        # to splat the offset and loop_index_range variables and replace them
+        # with something appropriate for our data layout.
+        self.mixed_elt_int_facet_mode = self.parameters["pyop2-ir"] and \
+            isinstance(ffc_element, MixedElement) and \
+            self.restriction in ["+", "-"]
+
+        if self.mixed_elt_int_facet_mode:
+            # Exposition: suppose our mixed element has 6 dofs in the first
+            # sub-element, 3 in the second, and 4 in the third.  The data looks
+            # like 0-5 | 6-11 | 12-14 | 15-17 | 18-21 | 22-25
+            # If restriction is "+", we want the offsets to be 0, 12, 18
+            # If restriction is "-", we want the offsets to be 6, 15, 22
+            loop_index_range = [e.space_dimension() for e in ffc_element._elements]
+            if self.restriction == "+":
+                offset = ["0"]  # needs to be "0" rather than "", since we won't
+                                # try to eval the string below
+                cur = 0
+                for e in ffc_element._elements:
+                    cur += 2*e.space_dimension()
+                    offset.append(str(cur))
+                offset.pop()
+            if self.restriction == "-":
+                offset = []
+                cur = 0
+                for e in ffc_element._elements:
+                    cur += e.space_dimension()
+                    offset.append(str(cur))
+                    cur += e.space_dimension()
+
+        if self.mixed_elt_int_facet_mode:
+            coefficient_access = [format["add"]([coefficient_access, o]) for o in offset]
+        else:
+            if offset:
+                coefficient_access = format["add"]([coefficient_access, offset])
 
         # Try to evaluate coefficient access ("3 + 2" --> "5").
         try:
             coefficient_access = str(eval(coefficient_access))
             C_ACCESS = GEO
         except:
+            # Guaranteed to fail in "borkmode", i.e. mixed_elt_int_facet_mode
             C_ACCESS = IP
+
         # Format coefficient access
-        coefficient = format["coefficient"][p_format](str(ufl_function.count()), coefficient_access)
+        if self.mixed_elt_int_facet_mode:
+            coefficient = [format["coefficient"][p_format](str(ufl_function.count()), ca) for ca in coefficient_access]
+        else:
+            coefficient = format["coefficient"][p_format](str(ufl_function.count()), coefficient_access)
 
         # Build and cache some function data only if we need the basis
         # MSA: I don't understand the mix of loop index range check and ones check here, but that's how it was.
@@ -1154,9 +1195,19 @@ class QuadratureTransformerBase(Transformer):
             # Create basis access, we never need to map the entry in the basis
             # table since we will either loop the entire space dimension or the
             # non-zeros.
-            basis_index = "0" if loop_index_range == 1 else loop_index
-            basis_access = format["component"]("", [f_ip, basis_index])
-            basis_name = psi_name + basis_access
+            # Edit: unfortunately this is not true if we are in m_e_i_f_mode!
+            if self.mixed_elt_int_facet_mode:
+                basis_index = []
+                cur = 0
+                for e in ffc_element._elements:
+                    basis_index.append(format["add"]([loop_index, str(cur)]))
+                    cur += e.space_dimension()
+                basis_access = [format["component"]("", [f_ip, bi]) for bi in basis_index]
+                basis_name = [psi_name + ba for ba in basis_access]
+            else:
+                basis_index = "0" if loop_index_range == 1 else loop_index
+                basis_access = format["component"]("", [f_ip, basis_index])
+                basis_name = psi_name + basis_access
             # Try to set access to the outermost possible loop
             if f_ip == "0" and basis_access == "0":
                 B_ACCESS = GEO
@@ -1166,19 +1217,36 @@ class QuadratureTransformerBase(Transformer):
                 F_ACCESS = IP
 
             # Format expression for function
-            function_expr = self._create_product(\
-                        [self._create_symbol(basis_name, B_ACCESS, _iden=basis_name)[()], \
-                         self._create_symbol(coefficient, C_ACCESS, _iden=coefficient)[()]])
+            if self.mixed_elt_int_facet_mode:
+                function_expr = [self._create_product(\
+                            [self._create_symbol(bn, B_ACCESS, _iden=bn)[()], \
+                             self._create_symbol(co, C_ACCESS, _iden=co)[()]]) \
+                             for bn, co in zip(basis_name, coefficient)]
+            else:
+                function_expr = self._create_product(\
+                            [self._create_symbol(basis_name, B_ACCESS, _iden=basis_name)[()], \
+                             self._create_symbol(coefficient, C_ACCESS, _iden=coefficient)[()]])
              
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
-            data = self.function_data.get(function_expr)
-            if data is None:
+            if self.mixed_elt_int_facet_mode:
                 function_count = len(self.function_data)
-                data = (function_count, loop_index_range,
-                        self._count_operations(function_expr),
-                        psi_name, used_nzcs, ufl_function.element())
-                self.function_data[function_expr] = data
+                for fe, lir in zip(function_expr, loop_index_range):
+                    data = self.function_data.get(fe)
+                    if data is None:
+                        data = (function_count, lir,
+                                self._count_operations(fe),
+                                psi_name, used_nzcs, ufl_function.element())
+                        self.function_data[fe] = data
+            else:
+                data = self.function_data.get(function_expr)
+                if data is None:
+                    function_count = len(self.function_data)
+                    data = (function_count, loop_index_range,
+                            self._count_operations(function_expr),
+                            psi_name, used_nzcs, ufl_function.element())
+                    self.function_data[function_expr] = data
+
             function_symbol_name = format["function value"](data[0])
 
         # TODO: This access stuff was changed subtly during my refactoring, the
