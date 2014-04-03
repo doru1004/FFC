@@ -121,9 +121,18 @@ def _tabulate_tensor(ir, parameters):
     # these are passed in as double *
     common = []
     if p_format == 'pyop2':
-        common = ['double w%s[1][1];\nw%s[0][0] = c%s[0];' % (n[1:],n[1:],n[1:])
-                  for n,c in zip(ir["coefficient_names"], ir["coefficient_elements"])
-                  if c.family() == 'Real']
+        for n, c in zip(ir["coefficient_names"], ir["coefficient_elements"]):
+            if c.family() == 'Real':
+                shape = c.value_shape()
+                dim = len(shape)
+                if dim < 2:
+                    d = 1
+                elif dim == 2:
+                    d = shape[1]
+                else:
+                    raise RuntimeError("Don't know how to stage in Constants with shape %s" % shape)
+                common = ['double (*w%(n)s)[%(d)d] = (double (*)[%(d)d])c%(n)s;\n' %
+                          {'n': n[1:], 'd': d}]
 
     operations = []
     if domain_type == "cell":
