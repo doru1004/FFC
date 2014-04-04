@@ -426,9 +426,10 @@ class QuadratureTransformerBase(Transformer):
         # Component default is 0
         component = 0
 
-        # Handle restriction.
-        if self.restriction == "-":
-            component += 1
+        # No need to deal with restrictions for constants (same on both sides)
+        # # Handle restriction.
+        # if self.restriction == "-":
+        #     component += 1
 
         # Let child class create constant symbol
         p_format = self.parameters["format"]
@@ -451,14 +452,16 @@ class QuadratureTransformerBase(Transformer):
         # We get one component.
         component = components[0]
 
-        # Handle restriction.
-        if self.restriction == "-":
-            component += o.shape()[0]
+        # No need to deal with restrictions for constants (same on both sides)
+        # # Handle restriction.
+        # if self.restriction == "-":
+        #     component += o.shape()[0]
 
         # Let child class create constant symbol
         p_format = self.parameters["format"]
         coefficient = format["coefficient"][p_format](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
+        iden = format["coefficient"][p_format](o.count(), [])
+        return self._create_symbol(coefficient, CONST, [component, 0], _iden=iden)
 
     def tensor_constant(self, o):
         #print("\n\nVisiting TensorConstant: " + repr(o))
@@ -476,14 +479,16 @@ class QuadratureTransformerBase(Transformer):
         # Let the UFL element handle the component map.
         component = o.element()._sub_element_mapping[components]
 
-        # Handle restriction (offset by value shape).
-        if self.restriction == "-":
-            component += product(o.shape())
+        # No need to deal with restrictions for constants (same on both sides)
+        # # Handle restriction (offset by value shape).
+        # if self.restriction == "-":
+        #     component += product(o.shape())
 
         # Let child class create constant symbol
         p_format = self.parameters["format"]
         coefficient = format["coefficient"][p_format](o.count(), component)
-        return self._create_symbol(coefficient, CONST)
+        iden = format["coefficient"][p_format](o.count(), [])
+        return self._create_symbol(coefficient, CONST, [component, 0], _iden=iden)
 
     # -------------------------------------------------------------------------
     # SpatialCoordinate (geometry.py).
