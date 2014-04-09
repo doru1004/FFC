@@ -147,8 +147,8 @@ def _tabulate_tensor(ir, parameters):
                     d = shape[1]
                 else:
                     raise RuntimeError("Don't know how to stage in Constants with shape %s" % shape)
-                common = ['double (*w%(n)s)[%(d)d] = (double (*)[%(d)d])c%(n)s;\n' %
-                          {'n': n[1:], 'd': d}]
+                common += ['double (*w%(n)s)[%(d)d] = (double (*)[%(d)d])c%(n)s;\n' %
+                           {'n': n[1:], 'd': d}]
 
     operations = []
     if domain_type == "cell":
