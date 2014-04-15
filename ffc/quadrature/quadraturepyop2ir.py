@@ -570,9 +570,10 @@ def _generate_functions(functions, sets):
 
     ast_items = []
 
-    # Create the function declarations.
+    # Create the function declarations -- only the (unique) variables we need
+    vardecls = set([functions[function][0] for function in functions])
     ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
-                    for n in range(len(functions))]
+                    for n in vardecls]
 
     # Get sets.
     used_psi_tables = sets[1]
@@ -589,7 +590,7 @@ def _generate_functions(functions, sets):
     total_ops = 0
     # Loop ranges and get list of functions.
     for loop_range, list_of_functions in function_list.items():
-        function_expr = {}
+        function_expr = []
         function_numbers = []
         # Loop functions.
         func_ops = 0
@@ -603,18 +604,20 @@ def _generate_functions(functions, sets):
             used_psi_tables.add(psi_name)
             used_nzcs.update(u_nzcs)
 
-            # TODO: This check can be removed for speed later.
-            ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
+            # # TODO: This check can be removed for speed later.
+            # REMOVED this, since we might need to increment into the same
+            # number more than once for mixed element + interior facets
+            # ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
 
             # Convert function (that might be a symbol) to a simple string and save.
             function = visit_rhs(function)
-            function_expr[number] = function
+            function_expr.append((number, function))
 
             # Get number of operations to compute entry and add to function operations count.
             func_ops += (ops + 1)*sum(range_i)
 
         # Sort the functions according to name and create loop to compute the function values.
-        lines = [pyop2.Incr(c_sym(f_F(n)), function_expr[n]) for n in sorted(function_expr.keys())]
+        lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn in sorted(function_expr)]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
