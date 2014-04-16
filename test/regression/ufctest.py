@@ -126,6 +126,7 @@ set the environment variable BOOST_DIR.
         info("Benchmarking activated")
         # Takes too long to build with -O2
         #compiler_options += " -O2"
+        compiler_options += " -O3"
         #compiler_options += " -O3 -fno-math-errno -march=native"
     if debug:
         info("Debugging activated")

@@ -339,26 +339,28 @@ def main(args):
     generate_only  = "--generate-only" in args
     fast           = "--fast" in args
     bench          = "--bench" in args
-    use_auto       = "--skip_auto" not in args
-    use_quad       = "--skip_quad" not in args
-    use_ext_quad   = "--ext_quad" in args
-    use_ext_uflacs = "--ext_uflacs" in args
+    use_auto       = "--skip-auto" not in args
+    use_quad       = "--skip-quad" not in args
+    use_ext_quad   = "--ext-quad" in args
+    use_ext_uflacs = "--ext-uflacs" in args
     permissive     = "--permissive" in args
     tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
+    skip_download  = "--skip-download" in args
     pyop2          = "--pyop2" in args
 
     flags = (
         "--generate-only",
         "--fast",
         "--bench",
-        "--skip_auto",
-        "--skip_quad",
-        "--ext_quad",
-        "--ext_uflacs",
+        "--skip-auto",
+        "--skip-quad",
+        "--ext-quad",
+        "--ext-uflacs",
         "--permissive",
         "--tolerant",
         "--print-timing",
+        "--skip-download",
         "--pyop2",
         )
     args = [arg for arg in args if not arg in flags]
@@ -368,12 +370,15 @@ def main(args):
     args = [arg for arg in args if arg not in only_forms]
 
     # Download reference data
-    failure, output = get_status_output("./scripts/download")
-    print output
-    if failure:
-        info_red("Download reference data failed")
+    if skip_download:
+        info_blue("Skipping reference data download")
     else:
-        info_green("Download reference data ok")
+        failure, output = get_status_output("./scripts/download")
+        print output
+        if failure:
+            info_red("Download reference data failed")
+        else:
+            info_green("Download reference data ok")
 
     if tolerant:
         global output_tolerance
