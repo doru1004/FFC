@@ -377,12 +377,19 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
                 # Create mapping and basis name.
                 mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-                if not mapping in code:
-                    code[mapping] = []
-
-                if basis is not None:
-                    # Add transformation if needed.
-                    code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
+                if isinstance(mapping, list):
+                    for ma, ba in zip(mapping, basis):
+                        if not ma in code:
+                            code[ma] = []
+                        if basis is not None:
+                            # Add transformation if needed.
+                            code[ma].append(self.__apply_transform(ba, derivatives, multi, tdim, gdim))
+                else:
+                    if not mapping in code:
+                        code[mapping] = []
+                    if basis is not None:
+                        # Add transformation if needed.
+                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
         else:

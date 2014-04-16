@@ -992,12 +992,46 @@ class QuadratureTransformerBase(Transformer):
         space_dim = ffc_element.space_dimension()
         offset = {"+": "", "-": str(space_dim), None: ""}[self.restriction]
 
+        # If we are in PyOP2 mode with mixed elements on interior facets, the
+        # offsets are different; see below for fuller explanation
+        self.mixed_elt_int_facet_mode = self.parameters["pyop2-ir"] and \
+            isinstance(ffc_element, MixedElement) and \
+            self.restriction in ["+", "-"]
+
+        if self.mixed_elt_int_facet_mode:
+            # Exposition: see below
+            loop_index_range = [e.space_dimension() for e in ffc_element._elements]
+            if self.restriction == "+":
+                offset = ["0"]  # needs to be "0" rather than "", since we won't
+                                # try to eval the string below
+                cur = 0
+                for e in ffc_element._elements:
+                    cur += 2*e.space_dimension()
+                    offset.append(str(cur))
+                offset.pop()
+            if self.restriction == "-":
+                offset = []
+                cur = 0
+                for e in ffc_element._elements:
+                    cur += e.space_dimension()
+                    offset.append(str(cur))
+                    cur += e.space_dimension()
+
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
-        if self.points == 1:
-            f_ip = "0"
-        index_calc = loop_index
-        basis_access = format["component"]("", [f_ip, index_calc])
+        # NOT TRUE FOR MIXED-ELT-INT-FACET MODE
+        if self.mixed_elt_int_facet_mode:
+            index_calc = []
+            cur = 0
+            for e in ffc_element._elements:
+                index_calc.append(format["add"]([loop_index, str(cur)]))
+                cur += e.space_dimension()
+            basis_access = [format["component"]("", [f_ip, bi]) for bi in index_calc]
+        else:
+            if self.points == 1:
+                f_ip = "0"
+            index_calc = loop_index
+            basis_access = format["component"]("", [f_ip, index_calc])
 
         # If we have a restricted function multiply space_dim by two.
         if self.restriction == "+" or self.restriction == "-":
@@ -1008,7 +1042,9 @@ class QuadratureTransformerBase(Transformer):
 
         name = generate_psi_name(element_counter, self.entitytype, entity, component, deriv, avg)
         name, non_zeros, zeros, ones = self.name_map[name]
-        loop_index_range = shape(self.unique_tables[name])[1]
+        # don't overwrite this if we set it already
+        if not self.mixed_elt_int_facet_mode:
+            loop_index_range = shape(self.unique_tables[name])[1]
 
         basis = ""
         # Ignore zeros if applicable
@@ -1021,8 +1057,13 @@ class QuadratureTransformerBase(Transformer):
             basis = self._format_scalar_value(1.0)[()]
         else:
             # Add basis name to the psi tables map for later use.
-            basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc], _iden=name)[()]
-            self.psi_tables_map[basis] = name
+            if self.mixed_elt_int_facet_mode:
+                basis = [self._create_symbol(name + ba, BASIS, [f_ip, ic], _iden=name)[()] for ba, ic in zip(basis_access, index_calc)]
+                for ba in basis:
+                    self.psi_tables_map[ba] = name
+            else:
+                basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc], _iden=name)[()]
+                self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local element tensor.
         basis_map = loop_index
@@ -1031,7 +1072,10 @@ class QuadratureTransformerBase(Transformer):
         elif non_zeros:
             basis_map = format["component"](format["nonzero columns"](non_zeros[0]), basis_map)
         if offset:
-            basis_map = format["grouping"](format["add"]([basis_map, offset]))
+            if self.mixed_elt_int_facet_mode:
+                basis_map = [format["grouping"](format["add"]([basis_map, o])) for o in offset]
+            else:
+                basis_map = format["grouping"](format["add"]([basis_map, offset]))
 
         # Try to evaluate basis map ("3 + 2" --> "5").
         try:
@@ -1043,8 +1087,10 @@ class QuadratureTransformerBase(Transformer):
         # Example dx and ds: (0, j, 3, 3)
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
-        mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
-
+        if self.mixed_elt_int_facet_mode:
+            mapping = [((ufl_argument.count(), bm, lir, space_dim),) for bm, lir in zip(basis_map, loop_index_range)]
+        else:
+            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
         return (mapping, basis)
 
     def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
