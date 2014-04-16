@@ -390,9 +390,9 @@ def _evaluate_basis(ufl_element, element, cell):
             "cellname" : cell.cellname(),
             "cell": cell,
             "space_dimension" : element.space_dimension(),
-            "needs_oriented": needs_oriented_jacobian(element)
+            "needs_oriented": needs_oriented_jacobian(element),
+            "max_degree": max([e.degree() for e in elements])
             }
-
 
     # Loop element and space dimensions to generate dof data.
     dof = 0
