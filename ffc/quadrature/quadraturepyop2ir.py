@@ -387,12 +387,13 @@ def _tabulate_tensor(ir, parameters):
     jacobi_ir = pyop2.FlatBlock("\n".join(common))
 
     # @@@: const double W3[3] = {{...}}
+    pyop2_weights = []
     for weights, points in [quadrature_weights[p] for p in used_weights]:
         n_points = len(points)
         value = f_float(weights[0])
         w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
         values = f_float(weights[0]) if n_points == 1 else "{%s}" % ", ".join(map(str, [f_float(i) for i in weights]))
-        pyop2_weights = pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"])
+        pyop2_weights.append(pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"]))
 
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
@@ -407,7 +408,7 @@ def _tabulate_tensor(ir, parameters):
         pyop2_basis.append(pyop2.Decl("double", feo_sym, pyop2.ArrayInit(value), qualifiers=["static", "const"]))
 
     # Build the root of the PyOP2' ast
-    pyop2_tables = [pyop2_weights] + [tab for tab in pyop2_basis]
+    pyop2_tables = pyop2_weights + [tab for tab in pyop2_basis]
     root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
 
     return root
@@ -662,6 +663,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     # Extract sets.
     used_weights, used_psi_tables, used_nzcs, trans_set = sets
 
+    nests = []
     # Loop terms and create code.
     for loop, (data, entry_vals) in terms.items():
         # If we don't have any entry values, there's no need to generate the loop.
@@ -689,21 +691,22 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             pragma = "#pragma pyop2 outerproduct(j,k)" if len(loop) == 2 else ""
             entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
 
-    if len(loop) == 0:
-        nest = pyop2.Block(entry_ir, open_scope=True)
-    elif len(loop) in [1, 2]:
-        it_var = c_sym(loop[0][0])
-        end = c_sym(loop[0][2])
-        nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
-    if len(loop) == 2:
-        it_var = c_sym(loop[1][0])
-        end = c_sym(loop[1][2])
-        nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
-        nest.children[0] = pyop2.Block([nest_k], open_scope=True)
+        if len(loop) == 0:
+            nest = pyop2.Block(entry_ir, open_scope=True)
+        elif len(loop) in [1, 2]:
+            it_var = c_sym(loop[0][0])
+            end = c_sym(loop[0][2])
+            nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
+                             pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
+        if len(loop) == 2:
+            it_var = c_sym(loop[1][0])
+            end = c_sym(loop[1][2])
+            nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
+                               pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
+            nest.children[0] = pyop2.Block([nest_k], open_scope=True)
+        nests.append(nest)
 
-    return nest, num_ops
+    return pyop2.Block(nests, open_scope=True), num_ops
 
 def _tabulate_weights(quadrature_weights, parameters):
     "Generate table of quadrature weights."
