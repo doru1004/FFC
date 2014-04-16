@@ -121,7 +121,7 @@ set the environment variable BOOST_DIR.
     # Set compiler options
     compiler_options = "%s -Wall" % ufc_cflags
     if not permissive:
-        compiler_options += " -Werror"
+        compiler_options += " -Werror -pedantic"
     if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
