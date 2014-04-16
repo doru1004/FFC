@@ -104,6 +104,7 @@ format.update({
     "acos":           {'ufc': lambda v: "std::acos(%s)" % str(v), 'pyop2': lambda v: "acos(%s)" % str(v)},
     "asin":           {'ufc': lambda v: "std::asin(%s)" % str(v), 'pyop2': lambda v: "asin(%s)" % str(v)},
     "atan":           {'ufc': lambda v: "std::atan(%s)" % str(v), 'pyop2': lambda v: "atan(%s)" % str(v)},
+    "atan_2":         lambda v1,v2: "std::atan2(%s,%s)" % (str(v1),str(v2)),
     "erf":            {'ufc': lambda v: "erf(%s)" % str(v), 'pyop2': lambda v: "erf(%s)" % str(v)},
     "bessel_i":       lambda v, n: "boost::math::cyl_bessel_i(%s, %s)" % (str(n), str(v)),
     "bessel_j":       lambda v, n: "boost::math::cyl_bessel_j(%s, %s)" % (str(n), str(v)),
