@@ -99,7 +99,7 @@ def build_ufc_programs(bench, permissive, debug=False):
         if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
             boost_inc_dir = os.path.join(boost_dir, inc_dir)
             break
-    for lib_dir in ["", "lib"]:
+    for lib_dir in ["", "lib", "lib/x86_64-linux-gnu"]:
         for ext in [".so", "-mt.so", ".dylib", "-mt.dylib"]:
             _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib + ext)
             if os.path.isfile(_lib):
@@ -121,11 +121,12 @@ set the environment variable BOOST_DIR.
     # Set compiler options
     compiler_options = "%s -Wall" % ufc_cflags
     if not permissive:
-        compiler_options += " -Werror"
+        compiler_options += " -Werror -pedantic"
     if bench:
         info("Benchmarking activated")
         # Takes too long to build with -O2
         #compiler_options += " -O2"
+        compiler_options += " -O3"
         #compiler_options += " -O3 -fno-math-errno -march=native"
     if debug:
         info("Debugging activated")
