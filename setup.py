@@ -63,7 +63,7 @@ ext = NumpyExtension("ffc.time_elements_ext",
                       "ffc/ext/Legendre.cpp"])
 
 setup(name = "FFC",
-      version = "1.3.0",
+      version = "1.3.0+",
       description = "The FEniCS Form Compiler",
       author = "Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,  et al.",
       author_email = "fenics@fenicsproject.org",

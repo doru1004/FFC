@@ -21,7 +21,7 @@
 # First added:  2005-05-20
 # Last changed: 2014-01-07
 
-FFC_VERSION = "1.3.0"
-UFC_VERSION = "2.3.0"
+FFC_VERSION = "1.3.0+"
+UFC_VERSION = "2.3.0+"
 PYOP2_VERSION = "0.5.0"
 PYOP2_VERSION_INFO = (0, 5, 0)
