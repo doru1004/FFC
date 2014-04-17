@@ -123,20 +123,21 @@ def _compute_element_ir(ufl_element, element_id, element_numbers):
         return None
     # Create FIAT element
     element = create_element(ufl_element)
-    cell = ufl_element.cell()
+    domain, = ufl_element.domains() # Assuming single domain
+    cell = domain.cell()
 
     # Store id
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = repr(ufl_element)
+    ir["signature"] = ufl_element.reconstruction_signature()
     ir["cell"] = cell
     ir["space_dimension"] = element.space_dimension()
     ir["value_rank"] = len(ufl_element.value_shape())
     ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element, cell)
-    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element, cell)
-    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element, cell)
+    ir["evaluate_basis"] = _evaluate_basis(ufl_element, element)
+    ir["evaluate_dof"] = _evaluate_dof(ufl_element, element)
+    ir["interpolate_vertex_values"] = _interpolate_vertex_values(ufl_element, element)
     ir["num_sub_elements"] = ufl_element.num_sub_elements()
     ir["create_sub_element"] = _create_sub_foo(ufl_element, element_numbers)
 
@@ -153,7 +154,8 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
         return None
     # Create FIAT element
     element = create_element(ufl_element)
-    cell = ufl_element.cell()
+    domain, = ufl_element.domains() # Assuming single domain
+    cell = domain.cell()
 
     # Precompute repeatedly used items
     num_dofs_per_entity = _num_dofs_per_entity(element)
@@ -163,7 +165,7 @@ def _compute_dofmap_ir(ufl_element, element_id, element_numbers):
     ir = {"id": element_id}
 
     # Compute data for each function
-    ir["signature"] = "FFC dofmap for " + repr(ufl_element)
+    ir["signature"] = "FFC dofmap for " + ufl_element.reconstruction_signature()
     ir["needs_mesh_entities"] = _needs_mesh_entities(element)
     ir["cell"] = cell
     ir["global_dimension"] = _global_dimension(element)
@@ -306,8 +308,9 @@ def _generate_physical_offsets(ufl_element, offset=0):
 
     # Refer to reference if gdim == tdim. This is a hack to support
     # more stuff (in particular restricted elements)
-    gdim = ufl_element.cell().geometric_dimension()
-    tdim = ufl_element.cell().topological_dimension()
+    domain, = ufl_element.domains() # Assuming single domain
+    gdim = domain.geometric_dimension()
+    tdim = domain.topological_dimension()
     if (gdim == tdim):
         return _generate_reference_offsets(create_element(ufl_element))
 
@@ -323,7 +326,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
             "This element combination is not implemented"
     return offsets
 
-def _evaluate_dof(ufl_element, element, cell):
+def _evaluate_dof(ufl_element, element):
     "Compute intermediate representation of evaluate_dof."
 
     # With regard to reference_value_size vs physical_value_size: Note
@@ -337,10 +340,12 @@ def _evaluate_dof(ufl_element, element, cell):
     # value size. This of course only matters for elements that have
     # different physical and reference value shapes and sizes.
 
+    domain, = ufl_element.domains() # Assuming single domain
+
     return {"mappings": element.mapping(),
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
-            "cell": cell,
+            "cell": domain.cell(),
             "dofs": [L.pt_dict for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
@@ -365,8 +370,11 @@ def _extract_elements(element):
 #     else:
 #         error("Tensor valued elements are not supported yet: %d " % shape)
 
-def _evaluate_basis(ufl_element, element, cell):
+def _evaluate_basis(ufl_element, element):
     "Compute intermediate representation for evaluate_basis."
+
+    domain, = ufl_element.domains() # Assuming single domain
+    cell = domain.cell()
 
     # Handle MixedElements by extracting 'sub' elements.
     elements = _extract_elements(element)
@@ -434,8 +442,10 @@ def _tabulate_coordinates(ufl_element, element):
     if uses_integral_moments(element):
         return {}
 
+    domain, = ufl_element.domains() # Assuming single domain
+
     data = {}
-    data["cell"] = ufl_element.cell()
+    data["cell"] = domain.cell()
     data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
     return data
 
@@ -471,7 +481,6 @@ def _tabulate_dofs(element, cell):
 
     return (dofs_per_element, num_dofs_per_element, num_entities, need_offset, fakes)
 
-
 def _tabulate_facet_dofs(element, cell):
     "Compute intermediate representation of tabulate_facet_dofs."
 
@@ -503,13 +512,16 @@ def _tabulate_facet_dofs(element, cell):
         facet_dofs[facet].sort()
     return facet_dofs
 
-def _interpolate_vertex_values(ufl_element, element, cell):
+def _interpolate_vertex_values(ufl_element, element):
     "Compute intermediate representation of interpolate_vertex_values."
 
     # Check for QuadratureElement
     for e in all_elements(element):
         if isinstance(e, QuadratureElement):
             return "Function is not supported/implemented for QuadratureElement."
+
+    domain, = ufl_element.domains() # Assuming single domain
+    cell = domain.cell()
 
     ir = {}
     ir["cell"] = cell
@@ -524,8 +536,8 @@ def _interpolate_vertex_values(ufl_element, element, cell):
     ir["physical_value_size"] = _value_size(ufl_element)
 
     # Get vertices of reference cell
-    cell = reference_cell(cell)
-    vertices = cell.get_vertices()
+    fiat_cell = reference_cell(cell)
+    vertices = fiat_cell.get_vertices()
 
     # Compute data for each constituent element
     extract = lambda values: values[values.keys()[0]].transpose()
@@ -570,9 +582,10 @@ def _has_foo_integrals(domain_type, form_data):
 def _create_default_foo_integral(domain_type, form_data):
     "Compute intermediate representation of create_default_foo_integral."
     itg_data = [itg_data for itg_data in form_data.integral_data
-           if itg_data.domain_id == Measure.DOMAIN_ID_OTHERWISE and itg_data.domain_type == domain_type]
+                if (itg_data.domain_id == "otherwise" and
+                    itg_data.domain_type == domain_type)]
     ffc_assert(len(itg_data) in (0,1), "Expecting at most one default integral of each type.")
-    return Measure.DOMAIN_ID_OTHERWISE if itg_data else None
+    return "otherwise" if itg_data else None
 
 #--- Utility functions ---
 

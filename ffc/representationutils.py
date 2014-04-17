@@ -39,8 +39,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    gdim = ufl_element.cell().geometric_dimension()
-    tdim = ufl_element.cell().topological_dimension()
+    domain, = ufl_element.domains() # Assuming single domain
+    gdim = domain.geometric_dimension()
+    tdim = domain.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=
@@ -109,22 +110,26 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "interior_facet_vert": "vert_facet",
                    "point": "vertex",
                    }[itg_data.domain_type]
+    cell = itg_data.domain.cell()
+    tdim = itg_data.domain.topological_dimension()
+    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+
     if entitytype == "horiz_facet":
         num_facets = 2  # top and bottom
     elif entitytype == "vert_facet":
-        num_facets = cell_to_num_entities(form_data.cell._A)[-2]  # number of facets on base
+        num_facets = cell_to_num_entities(cell._A)[-2]  # number of facets on base
     else:
-        num_facets = cell_to_num_entities(form_data.cell)[-2]
-        
+        num_facets = cell_to_num_entities(cell)[-2]
+
     return { "representation":       representation,
              "domain_type":          itg_data.domain_type,
              "domain_id":            itg_data.domain_id,
              "form_id":              form_id,
              "rank":                 form_data.rank,
-             "cell":                 form_data.cell,
+             "cell":                 cell,
              "entitytype":           entitytype,
              "num_facets":           num_facets,
-             "num_vertices":         cell_to_num_entities(form_data.cell)[0],
+             "num_vertices":         cell_to_num_entities(cell)[0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
 

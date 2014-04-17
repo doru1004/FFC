@@ -79,7 +79,7 @@ class JITObject:
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
         swig_signature = str(get_swig_version())
-        cell_signature = str(self.form.form_data().cell)
+        #cell_signature = str(self.form.form_data().cell)
 
         # Compute signature of all ufc headers combined
         import ufc_utils
@@ -93,7 +93,7 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
-                      cell_signature,
+                      #cell_signature,
                       ufc_signature]
         string = ";".join(signatures)
         self._signature = sha1(string).hexdigest()

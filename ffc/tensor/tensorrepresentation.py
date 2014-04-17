@@ -31,9 +31,6 @@ might be (re-)implemented in a future version of FFC
 # First added:  2007-02-05
 # Last changed: 2013-02-10
 
-# UFL modules
-from ufl.classes import Form, Measure, Integral
-
 # FFC modules
 from ffc.log import info, error
 from ffc.representationutils import initialize_integral_ir
@@ -41,7 +38,6 @@ from ffc.fiatinterface import cell_to_num_entities
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
-from ffc.tensor.monomialextraction import MonomialForm
 from ffc.tensor.monomialtransformation import transform_monomial_form
 from ffc.tensor.referencetensor import ReferenceTensor
 from ffc.tensor.geometrytensor import GeometryTensor
@@ -56,13 +52,14 @@ def compute_integral_ir(itg_data,
     info("Computing tensor representation")
 
     # Extract monomial representation
-    monomial_form = extract_monomial_form(itg_data.integrals, form_data.function_replace_map)
+    integrands = [itg.integrand() for itg in itg_data.integrals]
+    monomial_form = extract_monomial_form(integrands, form_data.function_replace_map)
 
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
 
     # Get some cell properties
-    cell = form_data.cell
+    cell = itg_data.domain.cell()
     cellname = cell.cellname()
     facet_cellname = cell.facet_cellname()
     num_facets = cell_to_num_entities(cell)[-2]
@@ -131,7 +128,7 @@ def _compute_terms(monomial_form,
 
     # Compute terms
     terms = []
-    for (integrand, measure) in monomial_form:
+    for integrand in monomial_form:
 
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
