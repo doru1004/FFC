@@ -84,8 +84,9 @@ def compute_integral_ir(itg_data,
                                              parameters)
 
     # Transform integrals.
-    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
-                                                         itg_data.domain_type, form_data.cell)
+    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer,
+                                                         integrals_dict,
+                                                         itg_data.domain_type)
 
     # Save tables populated by transformer
     ir["name_map"] = transformer.name_map
@@ -141,7 +142,7 @@ def _parse_optimise_parameters(parameters):
 
     return optimise_parameters
 
-def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type, cell):
+def _transform_integrals_by_type(ir, transformer, integrals_dict, domain_type):
     num_vertices = ir["num_vertices"]
     num_facets = ir["num_facets"]
     if domain_type == "cell":
