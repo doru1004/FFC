@@ -8,37 +8,7 @@ except ImportError:
 from distutils.version import LooseVersion
 from os import chdir
 from os.path import join, split
-
-
-# https://mail.python.org/pipermail/distutils-sig/2007-September/008253.html
-class NumpyExtension(Extension, object):
-    """Extension type that adds the NumPy include directory to include_dirs."""
-
-    def __init__(self, *args, **kwargs):
-        super(NumpyExtension, self).__init__(*args, **kwargs)
-        self._include_dirs = []
-        self._macros = []
-
-    @property
-    def include_dirs(self):
-        from numpy import get_include
-        return self._include_dirs + [get_include()]
-
-    @include_dirs.setter
-    def include_dirs(self, include_dirs):
-        self._include_dirs = include_dirs
-
-    @property
-    def define_macros(self):
-        from numpy import __version__
-        if LooseVersion(__version__) > LooseVersion("1.6.2"):
-            self._macros += [("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION"
-                             % tuple(__version__.split(".")[:2]))]
-        return self._macros
-
-    @define_macros.setter
-    def define_macros(self, macros):
-        self._macros = macros
+import numpy
 
 scripts = [join("scripts", "ffc")]
 
@@ -55,12 +25,18 @@ if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         batch_files.append(batch_file)
     scripts.extend(batch_files)
 
-ext = NumpyExtension("ffc.time_elements_ext",
-                     ["ffc/ext/time_elements_interface.cpp",
-                      "ffc/ext/time_elements.cpp",
-                      "ffc/ext/LobattoQuadrature.cpp",
-                      "ffc/ext/RadauQuadrature.cpp",
-                      "ffc/ext/Legendre.cpp"])
+ext_kwargs = dict(include_dirs=[numpy.get_include()])
+if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
+    ext_kwargs["define_macros"] = [ ("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
+                                     % tuple(numpy.__version__.split(".")[:2]))]
+
+ext = Extension("ffc.time_elements_ext",
+                ["ffc/ext/time_elements_interface.cpp",
+                 "ffc/ext/time_elements.cpp",
+                 "ffc/ext/LobattoQuadrature.cpp",
+                 "ffc/ext/RadauQuadrature.cpp",
+                 "ffc/ext/Legendre.cpp"],
+                **ext_kwargs)
 
 setup(name = "FFC",
       version = "1.3.0+",
@@ -68,7 +44,6 @@ setup(name = "FFC",
       author = "Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,  et al.",
       author_email = "fenics@fenicsproject.org",
       url = "http://www.fenicsproject.org",
-      setup_requires=['numpy>=1.6'],
       packages = ["ffc",
                   "ffc.quadrature", "ffc.tensor", "ffc.uflacsrepr",
                   "ffc.errorcontrol",
