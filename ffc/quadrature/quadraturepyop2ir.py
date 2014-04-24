@@ -21,9 +21,6 @@
 # Modified by Anders Logg 2013
 # Modified by Martin Alnaes, 2013
 # Modified by Fabio Luporini, 2013
-#
-# First added:  2009-01-07
-# Last changed: 2013-12-5
 
 # Python modules.
 import functools
