@@ -1,16 +1,17 @@
 #!/usr/bin/env python
 
-import os, sys, platform, re, subprocess, string, numpy
+import os, sys, platform, re, subprocess, string, numpy, tempfile, shutil
 from distutils import sysconfig, spawn
 try:
     from setuptools import setup, Extension
 except ImportError:
     from distutils.core import setup, Extension
 from distutils.command import build_ext
+from distutils.command.build import build
 from distutils.version import LooseVersion
+from distutils.ccompiler import new_compiler
 
 VERSION   = "1.3.0+"
-CXX_FLAGS = "-std=c++11 " + os.environ.get("CXXFLAGS", "")
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
@@ -102,19 +103,46 @@ def write_config_file(infile, outfile, variables={}):
     finally:
         a.close()
 
-def generate_config_files(SWIG_EXECUTABLE):
+def find_python_library():
+    "Return the full path to the Python library (empty string if not found)"
+    pyver = sysconfig.get_python_version()
+    libpython_names = [
+        "python%s" % pyver.replace(".", ""),
+        "python%smu" % pyver,
+        "python%sm" % pyver,
+        "python%su" % pyver,
+        "python%s" % pyver,
+        ]
+    dirs = [
+        "%s/lib" % os.environ.get("PYTHON_DIR", ""),
+        "%s" % sysconfig.get_config_vars().get("LIBDIR", ""),
+        "/usr/lib/%s" % sysconfig.get_config_vars().get("MULTIARCH", ""),
+        "/usr/local/lib",
+        "/opt/local/lib",
+        "/usr/lib",
+        "/usr/lib64",
+        ]
+    libpython = None
+    cc = new_compiler()
+    for name in libpython_names:
+        libpython = cc.find_library_file(dirs, name)
+        if libpython is not None:
+            break
+    return libpython or ""
+
+def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
     "Generate and install configuration files"
 
     # Get variables
-    INSTALL_PREFIX  = get_installation_prefix()
-    PYTHON_LIBRARY  = "libpython2.7.so"
+    INSTALL_PREFIX = get_installation_prefix()
+    PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
     MAJOR, MINOR, MICRO = VERSION.split(".")
 
     # Generate UFCConfig.cmake
     write_config_file(os.path.join("cmake/templates", "UFCConfig.cmake.in"),
                       os.path.join("cmake/templates", "UFCConfig.cmake"),
                       variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS,
+                                     CXX_FLAGS=CXX_FLAGS.strip(),
                                      PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
                                      PYTHON_LIBRARY=PYTHON_LIBRARY,
                                      PYTHON_EXECUTABLE=sys.executable,
@@ -141,6 +169,32 @@ def generate_config_files(SWIG_EXECUTABLE):
                                      INSTALL_PREFIX=INSTALL_PREFIX,
                                      CXX_FLAGS=CXX_FLAGS))
 
+def has_cxx_flag(cc, flag):
+    "Return True if compiler supports given flag"
+    tmpdir = tempfile.mkdtemp(prefix="ffc-build-")
+    devnull = oldstderr = None
+    try:
+        try:
+            fname = os.path.join(tmpdir, "flagname.cpp")
+            f = open(fname, "w")
+            f.write("int main() { return 0;}")
+            f.close()
+            # Redirect stderr to /dev/null to hide any error messages
+            # from the compiler.
+            devnull = open(os.devnull, 'w')
+            oldstderr = os.dup(sys.stderr.fileno())
+            os.dup2(devnull.fileno(), sys.stderr.fileno())
+            cc.compile([fname], output_dir=tmpdir, extra_preargs=[flag])
+        except:
+            return False
+        return True
+    finally:
+        if oldstderr is not None:
+            os.dup2(oldstderr, sys.stderr.fileno())
+        if devnull is not None:
+            devnull.close()
+        shutil.rmtree(tmpdir)
+
 def run_install():
     "Run installation"
 
@@ -149,20 +203,30 @@ def run_install():
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
 
-    # Define callback for distutils to find correct SWIG executable
+    # Subclass extension building command to ensure that distutils to
+    # finds the correct SWIG executable
     SWIG_EXECUTABLE = get_swig_executable()
     class my_build_ext(build_ext.build_ext):
         def find_swig(self):
             return SWIG_EXECUTABLE
 
-    # Generate config files
-    generate_config_files(SWIG_EXECUTABLE)
+    # Subclass the build command to ensure that build_ext produces
+    # ufc.py before build_py tries to copy it.
+    class my_build(build):
+        def run(self):
+            self.run_command('build_ext')
+            build.run(self)
 
-    # FIXME: Someone needs to explain what this does. Benjamin?
-    ext_kwargs = dict(include_dirs=[numpy.get_include()])
-    if LooseVersion(numpy.__version__) > LooseVersion("1.6.2"):
-        ext_kwargs["define_macros"] = [("NPY_NO_DEPRECATED_API", "NPY_%s_%s_API_VERSION" \
-                                            % tuple(numpy.__version__.split(".")[:2]))]
+    # Check that compiler supports C++11 features
+    cc = new_compiler()
+    CXX_FLAGS = os.environ.get("CXXFLAGS", "")
+    if has_cxx_flag(cc, "-std=c++11"):
+        CXX_FLAGS += " -std=c++11"
+    elif has_cxx_flag(cc, "-std=c++0x"):
+        CXX_FLAGS += " -std=c++0x"
+
+    # Generate config files
+    generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for FFC time elements
     ext_module_time = Extension("ffc.time_elements_ext",
@@ -170,8 +234,7 @@ def run_install():
                                  "ffc/ext/time_elements.cpp",
                                  "ffc/ext/LobattoQuadrature.cpp",
                                  "ffc/ext/RadauQuadrature.cpp",
-                                 "ffc/ext/Legendre.cpp"],
-                                **ext_kwargs)
+                                 "ffc/ext/Legendre.cpp"])
 
     # Setup extension module for UFC
     ext_module_ufc = Extension("ufc._ufc",
@@ -208,8 +271,9 @@ def run_install():
           package_dir      = {"ffc": "ffc",
                               "ufc": "ufc"},
           scripts          = scripts,
+          include_dirs     = [numpy.get_include()],
           ext_modules      = [ext_module_time, ext_module_ufc],
-          cmdclass         = {"build_ext": my_build_ext},
+          cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
                               (os.path.join("include"),
