@@ -60,9 +60,9 @@ def _arglist(ir):
     float = format['float declaration']
     int   = format['int declaration']
     prim_idims  = ir["prim_idims"]
-    domain_type = ir["domain_type"]
+    integral_type = ir["integral_type"]
 
-    if domain_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
+    if integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
         prim_idims = [d*2 for d in prim_idims]
     localtensor = pyop2.Decl(float, pyop2.Symbol("A", tuple(prim_idims) or (1,)))
 
@@ -77,13 +77,13 @@ def _arglist(ir):
     # embedded manifold, passing in cell_orientation
     if ir['needs_oriented'] and \
         ir['cell'].topological_dimension() != ir['cell'].geometric_dimension() and \
-        domain_type == 'cell':
+        integral_type == 'cell':
         cell_orientation = pyop2.Decl(int, pyop2.Symbol("*cell_orientation_", ()))
         arglist.append(cell_orientation)
     arglist += coeffs
-    if domain_type in ("exterior_facet", "exterior_facet_vert"):
+    if integral_type in ("exterior_facet", "exterior_facet_vert"):
         arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
-    if domain_type in ("interior_facet", "interior_facet_vert"):
+    if integral_type in ("interior_facet", "interior_facet_vert"):
         arglist.append(pyop2.Decl(int, pyop2.Symbol("facet_p", (2,)), qualifiers=["unsigned"]))
 
     return arglist
@@ -110,7 +110,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Get data.
     opt_par     = ir["optimise_parameters"]
-    domain_type = ir["domain_type"]
+    integral_type = ir["integral_type"]
     cell        = ir["cell"]
     gdim        = cell.geometric_dimension()
     tdim        = cell.topological_dimension()
@@ -148,7 +148,7 @@ def _tabulate_tensor(ir, parameters):
                            {'n': n[1:], 'd': d}]
 
     operations = []
-    if domain_type == "cell":
+    if integral_type == "cell":
         # Update transformer with facets and generate code + set of used geometry terms.
         tensor_code, nest_ir, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
                                          opt_par, parameters)
@@ -169,7 +169,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"][p_format]
 
-    elif domain_type in ("exterior_facet", "exterior_facet_vert"):
+    elif integral_type in ("exterior_facet", "exterior_facet_vert"):
         if p_format == 'pyop2':
             common += ["unsigned int facet = *facet_p;\n"]
 
@@ -198,33 +198,33 @@ def _tabulate_tensor(ir, parameters):
             # NEED TO THINK ABOUT THIS FOR EXTRUSION
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
-        if domain_type == "exterior_facet":
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+        if integral_type == "exterior_facet":
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
             jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
             if tdim == 3:
                 jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
                 jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
-        elif domain_type == "exterior_facet_vert":
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+        elif integral_type == "exterior_facet_vert":
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
             # OTHER THINGS NOT IMPLEMENTED YET
         else:
-            raise RuntimeError("Invalid domain_type")
+            raise RuntimeError("Invalid integral_type")
 
     # If we have an extruded horizontal facet, we don't want a switch
     # statement to be generated. Ideally, we would stop unnecessary
     # bits of code from being generated much earlier on, but this
     # is a start.
-    elif domain_type in ("exterior_facet_top", "exterior_facet_bottom"):
-        if domain_type == "exterior_facet_bottom":
+    elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
+        if integral_type == "exterior_facet_bottom":
             c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[0], sets, opt_par, parameters)
             operations.append([ops])
-        elif domain_type == "exterior_facet_top":
+        elif integral_type == "exterior_facet_top":
             c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[1], sets, opt_par, parameters)
             operations.append([ops])
         else:
-            raise RuntimeError("Invalid domain_type")
+            raise RuntimeError("Invalid integral_type")
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -236,11 +236,11 @@ def _tabulate_tensor(ir, parameters):
             # NEED TO THINK ABOUT THIS FOR EXTRUSION
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type)
-        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
+        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
         # THE REST IS NOT IMPLEMENTED YET
 
-    elif domain_type in ("interior_facet", "interior_facet_vert"):
+    elif integral_type in ("interior_facet", "interior_facet_vert"):
         if p_format == 'pyop2':
             common += ["unsigned int facet_0 = facet_p[0];"]
             common += ["unsigned int facet_1 = facet_p[1];"]
@@ -281,25 +281,25 @@ def _tabulate_tensor(ir, parameters):
                 jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
 
-        if domain_type == "interior_facet":
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+        if integral_type == "interior_facet":
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
 
             jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
             if tdim == 3:
                 jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
                 jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
-        elif domain_type == "interior_facet_vert":
+        elif integral_type == "interior_facet_vert":
             # THE REST IS NOT IMPLEMENTED YET
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
+            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
         else:
-            raise RuntimeError("Invalid domain_type")
+            raise RuntimeError("Invalid integral_type")
 
     # As before, all interior horizontal facets are identical, so
     # don't write out a double-switch statement
-    elif domain_type == "interior_facet_horiz":
+    elif integral_type == "interior_facet_horiz":
         common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
         # Note that the following line is unsafe for isoparametric elements.
         common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
@@ -325,11 +325,11 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
 
         # TODO: verify that this is correct (we think it is)
-        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, domain_type, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, domain_type)
+        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
+        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
         # THE REST IS NOT IMPLEMENTED YET
 
-    elif domain_type == "point":
+    elif integral_type == "point":
         cases = [None for i in range(num_vertices)]
         for i in range(num_vertices):
             # Update transformer with vertices and generate case code +
@@ -361,7 +361,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Add common (for cell, exterior and interior) geo code.
     # @@@: adding circumradius, area, ... after the jacobian
-    if domain_type != "point":
+    if integral_type != "point":
         # In the other cases, these snippets are just not included
         # in the kernel code (i.e. unsupported), as I can't be
         # bothered to write another batch of codesnippets for a
@@ -370,13 +370,13 @@ def _tabulate_tensor(ir, parameters):
         # EDIT: reenabling cell volume for horiz/vert facet integrals
         # technically this is incorrect by a factor of 2 (quads) or
         # 3 (prisms), but it's only used for stabilisation anyway.
-        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, domain_type)
-        if domain_type in ("cell", "exterior_facet") or p_format != "pyop2":
+        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
+        if integral_type in ("cell", "exterior_facet") or p_format != "pyop2":
             # pyop2+interior has different coord layout
-            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
+            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     # Embedded manifold, need to pass in cell orientations
-    if oriented and tdim != gdim and p_format == 'pyop2' and domain_type == 'cell':
+    if oriented and tdim != gdim and p_format == 'pyop2' and integral_type == 'cell':
         common += ["const int cell_orientation = *cell_orientation_;"]
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.

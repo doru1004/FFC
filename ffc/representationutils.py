@@ -106,7 +106,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "interior_facet_horiz": "horiz_facet",
                    "interior_facet_vert": "vert_facet",
                    "point": "vertex",
-                   }[itg_data.domain_type]
+                   }[itg_data.integral_type]
     cell = itg_data.domain.cell()
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
@@ -119,7 +119,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
         num_facets = cell_to_num_entities(cell)[-2]
 
     return { "representation":       representation,
-             "domain_type":          itg_data.domain_type,
+             "integral_type":          itg_data.integral_type,
              "subdomain_id":            itg_data.subdomain_id,
              "form_id":              form_id,
              "rank":                 form_data.rank,
@@ -134,7 +134,7 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
+    code["classname"] = format["classname " + ir["integral_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""

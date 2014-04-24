@@ -53,7 +53,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Extract data from intermediate representation
     AK = ir["AK"]
-    domain_type = ir["domain_type"]
+    integral_type = ir["integral_type"]
     tdim = ir["cell"].topological_dimension()
     gdim = ir["cell"].geometric_dimension()
     cell = ir["cell"]
@@ -61,7 +61,7 @@ def _tabulate_tensor(ir, parameters):
     num_facets = ir["num_facets"]
 
     # Check integral type and generate code
-    if domain_type == "cell":
+    if integral_type == "cell":
 
         # Generate code for one single tensor contraction
         t_code = _generate_tensor_contraction(AK, parameters, g_set)
@@ -79,7 +79,7 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["scale factor snippet"]["ufc"]
 
-    elif domain_type == "exterior_facet":
+    elif integral_type == "exterior_facet":
 
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(num_facets)]
@@ -100,7 +100,7 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["facet determinant"]["ufc"](tdim, gdim)
 
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -125,7 +125,7 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
 
     else:
-        error("Unhandled integral type: " + str(domain_type))
+        error("Unhandled integral type: " + str(integral_type))
 
     # Remove unused declarations from Jacobian code
     j_code = remove_unused(j_code, j_set)
