@@ -18,7 +18,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2008-09-04
-# Last changed: 2013-01-25
+# Last changed: 2014-02-20
 
 # Python modules.
 from hashlib import sha1
@@ -82,10 +82,10 @@ class JITObject:
         #cell_signature = str(self.form.form_data().cell)
 
         # Compute signature of all ufc headers combined
-        import ufc_utils
-        ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+        from ffc.backends import ufc
+        ufc_signature = sha1(''.join(getattr(ufc, header)
                                      for header in
-                                     (k for k in vars(ufc_utils).keys()
+                                     (k for k in vars(ufc).keys()
                                       if k.endswith("_header")))
                                       ).hexdigest()
 

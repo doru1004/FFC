@@ -1,7 +1,7 @@
 """This module provides a just-in-time (JIT) form compiler.
 It uses Instant to wrap the generated code into a Python module."""
 
-# Copyright (C) 2007-2013 Anders Logg
+# Copyright (C) 2007-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -25,7 +25,7 @@ It uses Instant to wrap the generated code into a Python module."""
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-07-20
-# Last changed: 2013-01-25
+# Last changed: 2014-02-20
 
 # Python modules
 import os, sys
@@ -86,7 +86,7 @@ def check_swig_version(compiled_module):
 
 def jit_form(form, parameters=None):
     "Just-in-time compile the given form."
-    import ufc_utils
+    from ffc.backends.ufc import build_ufc_module
 
     # Check that we get a Form
     if not isinstance(form, Form):
@@ -145,7 +145,7 @@ def jit_form(form, parameters=None):
         debug("Compiling and linking Python extension module, this may take some time.")
         hfile   = module_name + ".h"
         cppfile = module_name + ".cpp"
-        module = ufc_utils.build_ufc_module(
+        module = build_ufc_module(
             hfile,
             source_directory = os.curdir,
             signature = module_name,
