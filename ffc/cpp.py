@@ -329,6 +329,9 @@ format.update({
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
+    "classname quadrature_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_quadrature_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
 
@@ -732,7 +735,7 @@ def _generate_circumradius(tdim, gdim, domain_type, circumradius):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet", "point"):
+    if domain_type in ("cell", "exterior_facet", "point", "quadrature"):
         code = radius % {"restriction": ""}
     elif domain_type == "interior_facet":
         code = radius % {"restriction": _choose_map["+"]}
