@@ -120,8 +120,7 @@ def _tabulate_tensor(ir, parameters):
             j_code += format["compute_jacobian_inverse"](cell, r=_r)
             j_code += "\n"
             if oriented:
-                j_code += format["orientation"](tdim, gdim, r=_r)
-
+                j_code += format["orientation"]["ufc"](tdim, gdim, r=_r)
         j_code += format["facet determinant"]["ufc"](tdim, gdim, r="+")
         j_code += "\n"
 
