@@ -278,7 +278,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented and tdim != gdim:
                 # NEED TO THINK ABOUT THIS FOR EXTRUSION
-                jacobi_code += format["orientation"][p_format](tdim, gdim)
+                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
 
         if domain_type == "interior_facet":
@@ -321,7 +321,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
                 # NEED TO THINK ABOUT THIS FOR EXTRUSION
-                jacobi_code += format["orientation"][p_format](tdim, gdim)
+                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
 
         # TODO: verify that this is correct (we think it is)
