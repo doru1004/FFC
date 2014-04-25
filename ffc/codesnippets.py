@@ -334,9 +334,9 @@ else if (cell_orientation == 1)
   detJ%(restriction)s *= -1;
 """
 pyop2_orientation_snippet = """
-if (cell_orientation == -1)
+if (cell_orientation%(restriction)s == -1)
    abort();
-else if (cell_orientation == 1)
+else if (cell_orientation%(restriction)s == 1)
    detJ%(restriction)s *= -1;
 """
 

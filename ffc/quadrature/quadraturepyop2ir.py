@@ -34,7 +34,7 @@ from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import format, remove_unused
+from ffc.cpp import format, remove_unused, _choose_map
 
 # PyOP2 IR modules.
 from pyop2.ir import ast_base as pyop2
@@ -79,9 +79,8 @@ def _arglist(ir):
     arglist = [localtensor, coordinates]
     # embedded manifold, passing in cell_orientation
     if ir['needs_oriented'] and \
-        ir['cell'].topological_dimension() != ir['cell'].geometric_dimension() and \
-        domain_type == 'cell':
-        cell_orientation = pyop2.Decl(int, pyop2.Symbol("*cell_orientation_", ()))
+        ir['cell'].topological_dimension() != ir['cell'].geometric_dimension():
+        cell_orientation = pyop2.Decl(int, pyop2.Symbol("**cell_orientation_", ()))
         arglist.append(cell_orientation)
     arglist += coeffs
     if domain_type in ("exterior_facet", "exterior_facet_vert"):
@@ -281,7 +280,7 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented and tdim != gdim:
                 # NEED TO THINK ABOUT THIS FOR EXTRUSION
-                jacobi_code += format["orientation"][p_format](tdim, gdim)
+                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
 
         if domain_type == "interior_facet":
@@ -379,8 +378,12 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
 
     # Embedded manifold, need to pass in cell orientations
-    if oriented and tdim != gdim and p_format == 'pyop2' and domain_type == 'cell':
-        common += ["const int cell_orientation = *cell_orientation_;"]
+    if oriented and tdim != gdim and p_format == 'pyop2':
+        if domain_type in ("interior_facet", "interior_facet_vert"):
+            common += ["const int cell_orientation%s = cell_orientation_[0][0];" % _choose_map['+'],
+                       "const int cell_orientation%s = cell_orientation_[1][0];" % _choose_map['-']]
+        else:
+            common += ["const int cell_orientation = cell_orientation_[0][0];"]
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
