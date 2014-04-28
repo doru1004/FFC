@@ -500,7 +500,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
-        ip_ir += [nest_ir]
+        ip_ir += nest_ir
 
         element_code.append(f_comment\
             ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
@@ -709,7 +709,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             nest.children[0] = pyop2.Block([nest_k], open_scope=True)
         nests.append(nest)
 
-    return pyop2.Block(nests, open_scope=True), num_ops
+    return nests, num_ops
 
 def _tabulate_weights(quadrature_weights, parameters):
     "Generate table of quadrature weights."
