@@ -88,7 +88,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Bubble",
                       "Quadrature",
                       "OuterProductElement",
-                      "EnrichedElement")
+                      "EnrichedElement",
+                      "BrokenElement")
 
 # Mapping from dimension to number of mesh sub-entities. (In principle,
 # cellname_to_num_entities contains the same information, but with string keys.)
@@ -131,7 +132,7 @@ def create_element(ufl_element):
     elif isinstance(ufl_element, ufl.RestrictedElement):
         # Create restricted element(implemented by FFC)
         element = _create_restricted_element(ufl_element)
-    elif isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement)):
+    elif isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement, ufl.BrokenElement)):
         # Create regular FIAT finite element
         element = _create_fiat_element(ufl_element)
     else:
@@ -201,6 +202,8 @@ def create_actual_fiat_element(ufl_element):
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
             return ElementClass(A, B)
+        elif isinstance(ufl_element, ufl.BrokenElement):
+            return ElementClass(create_element(ufl_element._element))
         else:
             # "Normal element" case
             domain, = ufl_element.domains() # Assuming single domain
