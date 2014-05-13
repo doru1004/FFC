@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-04
+# Last changed: 2014-03-05
 
 from ufl.measure import integral_type_to_measure_name
 
@@ -105,16 +105,17 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
-    # Recognized domain types
-    entity_types = {"cell": "cell",
-                    "exterior_facet": "facet",
-                    "interior_facet": "facet",
-                    "exterior_facet_top": "horiz_facet",
+    # Mapping from recognized domain types to entity types
+    entity_types = {"cell":                  "cell",
+                    "exterior_facet":        "facet",
+                    "interior_facet":        "facet",
+                    "exterior_facet_top":    "horiz_facet",
                     "exterior_facet_bottom": "horiz_facet",
-                    "exterior_facet_vert": "vert_facet",
-                    "interior_facet_horiz": "horiz_facet",
-                    "interior_facet_vert": "vert_facet",
-                    "point": "vertex"}
+                    "exterior_facet_vert":   "vert_facet",
+                    "interior_facet_horiz":  "horiz_facet",
+                    "interior_facet_vert":   "vert_facet",
+                    "point":                 "vertex",
+                    "quadrature":            "cell"}
 
     # Check and extract entity type
     integral_type = itg_data.integral_type
@@ -142,7 +143,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "form_id":              form_id,
             "rank":                 form_data.rank,
             "cell":                 cell,
-            "entitytype":           entity_type,
+            "entity_type":          entity_type,
             "num_facets":           num_facets,
             "num_vertices":         cell_to_num_entities(cell)[0],
             "needs_oriented":       needs_oriented_jacobian(form_data)}

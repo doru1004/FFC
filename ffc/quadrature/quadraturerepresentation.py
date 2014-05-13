@@ -19,6 +19,9 @@
 #
 # Modified by Anders Logg, 2009.
 # Modified by Martin Alnaes, 2013-2014
+#
+# First added:  2009-01-07
+# Last changed: 2014-03-05
 
 import numpy
 from collections import defaultdict
@@ -80,7 +83,7 @@ def compute_integral_ir(itg_data,
                                              quadrature_rules,
                                              form_data.geometric_dimension,
                                              itg_data.domain.topological_dimension(),
-                                             ir["entitytype"],
+                                             ir["entity_type"],
                                              form_data.function_replace_map,
                                              ir["optimise_parameters"],
                                              parameters)
