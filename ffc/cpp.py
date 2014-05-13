@@ -329,8 +329,8 @@ format.update({
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
-    "classname quadrature_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_quadrature_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+    "classname quadrature_cell_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_quadrature_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -718,7 +718,8 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
 
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
-                       "exterior_facet_top", "exterior_facet_vert"):
+                         "exterior_facet_top", "exterior_facet_vert",
+                         "quadrature_cell"):
         code = volume % {"restriction": ""}
     elif integral_type in ("interior_facet", "interior_facet_horiz",
                          "interior_facet_vert"):
@@ -735,7 +736,7 @@ def _generate_circumradius(tdim, gdim, integral_type, circumradius):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "point", "quadrature"):
+    if integral_type in ("cell", "exterior_facet", "point", "quadrature_cell"):
         code = radius % {"restriction": ""}
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map["+"]}

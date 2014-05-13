@@ -29,7 +29,7 @@ import numpy
 from ufl.algorithms.printing import tree_format
 
 ## FFC modules.
-from ffc.log import info, debug, ffc_assert
+from ffc.log import info, debug, ffc_assert, error
 from ffc.cpp import format, remove_unused
 
 from ffc.representationutils import initialize_integral_code
@@ -133,7 +133,8 @@ def _tabulate_tensor(ir, parameters):
 
     operations = []
     if integral_type == "cell":
-        # Update treansformer with facets and generate code + set of used geometry terms.
+
+        # Update transformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
                                          opt_par, parameters)
         tensor_code = "\n".join(tensor_code)
@@ -157,7 +158,7 @@ def _tabulate_tensor(ir, parameters):
 
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
-            # Update treansformer with facets and generate case code + set of used geometry terms.
+            # Update transformer with facets and generate case code + set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
@@ -230,7 +231,7 @@ def _tabulate_tensor(ir, parameters):
     elif integral_type == "point":
         cases = [None for i in range(num_vertices)]
         for i in range(num_vertices):
-            # Update treansformer with vertices and generate case code +
+            # Update transformer with vertices and generate case code +
             # set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets, opt_par, parameters)
@@ -253,18 +254,43 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
 
+    elif domain_type == "quadrature_cell":
+
+        # Update transformer with facets and generate code + set of used geometry terms.
+        tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
+                                         opt_par)
+        tensor_code = "\n".join(tensor_code)
+
+        # Set operations equal to num_ops (for printing info on operations).
+        operations.append([num_ops])
+
+        # Generate code for basic geometric quantities
+        jacobi_code  = ""
+        jacobi_code += format["compute_jacobian"](tdim, gdim)
+        jacobi_code += "\n"
+        jacobi_code += format["compute_jacobian_inverse"](tdim, gdim)
+        if oriented:
+            jacobi_code += format["orientation"](tdim, gdim)
+        jacobi_code += "\n"
+        jacobi_code += format["scale factor snippet"]
+
     else:
         error("Unhandled integral type: " + str(integral_type))
 
-    # Add common (for cell, exterior and interior) geo code.
+    # Add common code except for domain_type "point"
     if integral_type != "point":
         jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     # After we have generated the element code for all facets we can remove
-    # the unused transformations and tabulate the used psi tables and weights.
+    # the unused transformations.
     common += [remove_unused(jacobi_code, trans_set)]
-    common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
+
+    # Add common code except for domain_type "quadrature_cell"
+    if domain_type != "quadrature_cell":
+        common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
+
+    # Add common code for updating tables
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
     tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
@@ -297,7 +323,8 @@ def _tabulate_tensor(ir, parameters):
     message = {"cell":           "Cell, number of operations to compute tensor: %d",
                "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
                "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d",
-               "point": "Point %d, number of operations to compute tensor: %d"}
+               "point": "Point %d, number of operations to compute tensor: %d",
+               "quadrature_cell": "Quadrature cell, number of operations to compute tensor: %d"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
         ops[-1] += geo_ops
