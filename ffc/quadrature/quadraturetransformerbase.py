@@ -1102,15 +1102,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
-
-
-
         name = generate_psi_name(element_counter, self.entity_type, entity, component, deriv, avg)
-
-        print
-        print "name =", name
-        print "name_map =", self.name_map
-
         name, non_zeros, zeros, ones = self.name_map[name]
         # don't overwrite this if we set it already
         if not self.mixed_elt_int_facet_mode:
