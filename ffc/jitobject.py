@@ -18,13 +18,10 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2008-09-04
-# Last changed: 2013-01-25
+# Last changed: 2014-02-20
 
 # Python modules.
 from hashlib import sha1
-
-# Instant modules.
-from instant import get_swig_version
 
 # UFL modules.
 import ufl
@@ -78,14 +75,13 @@ class JITObject:
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
-        swig_signature = str(get_swig_version())
-        cell_signature = str(self.form.form_data().cell)
+        #cell_signature = str(self.form.form_data().cell)
 
         # Compute signature of all ufc headers combined
-        import ufc_utils
-        ufc_signature = sha1(''.join(getattr(ufc_utils, header)
+        from ffc.backends import ufc
+        ufc_signature = sha1(''.join(getattr(ufc, header)
                                      for header in
-                                     (k for k in vars(ufc_utils).keys()
+                                     (k for k in vars(ufc).keys()
                                       if k.endswith("_header")))
                                       ).hexdigest()
 
@@ -93,7 +89,7 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
-                      cell_signature,
+                      #cell_signature,
                       ufc_signature]
         string = ";".join(signatures)
         self._signature = sha1(string).hexdigest()

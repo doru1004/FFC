@@ -9,7 +9,7 @@ It relies on templates for UFC code available as part of the module
 ufc_utils.
 """
 
-# Copyright (C) 2009 Anders Logg
+# Copyright (C) 2009-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -27,14 +27,14 @@ ufc_utils.
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2009-12-16
-# Last changed: 2011-02-21
+# Last changed: 2014-02-20
 
 # Python modules
 import os
 
 # Code generation templates
 try:
-    from ufc_utils import templates as ufc_templates
+    from ffc.backends.ufc import templates as ufc_templates
 except ImportError:
     ufc_templates = None
 try:
@@ -104,6 +104,9 @@ def format_code(code, wrapper_code, prefix, parameters):
             elif "point_integral" in code_integral["classname"]:
                 code_h += _format_h("point_integral", code_integral, parameters, templates)
                 code_c += _format_c("point_integral", code_integral, parameters, templates)
+            elif "quadrature_integral" in code_integral["classname"]:
+                code_h += _format_h("quadrature_integral", code_integral, parameters, templates)
+                code_c += _format_c("quadrature_integral", code_integral, parameters, templates)
 
     # Generate code for form
     if code_forms:

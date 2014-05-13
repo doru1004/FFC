@@ -271,16 +271,64 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius (geometry.py).
     # -------------------------------------------------------------------------
+    def reference_coordinate(self, o):
+        error("This object should be implemented by the child class.")
+
+    def reference_facet_coordinate(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.")
+
+    def jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_jacobian(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.")
+
+    def facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.")
+
+    def reference_facet_jacobian(self, o):
+        error("This object should be implemented by the child class.")
+
+    #def cell_barycenter(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    #def facet_barycenter(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    #def cell_normal(self, o):
+    #    error("This object should be implemented by the child class.")
+
     def facet_normal(self, o):
-        print "\n\nVisiting FacetNormal: ", repr(o)
         error("This object should be implemented by the child class.")
 
     def cell_volume(self, o):
-        print "\n\nVisiting CellVolume: ", repr(o)
         error("This object should be implemented by the child class.")
 
     def circumradius(self, o):
-        print "\n\nVisiting Circumeradius: ", repr(o)
+        error("This object should be implemented by the child class.")
+
+    #def cell_surface_area(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    #def facet_diameter(self, o):
+    #    error("This object should be implemented by the child class.")
+
+    def facet_area(self, o):
+        error("This object should be implemented by the child class.")
+
+    def min_facet_edge_length(self, o):
+        error("This object should be implemented by the child class.")
+
+    def max_facet_edge_length(self, o):
         error("This object should be implemented by the child class.")
 
     # -------------------------------------------------------------------------
@@ -292,9 +340,6 @@ class QuadratureTransformerBase(Transformer):
     def argument(self, o):
         #print("\nVisiting Argument:" + repr(o))
 
-        # Map o to object with proper element and numbering
-        o = self._function_replace_map[o]
-
         # Create aux. info.
         components = self.component()
         derivatives = self.derivatives()
@@ -302,6 +347,8 @@ class QuadratureTransformerBase(Transformer):
         # Check if basis is already in cache
         key = (o, components, derivatives, self.restriction, self.avg)
         basis = self.argument_cache.get(key, None)
+
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
         if basis is None or self.optimise_parameters["optimisation"]:
@@ -313,7 +360,7 @@ class QuadratureTransformerBase(Transformer):
             basis = self.create_argument(o, derivatives, component, local_comp,
                                          local_offset, ffc_element,
                                          transformation, multiindices,
-                                         self.tdim, self.gdim, self.avg)
+                                         tdim, self.gdim, self.avg)
             self.argument_cache[key] = basis
 
         return basis
@@ -386,7 +433,7 @@ class QuadratureTransformerBase(Transformer):
     def coefficient(self, o):
         #print("\nVisiting Coefficient: " + repr(o))
 
-        # Map o to object with proper element and numbering
+        # Map o to object with proper element and count
         o = self._function_replace_map[o]
 
         # Create aux. info.
@@ -408,10 +455,12 @@ class QuadratureTransformerBase(Transformer):
             ffc_assert(not (derivatives and is_quad_element), \
                        "Derivatives of Quadrature elements are not supported: " + repr(o))
 
+            tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
                                                       local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, multiindices, self.tdim, self.gdim, self.avg)}
+                                                      transformation, multiindices, tdim, self.gdim, self.avg)}
 
             self.function_cache[key] = function_code
 
@@ -420,7 +469,7 @@ class QuadratureTransformerBase(Transformer):
     def constant(self, o):
         #print("\n\nVisiting Constant: " + repr(o))
 
-        # Map o to object with proper element and numbering
+        # Map o to object with proper element and count
         o = self._function_replace_map[o]
 
         # Safety checks.
@@ -444,7 +493,7 @@ class QuadratureTransformerBase(Transformer):
     def vector_constant(self, o):
         #print("\n\nVisiting VectorConstant: " + repr(o))
 
-        # Map o to object with proper element and numbering
+        # Map o to object with proper element and count
         o = self._function_replace_map[o]
 
         # Get the component
@@ -470,7 +519,7 @@ class QuadratureTransformerBase(Transformer):
     def tensor_constant(self, o):
         #print("\n\nVisiting TensorConstant: " + repr(o))
 
-        # Map o to object with proper element and numbering
+        # Map o to object with proper element and count
         o = self._function_replace_map[o]
 
         # Get the components
@@ -779,7 +828,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand, domain_type):
+    def generate_terms(self, integrand, integral_type):
         "Generate terms for code generation."
         #print integrand
         #print tree_format(integrand, 0, False)
@@ -796,7 +845,7 @@ class QuadratureTransformerBase(Transformer):
             if val is None:
                 continue
             # Create data.
-            value, ops, sets = self._create_entry_data(val, domain_type)
+            value, ops, sets = self._create_entry_data(val, integral_type)
             # Extract nzc columns if any and add to sets.
             used_nzcs = set([int(k[1].split(f_nzc)[1].split("[")[0]) for k in key if f_nzc in k[1]])
             sets.append(used_nzcs)
@@ -959,7 +1008,8 @@ class QuadratureTransformerBase(Transformer):
         transformation = ffc_sub_element.mapping()[0]
 
         # Generate FFC multi index for derivatives.
-        multiindices = FFCMultiIndex([range(self.tdim)]*len(derivatives)).indices
+        tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
+        multiindices = FFCMultiIndex([range(tdim)]*len(derivatives)).indices
 
         #print "in create_auxiliary"
         #print "component = ", component
@@ -979,8 +1029,6 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_mapping_basis(self, component, deriv, avg, ufl_argument, ffc_element):
         "Create basis name and mapping from given basis_info."
-        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
-
         # Get string for integration points.
         f_ip = "0" if (avg or self.points == 1) else format["integration points"]
         generate_psi_name = format["psi name"]
@@ -992,12 +1040,14 @@ class QuadratureTransformerBase(Transformer):
         index2map = {-2: 0, -1: 1, 0: 0, 1: 1}
 
         # Check that we have a basis function.
-        ffc_assert(ufl_argument.count() in indices, \
-                   "Currently, Argument index must be either 0 or 1: " + repr(ufl_argument))
+        ffc_assert(ufl_argument.number() in indices,
+                   "Currently, Argument number must be either 0 or 1: " + repr(ufl_argument))
+        ffc_assert(ufl_argument.part() is None,
+                   "Currently, Argument part is not supporte: " + repr(ufl_argument))
 
         # Get element counter and loop index.
         element_counter = self.element_map[1 if avg else self.points][ufl_argument.element()]
-        loop_index = indices[ufl_argument.count()]
+        loop_index = indices[ufl_argument.number()]
 
         # Offset element space dimension in case of negative restriction,
         # need to use the complete element for offset in case of mixed element.
@@ -1100,13 +1150,15 @@ class QuadratureTransformerBase(Transformer):
         # Example dS: (0, (j + 3), 3, 6), 6=2*space_dim
         # Example dS optimised: (0, (nz2[j] + 3), 2, 6), 6=2*space_dim
         if self.mixed_elt_int_facet_mode:
-            mapping = [((ufl_argument.count(), bm, lir, space_dim),) for bm, lir in zip(basis_map, loop_index_range)]
+            mapping = [((ufl_argument.number(), bm, lir, space_dim),) for bm, lir in zip(basis_map, loop_index_range)]
         else:
-            mapping = ((ufl_argument.count(), basis_map, loop_index_range, space_dim),)
+            mapping = ((ufl_argument.number(), basis_map, loop_index_range, space_dim),)
+
         return (mapping, basis)
 
     def _create_function_name(self, component, deriv, avg, is_quad_element, ufl_function, ffc_element):
-        ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
+        ffc_assert(ufl_function in self._function_replace_values,
+                   "Expecting ufl_function to have been mapped prior to this call.")
 
         # Get format
         p_format = self.parameters["format"]

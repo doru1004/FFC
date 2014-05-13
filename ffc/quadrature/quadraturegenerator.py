@@ -20,9 +20,6 @@
 # Modified by Mehdi Nikbakht 2010
 # Modified by Anders Logg 2013
 # Modified by Martin Alnaes, 2013
-#
-# First added:  2009-01-07
-# Last changed: 2013-02-20
 
 # Python modules.
 import functools
@@ -69,9 +66,9 @@ def _arglist(ir):
     itindices = {0: "int j", 1: "int k"}
 
     arglist = [localtensor, coordinates] + coeffs
-    if ir["domain_type"] in ("exterior_facet", "exterior_facet_vert"):
+    if ir["integral_type"] in ("exterior_facet", "exterior_facet_vert"):
         arglist.append("unsigned int *facet_p")
-    if ir["domain_type"] in ("interior_facet", "interior_facet_vert"):
+    if ir["integral_type"] in ("interior_facet", "interior_facet_vert"):
         arglist.append("unsigned int facet_p[2]")
     arglist += [itindices[i] for i in range(rank)]
 
@@ -96,7 +93,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Get data.
     opt_par     = ir["optimise_parameters"]
-    domain_type = ir["domain_type"]
+    integral_type = ir["integral_type"]
     cell        = ir["cell"]
     gdim        = cell.geometric_dimension()
     tdim        = cell.topological_dimension()
@@ -135,7 +132,7 @@ def _tabulate_tensor(ir, parameters):
                            {'n': n[1:], 'd': d}]
 
     operations = []
-    if domain_type == "cell":
+    if integral_type == "cell":
         # Update treansformer with facets and generate code + set of used geometry terms.
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
                                          opt_par, parameters)
@@ -154,7 +151,7 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"][p_format]
 
-    elif domain_type == "exterior_facet":
+    elif integral_type == "exterior_facet":
         if p_format == 'pyop2':
             common += ["unsigned int facet = *facet_p;\n"]
 
@@ -181,13 +178,13 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim)
-        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
 
@@ -221,16 +218,16 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
-                jacobi_code += format["orientation"][p_format](tdim, gdim)
+                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"][p_format](gdim, tdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
-    elif domain_type == "point":
+    elif integral_type == "point":
         cases = [None for i in range(num_vertices)]
         for i in range(num_vertices):
             # Update treansformer with vertices and generate case code +
@@ -260,9 +257,9 @@ def _tabulate_tensor(ir, parameters):
         error("Unhandled integral type: " + str(integral_type))
 
     # Add common (for cell, exterior and interior) geo code.
-    if domain_type != "point":
-        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, domain_type)
+    if integral_type != "point":
+        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
@@ -304,7 +301,7 @@ def _tabulate_tensor(ir, parameters):
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
         ops[-1] += geo_ops
-        info(message[domain_type] % tuple(ops))
+        info(message[integral_type] % tuple(ops))
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):

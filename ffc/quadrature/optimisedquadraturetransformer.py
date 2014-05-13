@@ -273,14 +273,52 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def facet_normal(self, o,  *operands):
-        #print("Visiting FacetNormal:")
+    def reference_coordinate(self, o):
+        error("This object should be implemented by the child class.") # FIXME
 
-        # Get the component
+    def reference_facet_coordinate(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def jacobian(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_jacobian(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_jacobian_determinant(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def facet_jacobian_inverse(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    def reference_facet_jacobian(self, o):
+        error("This object should be implemented by the child class.") # FIXME
+
+    #def cell_barycenter(self, o):
+    #    error("This object should be implemented by the child class.") # FIXME
+
+    #def facet_barycenter(self, o):
+    #    error("This object should be implemented by the child class.") # FIXME
+
+    #def cell_normal(self, o):
+    #    error("This object should be implemented by the child class.") # FIXME
+
+    #def cell_surface_area(self, o):
+    #    error("This object should be implemented by the child class.") # FIXME
+
+    #def facet_diameter(self, o):
+    #    error("This object should be implemented by the child class.") # FIXME
+
+    def facet_normal(self, o):
         components = self.component()
 
         # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for FacetNormal: " + repr(operands))
         ffc_assert(len(components) == 1,
                    "FacetNormal expects 1 component index: " + repr(components))
 
@@ -294,24 +332,18 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {(): create_symbol(normal_component, GEO, iden=normal_component)}
 
-    def cell_volume(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for CellVolume: " + repr(operands))
-
+    def cell_volume(self, o):
         # FIXME: KBO: This has to change for higher order elements
-#        detJ = format["det(J)"](self.restriction)
-#        volume = format["absolute value"](detJ)
-#        self.trans_set.add(detJ)
+        #detJ = format["det(J)"](self.restriction)
+        #volume = format["absolute value"](detJ)
+        #self.trans_set.add(detJ)
 
         volume = format["cell volume"](self.restriction)
         self.trans_set.add(volume)
 
         return {():create_symbol(volume, GEO, iden=volume)}
 
-    def circumradius(self, o,  *operands):
-        # Safety check.
-        ffc_assert(not operands, "Didn't expect any operands for Circumradius: " + repr(operands))
-
+    def circumradius(self, o):
         # FIXME: KBO: This has to change for higher order elements
         circumradius = format["circumradius"](self.restriction)
         self.trans_set.add(circumradius)
@@ -319,7 +351,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {():create_symbol(circumradius, GEO, iden=circumradius)}
 
     def facet_area(self, o):
-
         # FIXME: KBO: This has to change for higher order elements
         # NOTE: Omitting restriction because the area of a facet is the same
         # on both sides.
@@ -333,7 +364,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        if self.tdim < 3:
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        if tdim < 3:
             return self.facet_area(o)
 
         edgelen = format["min facet edge length"](self.restriction)
@@ -344,7 +376,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        if self.tdim < 3:
+        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        if tdim < 3:
             return self.facet_area(o)
 
         edgelen = format["max facet edge length"](self.restriction)
@@ -358,7 +391,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         local_offset, ffc_element, transformation, multiindices,
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
-        ffc_assert(ufl_argument in self._function_replace_values, "Expecting ufl_argument to have been mapped prior to this call.")
 
         # Prefetch formats to speed up code generation.
         f_transform     = format["transform"]
@@ -371,7 +403,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
@@ -397,11 +429,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
-                for c in range(self.tdim):
+                for c in range(tdim):
                     # Create mapping and basis name.
                     mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
                     if not mapping in code:
@@ -451,7 +483,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if transformation == "affine":
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
@@ -467,11 +499,11 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
             # Loop derivatives and get multi indices.
             for multi in multiindices:
-                deriv = [multi.count(i) for i in range(self.tdim)]
+                deriv = [multi.count(i) for i in range(tdim)]
                 if not any(deriv):
                     deriv = []
 
-                for c in range(self.tdim):
+                for c in range(tdim):
                     function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
                     if function_name:
                         # Multiply basis by appropriate transform.
@@ -569,7 +601,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def _count_operations(self, expression):
         return expression.ops()
 
-    def _create_entry_data(self, val, domain_type):
+    def _create_entry_data(self, val, integral_type):
 #        zero = False
         # Multiply value by weight and determinant
         ACCESS = GEO
@@ -582,7 +614,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             loop_index = [format["integration points"]]
         weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
-        if domain_type == "point":
+        if integral_type == "point":
             trans_set = set()
             value = create_product([val, weight])
         else:

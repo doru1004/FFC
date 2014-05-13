@@ -1,7 +1,7 @@
 """This module contains utility functions for some code shared between
 quadrature and tensor representation."""
 
-# Copyright (C) 2012-2013 Marie Rognes
+# Copyright (C) 2012-2014 Marie Rognes
 #
 # This file is part of FFC.
 #
@@ -18,10 +18,7 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2013-01-08
-# Last changed: 2013-02-10
+# Modified by Martin Alnaes, 2013-2014
 
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cell_to_num_entities
@@ -39,8 +36,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    gdim = ufl_element.cell().geometric_dimension()
-    tdim = ufl_element.cell().topological_dimension()
+    domain, = ufl_element.domains() # Assuming single domain
+    gdim = domain.geometric_dimension()
+    tdim = domain.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=
@@ -108,23 +106,27 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "interior_facet_horiz": "horiz_facet",
                    "interior_facet_vert": "vert_facet",
                    "point": "vertex",
-                   }[itg_data.domain_type]
+                   }[itg_data.integral_type]
+    cell = itg_data.domain.cell()
+    tdim = itg_data.domain.topological_dimension()
+    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+
     if entitytype == "horiz_facet":
         num_facets = 2  # top and bottom
     elif entitytype == "vert_facet":
-        num_facets = cell_to_num_entities(form_data.cell._A)[-2]  # number of facets on base
+        num_facets = cell_to_num_entities(cell._A)[-2]  # number of facets on base
     else:
-        num_facets = cell_to_num_entities(form_data.cell)[-2]
-        
+        num_facets = cell_to_num_entities(cell)[-2]
+
     return { "representation":       representation,
-             "domain_type":          itg_data.domain_type,
-             "domain_id":            itg_data.domain_id,
+             "integral_type":          itg_data.integral_type,
+             "subdomain_id":            itg_data.subdomain_id,
              "form_id":              form_id,
              "rank":                 form_data.rank,
-             "cell":                 form_data.cell,
+             "cell":                 cell,
              "entitytype":           entitytype,
              "num_facets":           num_facets,
-             "num_vertices":         cell_to_num_entities(form_data.cell)[0],
+             "num_vertices":         cell_to_num_entities(cell)[0],
              "needs_oriented":       needs_oriented_jacobian(form_data),
            }
 
@@ -132,7 +134,7 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["domain_type"] + "_integral"](prefix, ir["form_id"], ir["domain_id"])
+    code["classname"] = format["classname " + ir["integral_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
     code["constructor"] = format["do nothing"]
     code["constructor_arguments"] = ""

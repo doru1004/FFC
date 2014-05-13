@@ -270,9 +270,9 @@ format.update({
                                 compute_jacobian_inverse[cell] % {"restriction": _choose_map[r]},
     "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
                                  "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else ""},
-    "facet determinant":        lambda cell, p_format, domain_type, r=None: _generate_facet_determinant(cell, p_format, domain_type, r),
+    "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":          lambda cell, p_format, domain_type: _generate_normal(cell, p_format, domain_type),
+    "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
     "generate cell volume":     {"ufc": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume),
                                  "pyop2": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume)},
     "generate circumradius":    {"ufc": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, ufc_circumradius),
@@ -328,6 +328,9 @@ format.update({
 
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+
+    "classname quadrature_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_quadrature_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -609,7 +612,7 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     return name
 
-def _generate_facet_determinant(cell, p_format, domain_type, r):
+def _generate_facet_determinant(cell, p_format, integral_type, r):
     "Generate code for computing facet determinant"
 
     tdim = cell.topological_dimension()
@@ -617,61 +620,61 @@ def _generate_facet_determinant(cell, p_format, domain_type, r):
     if p_format == "ufc":
         code = ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]}
     elif p_format == "pyop2":
-        if domain_type == "exterior_facet":
+        if integral_type == "exterior_facet":
             code = pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]}
-        elif domain_type == "interior_facet":
+        elif integral_type == "interior_facet":
             code = pyop2_facet_determinant_interior[tdim][gdim] % {"restriction": _choose_map[r]}
-        elif domain_type == "exterior_facet_bottom":
+        elif integral_type == "exterior_facet_bottom":
             code = bottom_facet_determinant[cell] % {"restriction": _choose_map[r]}
-        elif domain_type == "exterior_facet_top":
+        elif integral_type == "exterior_facet_top":
             code = top_facet_determinant[cell] % {"restriction": _choose_map[r]}
-        elif domain_type == "interior_facet_horiz":
+        elif integral_type == "interior_facet_horiz":
             code = top_facet_determinant_interior[cell] % {"restriction": _choose_map[r]}
-        elif domain_type == "exterior_facet_vert":
+        elif integral_type == "exterior_facet_vert":
             code = vert_facet_determinant[cell] % {"restriction": _choose_map[r]}
-        elif domain_type == "interior_facet_vert":
+        elif integral_type == "interior_facet_vert":
             code = vert_facet_determinant_interior[cell] % {"restriction": _choose_map[r]}
         else:
-            raise RuntimeError("Invalid domain_type")
+            raise RuntimeError("Invalid integral_type")
     else:
         raise RuntimeError("Invalid p_format")
 
     return code
 
-def _generate_normal(cell, p_format, domain_type, reference_normal=False):
+def _generate_normal(cell, p_format, integral_type, reference_normal=False):
     "Generate code for computing normal"
 
     if p_format == "ufc":
         normal_direction = ufc_normal_direction
         facet_normal = ufc_facet_normal
     elif p_format == "pyop2":
-        if domain_type == "exterior_facet":
+        if integral_type == "exterior_facet":
             normal_direction = pyop2_normal_direction
             facet_normal = pyop2_facet_normal
-        elif domain_type == "interior_facet":
+        elif integral_type == "interior_facet":
             normal_direction = pyop2_normal_direction_interior
             facet_normal = pyop2_facet_normal_interior
-        elif domain_type == "exterior_facet_bottom":
+        elif integral_type == "exterior_facet_bottom":
             normal_direction = bottom_normal_direction
             facet_normal = bottom_facet_normal
-        elif domain_type == "exterior_facet_top":
+        elif integral_type == "exterior_facet_top":
             normal_direction = top_normal_direction
             facet_normal = top_facet_normal
-        elif domain_type == "interior_facet_horiz":
+        elif integral_type == "interior_facet_horiz":
             normal_direction = top_normal_direction_interior
             facet_normal = top_facet_normal_interior
-        elif domain_type == "exterior_facet_vert":
+        elif integral_type == "exterior_facet_vert":
             normal_direction = vert_normal_direction
             facet_normal = vert_facet_normal
-        elif domain_type == "interior_facet_vert":
+        elif integral_type == "interior_facet_vert":
             normal_direction = vert_normal_direction_interior
             facet_normal = vert_facet_normal_interior
         else:
-            raise RuntimeError("Invalid domain_type")
+            raise RuntimeError("Invalid integral_type")
     else:
         raise RuntimeError("Invalid p_format")
 
-    if domain_type in ("exterior_facet", "interior_facet"):
+    if integral_type in ("exterior_facet", "interior_facet"):
         # Choose snippets
         tdim = cell.topological_dimension()
         gdim = cell.geometric_dimension()
@@ -689,56 +692,56 @@ def _generate_normal(cell, p_format, domain_type, reference_normal=False):
         normal = facet_normal[cell]
     
     # Choose restrictions
-    if domain_type in ("exterior_facet", "exterior_facet_vert"):
+    if integral_type in ("exterior_facet", "exterior_facet_vert"):
         code = direction % {"restriction": "", "facet" : "facet"}
         code += normal % {"direction" : "", "restriction": ""}
-    elif domain_type in ("exterior_facet_bottom", "exterior_facet_top"):
+    elif integral_type in ("exterior_facet_bottom", "exterior_facet_top"):
         code = direction % {"restriction": ""}
         code += normal % {"direction" : "", "restriction": ""}
-    elif domain_type in ("interior_facet", "interior_facet_vert"):
+    elif integral_type in ("interior_facet", "interior_facet_vert"):
         code = direction % {"restriction": _choose_map["+"], "facet": "facet_0"}
         code += normal % {"direction" : "", "restriction": _choose_map["+"]}
         code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
-    elif domain_type == "interior_facet_horiz":
+    elif integral_type == "interior_facet_horiz":
         code = direction % {"restriction": _choose_map["+"]}
         code += normal % {"direction" : "", "restriction": _choose_map["+"]}
         code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, domain_type, cell_volume):
+def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
     "Generate code for computing cell volume."
 
     # Choose snippets
     volume = cell_volume[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet", "exterior_facet_bottom",
+    if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
                        "exterior_facet_top", "exterior_facet_vert"):
         code = volume % {"restriction": ""}
-    elif domain_type in ("interior_facet", "interior_facet_horiz",
+    elif integral_type in ("interior_facet", "interior_facet_horiz",
                          "interior_facet_vert"):
         code = volume % {"restriction": _choose_map["+"]}
         code += volume % {"restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, domain_type, circumradius):
+def _generate_circumradius(tdim, gdim, integral_type, circumradius):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if domain_type in ("cell", "exterior_facet", "point"):
+    if integral_type in ("cell", "exterior_facet", "point", "quadrature"):
         code = radius % {"restriction": ""}
-    elif domain_type == "interior_facet":
+    elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map["+"]}
         code += radius % {"restriction": _choose_map["-"]}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
 def _flatten(i, j, m, n):

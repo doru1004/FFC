@@ -8,7 +8,7 @@ might be (re-)implemented in a future version of FFC
   2. FErari optimizations
 """
 
-# Copyright (C) 2007-2013 Anders Logg
+# Copyright (C) 2007-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -26,13 +26,7 @@ might be (re-)implemented in a future version of FFC
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2010.
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2007-02-05
-# Last changed: 2013-02-10
-
-# UFL modules
-from ufl.classes import Form, Measure, Integral
+# Modified by Martin Alnaes, 2013-2014
 
 # FFC modules
 from ffc.log import info, error
@@ -41,7 +35,6 @@ from ffc.fiatinterface import cell_to_num_entities
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
-from ffc.tensor.monomialextraction import MonomialForm
 from ffc.tensor.monomialtransformation import transform_monomial_form
 from ffc.tensor.referencetensor import ReferenceTensor
 from ffc.tensor.geometrytensor import GeometryTensor
@@ -56,73 +49,60 @@ def compute_integral_ir(itg_data,
     info("Computing tensor representation")
 
     # Extract monomial representation
-    monomial_form = extract_monomial_form(itg_data.integrals, form_data.function_replace_map)
+    integrands = [itg.integrand() for itg in itg_data.integrals]
+    monomial_form = extract_monomial_form(integrands, form_data.function_replace_map)
 
     # Transform monomial form to reference element
     transform_monomial_form(monomial_form)
 
+    # Get some integral properties
+    integral_type = itg_data.integral_type
+    quadrature_degree = itg_data.metadata["quadrature_degree"]
+    quadrature_rule = itg_data.metadata["quadrature_rule"]
+
     # Get some cell properties
-    cell = form_data.cell
+    cell = itg_data.domain.cell()
     cellname = cell.cellname()
     facet_cellname = cell.facet_cellname()
     num_facets = cell_to_num_entities(cell)[-2]
 
-    # Initialize representation
-    ir = initialize_integral_ir("tensor", itg_data, form_data, form_id)
-    ir["rank"] = form_data.rank
+    # Helper to simplify code below
+    compute_terms = lambda i, j: _compute_terms(monomial_form,
+                                           i, j,
+                                           integral_type,
+                                           quadrature_degree,
+                                           quadrature_rule,
+                                           cellname,
+                                           facet_cellname)
 
     # Compute representation of cell tensor
-    quadrature_degree = itg_data.metadata["quadrature_degree"]
-    quadrature_rule = itg_data.metadata["quadrature_rule"]
-    if itg_data.domain_type == "cell":
-
+    if integral_type == "cell":
         # Compute sum of tensor representations
-        ir["AK"] = _compute_terms(monomial_form,
-                                  None, None,
-                                  itg_data.domain_type,
-                                  quadrature_degree,
-                                  quadrature_rule,
-                                  cellname,
-                                  facet_cellname)
+        terms = compute_terms(None, None)
 
-    elif itg_data.domain_type == "exterior_facet":
-
+    elif integral_type == "exterior_facet":
         # Compute sum of tensor representations for each facet
-        terms = [None for i in range(num_facets)]
-        for i in range(num_facets):
-            terms[i] = _compute_terms(monomial_form,
-                                      i, None,
-                                      itg_data.domain_type,
-                                      quadrature_degree,
-                                      quadrature_rule,
-                                      cellname,
-                                      facet_cellname)
-        ir["AK"] = terms
+        terms = [compute_terms(i, None) for i in range(num_facets)]
 
-    elif itg_data.domain_type == "interior_facet":
-
+    elif integral_type == "interior_facet":
         # Compute sum of tensor representations for each facet-facet pair
-        terms = [[None for j in range(num_facets)] for i in range(num_facets)]
+        terms = [[compute_terms(i, j) for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
-                terms[i][j] = _compute_terms(monomial_form,
-                                             i, j,
-                                             itg_data.domain_type,
-                                             quadrature_degree,
-                                             quadrature_rule,
-                                             cellname,
-                                             facet_cellname)
                 reorder_entries(terms[i][j])
-        ir["AK"] = terms
 
     else:
-        error("Unhandled domain type: " + str(itg_data.domain_type))
+        error("Unhandled domain type: " + str(integral_type))
+
+    # Initialize representation and store terms
+    ir = initialize_integral_ir("tensor", itg_data, form_data, form_id)
+    ir["AK"] = terms
 
     return ir
 
 def _compute_terms(monomial_form,
                    facet0, facet1,
-                   domain_type,
+                   integral_type,
                    quadrature_degree,
                    quadrature_rule,
                    cellname,
@@ -131,14 +111,14 @@ def _compute_terms(monomial_form,
 
     # Compute terms
     terms = []
-    for (integrand, measure) in monomial_form:
+    for integrand in monomial_form:
 
         # Iterate over monomials of integrand
         for monomial in integrand.monomials:
 
             # Compute reference tensor
             A0 = ReferenceTensor(monomial,
-                                 domain_type,
+                                 integral_type,
                                  facet0, facet1,
                                  quadrature_degree,
                                  quadrature_rule,
