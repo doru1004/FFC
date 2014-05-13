@@ -19,10 +19,17 @@ quadrature and tensor representation."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Alnaes, 2013-2014
+# Modified by Anders Logg 2014
+#
+# First added:  2013-01-08
+# Last changed: 2014-03-04
+
+from ufl.measure import integral_type_to_measure_name
 
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import cell_to_num_entities
 from ffc.cpp import format
+from ffc.log import error
 
 def transform_component(component, offset, ufl_element):
     """
@@ -97,38 +104,48 @@ def needs_oriented_jacobian(form_data):
 def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
-    entitytype = { "cell": "cell",
-                   "exterior_facet": "facet",
-                   "interior_facet": "facet",
-                   "exterior_facet_top": "horiz_facet",
-                   "exterior_facet_bottom": "horiz_facet",
-                   "exterior_facet_vert": "vert_facet",
-                   "interior_facet_horiz": "horiz_facet",
-                   "interior_facet_vert": "vert_facet",
-                   "point": "vertex",
-                   }[itg_data.integral_type]
+
+    # Recognized domain types
+    entity_types = {"cell": "cell",
+                    "exterior_facet": "facet",
+                    "interior_facet": "facet",
+                    "exterior_facet_top": "horiz_facet",
+                    "exterior_facet_bottom": "horiz_facet",
+                    "exterior_facet_vert": "vert_facet",
+                    "interior_facet_horiz": "horiz_facet",
+                    "interior_facet_vert": "vert_facet",
+                    "point": "vertex"}
+
+    # Check and extract entity type
+    integral_type = itg_data.integral_type
+    if not itg_data.integral_type in entity_types:
+        error("Unsupported integration domain type: %s (%s)" \
+                  % (integral_type, integral_type_to_measure_name[integral_type]))
+    entity_type = entity_types[itg_data.integral_type]
+
+    # Check topological dimension
     cell = itg_data.domain.cell()
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
-    if entitytype == "horiz_facet":
+    if entity_type == "horiz_facet":
         num_facets = 2  # top and bottom
-    elif entitytype == "vert_facet":
+    elif entity_type == "vert_facet":
         num_facets = cell_to_num_entities(cell._A)[-2]  # number of facets on base
     else:
         num_facets = cell_to_num_entities(cell)[-2]
 
-    return { "representation":       representation,
-             "integral_type":          itg_data.integral_type,
-             "subdomain_id":            itg_data.subdomain_id,
-             "form_id":              form_id,
-             "rank":                 form_data.rank,
-             "cell":                 cell,
-             "entitytype":           entitytype,
-             "num_facets":           num_facets,
-             "num_vertices":         cell_to_num_entities(cell)[0],
-             "needs_oriented":       needs_oriented_jacobian(form_data),
-           }
+    # Initialize integral intermediate representation
+    return {"representation":       representation,
+            "integral_type":        itg_data.integral_type,
+            "subdomain_id":         itg_data.subdomain_id,
+            "form_id":              form_id,
+            "rank":                 form_data.rank,
+            "cell":                 cell,
+            "entitytype":           entity_type,
+            "num_facets":           num_facets,
+            "num_vertices":         cell_to_num_entities(cell)[0],
+            "needs_oriented":       needs_oriented_jacobian(form_data)}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
