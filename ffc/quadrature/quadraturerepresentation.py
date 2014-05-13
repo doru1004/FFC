@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013-2014
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-05
+# Last changed: 2014-03-07
 
 import numpy
 from collections import defaultdict
@@ -189,8 +189,8 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type == "quadrature_cell":
-        # Note: Perform same transformations as for "cell" domain type
-        # Compute transformed integrals.
+
+        # Compute transformed integrals (same as for cell integrals).
         info("Transforming quadrature integral")
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, integral_type)

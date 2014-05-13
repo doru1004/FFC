@@ -18,8 +18,8 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Mehdi Nikbakht 2010
-# Modified by Anders Logg 2013
-# Modified by Martin Alnaes, 2013
+# Modified by Anders Logg 2013-2014
+# Modified by Martin Alnaes 2013
 
 # Python modules.
 import functools
@@ -320,15 +320,16 @@ def _tabulate_tensor(ir, parameters):
                 for k in sorted(opt_par.keys())]))]
 
     # Print info on operation count.
-    message = {"cell":           "Cell, number of operations to compute tensor: %d",
-               "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %d",
-               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %d",
-               "point": "Point %d, number of operations to compute tensor: %d",
-               "quadrature_cell": "Quadrature cell, number of operations to compute tensor: %d"}
+    message = {"cell":           "Cell, number of operations to compute tensor: %s",
+               "exterior_facet": "Exterior facet %d, number of operations to compute tensor: %s",
+               "interior_facet": "Interior facets (%d, %d), number of operations to compute tensor: %s",
+               "point": "Point %s, number of operations to compute tensor: %s",
+               "quadrature_cell": "Quadrature cell, number of operations to compute tensor: %s"}
     for ops in operations:
         # Add geo ops count to integral ops count for writing info.
-        ops[-1] += geo_ops
-        info(message[integral_type] % tuple(ops))
+        if isinstance(ops[-1], int):
+            ops[-1] += geo_ops
+        info(message[integral_type] % [str(o) for o in tuple(ops)])
     return "\n".join(common) + "\n" + tensor_code
 
 def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
@@ -345,7 +346,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     f_decl       = format["declaration"]
     f_X          = format["ip coordinates"]
     f_C          = format["conditional"]
-
 
     # Initialise return values.
     element_code     = []
@@ -414,11 +414,15 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # Generate code to evaluate the element tensor.
         integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
-        tensor_ops_count += num_ops*points
+        if points is None:
+            quadrature_ops = "unknown"
+            tensor_ops_count = "unknown"
+        else:
+            quadrature_ops = num_ops*points
+            tensor_ops_count += quadrature_ops
         ip_code += integral_code
-
         element_code.append(f_comment\
-            ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
+            ("Number of operations to compute element tensor for following IP loop = %s" % str(quadrature_ops)))
 
         # Loop code over all IPs.
         if points > 1:
@@ -432,14 +436,14 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 def _generate_functions(functions, sets):
     "Generate declarations for functions and code to compute values."
 
-    f_comment      = format["comment"]
-    f_double       = format["float declaration"]
-    f_F            = format["function value"]
-    f_float        = format["floating point"]
-    f_decl         = format["declaration"]
-    f_r            = format["free indices"]
-    f_iadd         = format["iadd"]
-    f_loop         = format["generate loop"]
+    f_comment = format["comment"]
+    f_double  = format["float declaration"]
+    f_F       = format["function value"]
+    f_float   = format["floating point"]
+    f_decl    = format["declaration"]
+    f_r       = format["free indices"]
+    f_iadd    = format["iadd"]
+    f_loop    = format["generate loop"]
 
     # Create the function declarations.
     code = ["", f_comment("Coefficient declarations.")]

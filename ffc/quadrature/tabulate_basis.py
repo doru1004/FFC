@@ -53,7 +53,7 @@ def _create_quadrature_points_and_weights(integral_type,
     elif integral_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     elif integral_type == "quadrature_cell":
-        (points, weights) = ([], [])
+        (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)
@@ -130,7 +130,7 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     # handling domain types generically extend to other parts of the code?
 
     # Handle case when list of points is empty
-    if len(points) == 0:
+    if points is None:
         return _tabulate_empty_psi_table(tdim, deriv_order)
 
     # Otherwise, call FIAT to tabulate
@@ -187,7 +187,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     quadrature_rules = {}
     psi_tables = {}
     integrals = {}
-    avg_elements = { "cell": [], "facet": [] }
+    avg_elements = {"cell": [], "facet": []}
 
     integral_type = itg_data.integral_type
     cell = itg_data.domain.cell()
@@ -200,7 +200,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         # Make quadrature rule and get points and weights.
         (points, weights) = _create_quadrature_points_and_weights(integral_type, cell, degree, scheme)
         # The TOTAL number of weights/points
-        len_weights = len(weights)
+        len_weights = None if weights is None else len(weights)
         # Add points and rules to dictionary
         ffc_assert(len_weights not in quadrature_rules,
                    "This number of points is already present in the weight table: " + repr(quadrature_rules))
