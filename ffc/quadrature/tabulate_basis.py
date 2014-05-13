@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009.
 # Modified by Martin Alnaes, 2013-2014
 
-import numpy
+import numpy, itertools
 
 # UFL modules
 import ufl
@@ -109,11 +109,31 @@ def _map_entity_points(cell, points, entity_dim, entity, integral_type):
     elif entity_dim == 0:
         return (reference_cell_vertices(cell.cellname())[entity],)
 
+def _tabulate_empty_psi_table(tdim, deriv_order):
+    "Tabulate psi table when there are no points"
+
+    # All combinations of partial derivatives up to given order
+    gdim = tdim # hack, consider passing gdim variable here
+    derivs = [d for d in itertools.product(*(gdim*[range(0, deriv_order + 1)]))]
+    derivs = [d for d in derivs if sum(d) <= deriv_order]
+
+    # Return empty table
+    table = {}
+    for d in derivs:
+        table[d] = [[]]
+
+    return {None: table}
+
 def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     "Tabulate psi table for different integral types."
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
-    if len(points) == 0: return {None: {(0, 0): numpy.array([[], [], []])}}
+
+    # Handle case when list of points is empty
+    if len(points) == 0:
+        return _tabulate_empty_psi_table(tdim, deriv_order)
+
+    # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, cell)
     if integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
         num_entities = 2  # top and bottom
@@ -127,6 +147,7 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if integral_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)
+
     return psi_table
 
 def _tabulate_entities(integral_type, cell):
@@ -238,7 +259,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
             # Tabulate table of basis functions and derivatives in points
             psi_table = _tabulate_psi_table(integral_type, cell, fiat_element,
-                                        num_derivatives[ufl_element], points)
+                                            num_derivatives[ufl_element], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
             psi_tables[len_weights][ufl_element] = {None: psi_table}
