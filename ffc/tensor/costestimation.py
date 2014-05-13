@@ -34,7 +34,7 @@ def estimate_cost(integral, function_replace_map):
 
     # Check that domain type is supported
     supported = ["cell", "exterior_facet", "interior_facet"]
-    if not integral.domain_type() in supported:
+    if not integral.integral_type() in supported:
         return -1
 
     # Extract monomial integrand
