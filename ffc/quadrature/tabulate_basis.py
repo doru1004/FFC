@@ -34,7 +34,10 @@ from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cell_to_num_entities
 from ffc.quadrature_schemes import create_quadrature
 
-def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+def _create_quadrature_points_and_weights(integral_type,
+                                          cell,
+                                          degree,
+                                          rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
@@ -49,6 +52,8 @@ def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
             (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
     elif integral_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    elif integral_type == "quadrature_cell":
+        (points, weights) = ([], [])
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)
@@ -83,6 +88,8 @@ def domain_to_entity_dim(integral_type, cell):
         entity_dim = tdim - 1
     elif integral_type == "point":
         entity_dim = 0
+    elif integral_type == "quadrature_cell":
+        entity_dim = tdim
     else:
         error("Unknown integral_type: %s" % integral_type)
     return entity_dim

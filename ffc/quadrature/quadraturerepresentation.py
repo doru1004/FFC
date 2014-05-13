@@ -163,6 +163,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("exterior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert"):
         # Compute transformed integrals.
+        info("Transforming exterior facet integral")
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
@@ -171,6 +172,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
         # Compute transformed integrals.
+        info("Transforming interior facet integral")
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):
@@ -185,6 +187,14 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
             info("Transforming point integral (%d)" % i)
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+
+    elif integral_type == "quadrature_cell":
+        # Note: Perform same transformations as for "cell" domain type
+        # Compute transformed integrals.
+        info("Transforming quadrature integral")
+        transformer.update_cell()
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
+
     else:
         error("Unhandled domain type: " + str(integral_type))
     return terms

@@ -105,6 +105,10 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     """Initialize a representation dict with common information that is
     expected independently of which representation is chosen."""
 
+    # FIXME: Rename "quadrature" in UFL to "quadrature_cell"
+    if itg_data.integral_type == "quadrature":
+        itg_data.integral_type = "quadrature_cell"
+
     # Mapping from recognized domain types to entity types
     entity_types = {"cell":                  "cell",
                     "exterior_facet":        "facet",
@@ -115,7 +119,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "interior_facet_horiz":  "horiz_facet",
                     "interior_facet_vert":   "vert_facet",
                     "point":                 "vertex",
-                    "quadrature":            "cell"}
+                    "quadrature_cell":       "cell"}
 
     # Check and extract entity type
     integral_type = itg_data.integral_type
