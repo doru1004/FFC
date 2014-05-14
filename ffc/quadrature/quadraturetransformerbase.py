@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-03-11
+# Last changed: 2014-04-02
 
 # Python modules.
 from itertools import izip
@@ -830,6 +830,10 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def generate_terms(self, integrand, integral_type):
         "Generate terms for code generation."
+
+        # Set domain type
+        self.integral_type = integral_type
+
         #print integrand
         #print tree_format(integrand, 0, False)
         # Get terms.
@@ -1097,8 +1101,17 @@ class QuadratureTransformerBase(Transformer):
             basis_access = format["component"]("", [f_ip, index_calc])
 
         # If we have a restricted function multiply space_dim by two.
-        if self.restriction == "+" or self.restriction == "-":
+        if self.restriction in ("+", "-"):
             space_dim *= 2
+
+        # If we have a restricted function and domain type is custom,
+        # then offset also the basis function access
+        if self.restriction in ("+", "-") and self.domain_type == "custom" and offset != "":
+            loop_index = format["add"]([loop_index, offset])
+
+        # Create basis access, we never need to map the entry in the basis table
+        # since we will either loop the entire space dimension or the non-zeros.
+        basis_access = format["component"]("", [f_ip, loop_index])
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
