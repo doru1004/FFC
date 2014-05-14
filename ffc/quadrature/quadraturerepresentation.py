@@ -21,9 +21,9 @@
 # Modified by Martin Alnaes, 2013-2014
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-07
+# Last changed: 2014-03-10
 
-import numpy
+import numpy, itertools
 from collections import defaultdict
 
 # UFL modules
@@ -73,12 +73,13 @@ def compute_integral_ir(itg_data,
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
-    # Create transformer.
+    # Select transformer.
     if ir["optimise_parameters"]["optimisation"] or parameters["pyop2-ir"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer
 
+    # Create transformer.
     transformer = QuadratureTransformerClass(psi_tables,
                                              quadrature_rules,
                                              form_data.geometric_dimension,
@@ -109,6 +110,9 @@ def compute_integral_ir(itg_data,
 
     # Add number of coefficients
     ir["num_coefficients"] = form_data.num_coefficients
+
+    # Extract element data for psi_tables, needed for runtime quadrature (quadrature_cell)
+    ir["element_data"] = _extract_element_data(transformer.element_map)
 
     return ir
 
@@ -208,3 +212,24 @@ def _transform_integrals(transformer, integrals, integral_type):
         transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
+
+def _extract_element_data(element_map):
+    "Extract element data for psi_tables"
+
+    # Iterate over map
+    element_data = {}
+    for elements in element_map.itervalues():
+        for ufl_element, counter in elements.iteritems():
+
+            # Create corresponding FIAT element
+            fiat_element = create_element(ufl_element)
+
+            # Compute value size
+            shape = ufl_element.value_shape()
+            value_size = 1 if shape == () else itertools.product(shape)
+
+            # Store data
+            element_data[counter] = {"value_size":      value_size,
+                                     "local_dimension": fiat_element.space_dimension()}
+
+    return element_data
