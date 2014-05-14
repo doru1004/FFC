@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013-2014
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-17
+# Last changed: 2014-03-19
 
 import numpy, itertools
 from collections import defaultdict
@@ -112,7 +112,7 @@ def compute_integral_ir(itg_data,
     ir["num_coefficients"] = form_data.num_coefficients
 
     # Extract element data for psi_tables, needed for runtime quadrature.
-    # This is used by the two integral types quadrature_cell and quadrature_facet
+    # This is used by integral type custom_integral.
     ir["element_data"] = _extract_element_data(transformer.element_map)
 
     return ir
@@ -193,20 +193,12 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type == "quadrature_cell":
+    elif integral_type == "custom":
 
         # Compute transformed integrale: same as for cell integrals
-        info("Transforming quadrature cell integral")
+        info("Transforming custom integral")
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
-
-    elif domain_type == "quadrature_facet":
-
-        # Compute transformed integrals: same as for cell integrals but
-        # we need to set a dummy facet-facet combination
-        info("Transforming quadrature facet integral")
-        transformer.update_facets(0, 0)
-        terms = _transform_integrals(transformer, integrals_dict, domain_type)
 
     else:
         error("Unhandled domain type: " + str(integral_type))

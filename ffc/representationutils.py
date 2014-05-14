@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-17
+# Last changed: 2014-03-19
 
 from ufl.measure import integral_type_to_measure_name
 
@@ -115,8 +115,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "interior_facet_horiz":  "horiz_facet",
                     "interior_facet_vert":   "vert_facet",
                     "point":                 "vertex",
-                    "quadrature_cell":       "cell",
-                    "quadrature_facet":      "facet"}
+                    "custom":                "cell"}
 
     # Check and extract entity type
     integral_type = itg_data.integral_type

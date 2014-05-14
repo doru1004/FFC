@@ -52,9 +52,7 @@ def _create_quadrature_points_and_weights(integral_type,
             (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
     elif integral_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
-    elif integral_type == "quadrature_cell":
-        (points, weights) = (None, None)
-    elif domain_type == "quadrature_facet":
+    elif integral_type == "custom":
         (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
@@ -90,7 +88,7 @@ def domain_to_entity_dim(integral_type, cell):
         entity_dim = tdim - 1
     elif integral_type == "point":
         entity_dim = 0
-    elif integral_type == "quadrature_cell":
+    elif integral_type == "custom":
         entity_dim = tdim
     else:
         error("Unknown integral_type: %s" % integral_type)

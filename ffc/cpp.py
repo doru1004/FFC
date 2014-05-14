@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-17
+# Last changed: 2014-03-19
 
 # Python modules
 import re, numpy, platform
@@ -347,11 +347,8 @@ format.update({
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
-    "classname quadrature_cell_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_quadrature_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname quadrature_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_quadrature_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+    "classname custom_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -742,11 +739,10 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
 
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
-                         "exterior_facet_top", "exterior_facet_vert",
-                         "quadrature_cell"):
+                         "exterior_facet_top", "exterior_facet_vert"):
         code = volume % {"restriction": ""}
     elif integral_type in ("interior_facet", "interior_facet_horiz",
-                           "interior_facet_vert", "quadrature_facet"):
+                           "interior_facet_vert", "custom"):
         code = volume % {"restriction": _choose_map["+"]}
         code += volume % {"restriction": _choose_map["-"]}
     else:
@@ -760,9 +756,9 @@ def _generate_circumradius(tdim, gdim, integral_type, circumradius):
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "point", "quadrature_cell"):
+    if integral_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
-    elif integral_type in ("interior_facet", "quadrature_facet"):
+    elif integral_type in ("interior_facet", "custom"):
         code = radius % {"restriction": _choose_map["+"]}
         code += radius % {"restriction": _choose_map["-"]}
     else:
