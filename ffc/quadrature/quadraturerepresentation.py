@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes, 2013-2014
 #
 # First added:  2009-01-07
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
 import numpy, itertools
 from collections import defaultdict
