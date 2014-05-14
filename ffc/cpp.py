@@ -283,10 +283,10 @@ format.update({
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
-    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r, ufc_cell_volume),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r, pyop2_cell_volume)},
-    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r, ufc_circumradius),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r, pyop2_circumradius)},
+    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume, r),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume, r)},
+    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, ufc_circumradius, r),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius, r)},
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
@@ -732,7 +732,7 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, integral_type, r=None, cell_volume):
+def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
     "Generate code for computing cell volume."
 
     # Choose snippets
@@ -752,7 +752,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, r=None, cell_volume):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, integral_type, r=None, circumradius):
+def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
