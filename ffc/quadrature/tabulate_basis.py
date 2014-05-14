@@ -54,6 +54,8 @@ def _create_quadrature_points_and_weights(integral_type,
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     elif integral_type == "quadrature_cell":
         (points, weights) = (None, None)
+    elif domain_type == "quadrature_facet":
+        (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)

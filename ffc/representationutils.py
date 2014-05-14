@@ -115,7 +115,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "interior_facet_horiz":  "horiz_facet",
                     "interior_facet_vert":   "vert_facet",
                     "point":                 "vertex",
-                    "quadrature_cell":       "cell"}
+                    "quadrature_cell":       "cell",
+                    "quadrature_facet":      "facet"}
 
     # Check and extract entity type
     integral_type = itg_data.integral_type
