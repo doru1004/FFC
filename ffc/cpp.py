@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-10
+# Last changed: 2014-03-11
 
 # Python modules
 import re, numpy, platform
@@ -303,8 +303,13 @@ format.update({
                                  "pyop2": ""},
     "header_c":                 header_c,
     "footer":                   {"ufc": footer,
-                                 "pyop2": ""}
-})
+                                 "pyop2": ""},
+    "eval_basis_decl":          eval_basis_decl,
+    "eval_basis":               eval_basis,
+    "eval_basis_copy":          eval_basis_copy,
+    "eval_derivs_decl":         eval_derivs_decl,
+    "eval_derivs":              eval_derivs,
+    "eval_derivs_copy":         eval_derivs_copy})
 
 # Class names
 format.update({
