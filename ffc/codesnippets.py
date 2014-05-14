@@ -1542,7 +1542,7 @@ max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
 
 eval_basis_decl = """\
 std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);
-for (std::size_t ip = 0; i < num_quadrature_points; i++)
+for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
   %(prefix)s.resize(%(macro_dim)s);
 """
 
@@ -1561,7 +1561,7 @@ std::copy(values, values + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offs
 
 eval_derivs_decl = """\
 std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);
-for (std::size_t ip = 0; i < num_quadrature_points; i++)
+for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
   %(prefix)s_D%(d)s.resize(%(macro_dim)s);
 """
 
