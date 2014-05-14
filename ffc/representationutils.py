@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-04-02
+# Last changed: 2014-04-15
 
 from ufl.measure import integral_type_to_measure_name
 

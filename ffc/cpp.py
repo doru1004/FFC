@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-04-02
+# Last changed: 2014-04-15
 
 # Python modules
 import re, numpy, platform
@@ -751,7 +751,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
     elif integral_type == "custom":
         code = volume % {"restriction": _choose_map(r)}
     else:
-        error("Unsupported domain_type: %s" % str(domain_type))
+        error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
 def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
