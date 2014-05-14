@@ -137,16 +137,17 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
         num_facets = cell_to_num_entities(cell)[-2]
 
     # Initialize integral intermediate representation
-    return {"representation":       representation,
-            "integral_type":        itg_data.integral_type,
-            "subdomain_id":         itg_data.subdomain_id,
-            "form_id":              form_id,
-            "rank":                 form_data.rank,
-            "cell":                 cell,
-            "entity_type":          entity_type,
-            "num_facets":           num_facets,
-            "num_vertices":         cell_to_num_entities(cell)[0],
-            "needs_oriented":       needs_oriented_jacobian(form_data)}
+    return {"representation": representation,
+            "integral_type":  itg_data.integral_type,
+            "subdomain_id":   itg_data.subdomain_id,
+            "form_id":        form_id,
+            "rank":           form_data.rank,
+            "cell":           cell,
+            "entity_type":    entity_type,
+            "num_facets":     num_facets,
+            "num_vertices":   cell_to_num_entities(cell)[0],
+            "needs_oriented": needs_oriented_jacobian(form_data),
+            "num_cells":      itg_data.metadata["num_cells"]}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."

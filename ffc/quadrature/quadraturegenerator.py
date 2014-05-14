@@ -39,14 +39,17 @@ from symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
+
+    # Prefetch formatting to speedup code generation (well...)
+    ret = format["return"]
+
+    # Generate code
     code = initialize_integral_code(ir, prefix, parameters)
+    code["num_cells"] = ret(ir["num_cells"])
     code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
     code["arglist"] = _arglist(ir)
     code["metadata"] = ""
-
-    # FIXME: Temporary implementation
-    code["num_cells"] = "return 1;"
 
     return code
 
@@ -82,17 +85,18 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     p_format        = parameters["format"]
 
-    f_comment       = format["comment"]
-    f_G             = format["geometry constant"]
-    f_const_double  = format["assign"]
-    f_switch        = format["switch"]
-    f_float         = format["float"]
-    f_assign        = format["assign"]
-    f_A             = format["element tensor"][p_format]
-    f_r             = format["free indices"][0]
-    f_loop          = format["generate loop"]
-    f_int           = format["int"]
-    f_facet         = format["facet"]
+    # Prefetch formatting to speedup code generation
+    f_comment      = format["comment"]
+    f_G            = format["geometry constant"]
+    f_const_double = format["assign"]
+    f_switch       = format["switch"]
+    f_float        = format["float"]
+    f_assign       = format["assign"]
+    f_A            = format["element tensor"][p_format]
+    f_r            = format["free indices"][0]
+    f_loop         = format["generate loop"]
+    f_int          = format["int"]
+    f_facet        = format["facet"]
 
     # Get data.
     opt_par       = ir["optimise_parameters"]
@@ -107,6 +111,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     geo_consts    = ir["geo_consts"]
     oriented      = ir["needs_oriented"]
     element_data  = ir["element_data"]
+    num_cells     = ir["num_cells"]
 
     # Create sets of used variables.
     used_weights    = set()
