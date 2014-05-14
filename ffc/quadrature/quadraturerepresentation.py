@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-02
+# Last changed: 2014-04-16
 
 # Python modules
 import numpy, itertools, collections
