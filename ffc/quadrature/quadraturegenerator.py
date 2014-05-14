@@ -322,6 +322,10 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
 
+        # FIXME: Jacobi code does not seem to be needed for custom
+        # integrals, so some of the above code can be removed
+        jacobi_code = ""
+
     else:
         error("Unhandled integral type: " + str(integral_type))
 
@@ -908,7 +912,8 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
                     # Generate code
                     code += [f_comment("Evaluate basis functions at all quadrature points")]
-                    code += [f_static_array("double", "values", num_vals)]
+                    if cell_number == 0:
+                        code += [f_static_array("double", "values", num_vals)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
@@ -961,7 +966,8 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
 
                     # Generate code
                     code += [f_comment("Evaluate basis function derivatives at all quadrature points")]
-                    code += [f_static_array("double", "values", num_vals)]
+                    if cell_number == 0:
+                        code += [f_static_array("double", "values", num_vals)]
                     code += f_loop(block, [("ip", 0, "num_quadrature_points")])
                     code += [""]
 
