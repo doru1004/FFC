@@ -165,8 +165,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += format["scale factor snippet"][p_format]
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
     elif integral_type == "exterior_facet":
         if p_format == 'pyop2':
@@ -203,8 +203,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
     elif integral_type == "interior_facet":
 
@@ -254,8 +254,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
 
     elif integral_type == "point":
 
@@ -287,7 +287,7 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
 
-    elif domain_type == "custom":
+    elif integral_type == "custom":
 
         # Warning that more than two cells in only partly supported.
         # The missing piece is to couple multiple cells to
@@ -314,13 +314,13 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"](tdim, gdim, domain_type, r=i)
+            jacobi_code += format["generate cell volume"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"](tdim, gdim, domain_type, r=i)
+            jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
 
     else:
-        error("Unhandled integral type: " + str(domain_type))
+        error("Unhandled integral type: " + str(integral_type))
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations.
@@ -338,7 +338,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         name_map = ir["name_map"]
         tables = ir["unique_tables"]
         tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
-        common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, domain_type, gdim, parameters)
+        common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, integral_type, gdim, parameters)
 
     # Add special tabulation code for custom integral
     else:
@@ -719,7 +719,7 @@ def _tabulate_weights(quadrature_weights, parameters):
 
     return code
 
-def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, domain_type, gdim, parameters):
+def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, integral_type, gdim, parameters):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.

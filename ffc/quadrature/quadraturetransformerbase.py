@@ -1106,7 +1106,7 @@ class QuadratureTransformerBase(Transformer):
 
         # If we have a restricted function and domain type is custom,
         # then offset also the basis function access
-        if self.restriction in ("+", "-") and self.domain_type == "custom" and offset != "":
+        if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
             loop_index = format["add"]([loop_index, offset])
 
         # Create basis access, we never need to map the entry in the basis table

@@ -746,7 +746,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
                            "interior_facet_vert"):
         code = volume % {"restriction": _choose_map("+")}
         code += volume % {"restriction": _choose_map("-")}
-    elif domain_type == "custom":
+    elif integral_type == "custom":
         code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
@@ -764,7 +764,7 @@ def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
     elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
         code += radius % {"restriction": _choose_map("-")}
-    elif domain_type == "custom":
+    elif integral_type == "custom":
         code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
