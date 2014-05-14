@@ -17,14 +17,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Anders Logg, 2009.
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Anders Logg 2009, 2014
+# Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
 # Last changed: 2014-04-02
 
-import numpy, itertools
-from collections import defaultdict
+# Python modules
+import numpy, itertools, collections
 
 # UFL modules
 from ufl.classes import Form, Integral
@@ -73,13 +73,12 @@ def compute_integral_ir(itg_data,
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
-    # Select transformer.
+    # Create transformer.
     if ir["optimise_parameters"]["optimisation"] or parameters["pyop2-ir"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer
 
-    # Create transformer.
     transformer = QuadratureTransformerClass(psi_tables,
                                              quadrature_rules,
                                              form_data.geometric_dimension,
@@ -138,7 +137,7 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     ffc_assert(all(subdomain_id == itg.subdomain_id() for itg in integrals),
                "Expecting only integrals on the same subdomain.")
 
-    sorted_integrands = defaultdict(list)
+    sorted_integrands = collections.defaultdict(list)
     for integral in integrals:
         # Override default degree and rule if specified in integral metadata
         integral_metadata = integral.metadata() or {}
@@ -168,7 +167,6 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("exterior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert"):
         # Compute transformed integrals.
-        info("Transforming exterior facet integral")
         terms = [None]*num_facets
         for i in range(num_facets):
             info("Transforming exterior facet integral %d" % i)
@@ -177,7 +175,6 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
         # Compute transformed integrals.
-        info("Transforming interior facet integral")
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
             for j in range(num_facets):

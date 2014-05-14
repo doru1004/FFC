@@ -18,7 +18,7 @@ quadrature and tensor representation."""
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes 2013
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08

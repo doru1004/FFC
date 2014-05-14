@@ -26,7 +26,7 @@ might be (re-)implemented in a future version of FFC
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Kristian B. Oelgaard, 2010.
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-05
 # Last changed: 2014-03-05

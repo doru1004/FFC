@@ -751,7 +751,7 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
     elif integral_type == "custom":
         code = volume % {"restriction": _choose_map(r)}
     else:
-        error("Unsupported integral_type: %s" % str(integral_type))
+        error("Unsupported domain_type: %s" % str(domain_type))
     return code
 
 def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):

@@ -193,7 +193,8 @@ class QuadratureTransformer(QuadratureTransformerBase):
                     code[()] = None
                     return code
                 elif not v:
-                    error("should not happen: %s" % str("v: '%s'" % repr(v)))
+                    print "v: '%s'" % repr(v)
+                    error("should not happen")
                 elif v == "1":
                     pass
                 else:
@@ -495,7 +496,6 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
                 if basis is not None:
                     # Add transformation
-                    print "Skipping"
                     code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
         # Handle non-affine mappings.
