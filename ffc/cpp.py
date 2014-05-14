@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2014-03-19
+# Last changed: 2014-04-02
 
 # Python modules
 import re, numpy, platform
@@ -283,10 +283,10 @@ format.update({
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
-    "generate cell volume":     {"ufc": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume),
-                                 "pyop2": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume)},
-    "generate circumradius":    {"ufc": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, ufc_circumradius),
-                                 "pyop2": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, pyop2_circumradius)},
+    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r, ufc_cell_volume),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, r, pyop2_cell_volume)},
+    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r, ufc_circumradius),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, r, pyop2_circumradius)},
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
@@ -732,7 +732,7 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
+def _generate_cell_volume(tdim, gdim, integral_type, r=None, cell_volume):
     "Generate code for computing cell volume."
 
     # Choose snippets
@@ -743,14 +743,16 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
                          "exterior_facet_top", "exterior_facet_vert"):
         code = volume % {"restriction": ""}
     elif integral_type in ("interior_facet", "interior_facet_horiz",
-                           "interior_facet_vert", "custom"):
+                           "interior_facet_vert"):
         code = volume % {"restriction": _choose_map("+")}
         code += volume % {"restriction": _choose_map("-")}
+    elif domain_type == "custom":
+        code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, integral_type, circumradius):
+def _generate_circumradius(tdim, gdim, integral_type, r=None, circumradius):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
@@ -759,9 +761,11 @@ def _generate_circumradius(tdim, gdim, integral_type, circumradius):
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
-    elif integral_type in ("interior_facet", "custom"):
+    elif integral_type == "interior_facet":
         code = radius % {"restriction": _choose_map("+")}
         code += radius % {"restriction": _choose_map("-")}
+    elif domain_type == "custom":
+        code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code

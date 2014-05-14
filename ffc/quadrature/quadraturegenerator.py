@@ -161,6 +161,10 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"][p_format]
 
+        # Generate code for cell volume and circumradius
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
+
     elif integral_type == "exterior_facet":
         if p_format == 'pyop2':
             common += ["unsigned int facet = *facet_p;\n"]
@@ -193,6 +197,10 @@ def _tabulate_tensor(ir, prefix, parameters):
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
+
+        # Generate code for cell volume and circumradius
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
 
     elif integral_type == "interior_facet":
         # Modify the dimensions of the primary indices because we have a macro element
@@ -236,6 +244,10 @@ def _tabulate_tensor(ir, prefix, parameters):
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
+
+        # Generate code for cell volume and circumradius
+        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, domain_type)
+        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, domain_type)
 
     elif integral_type == "point":
         cases = [None for i in range(num_vertices)]
@@ -282,14 +294,14 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
+            jacobi_code += "\n"
+            jacobi_code += format["generate cell volume"](tdim, gdim, domain_type, r=i)
+            jacobi_code += "\n"
+            jacobi_code += format["generate circumradius"](tdim, gdim, domain_type, r=i)
+            jacobi_code += "\n"
 
     else:
         error("Unhandled integral type: " + str(domain_type))
-
-    # Add common code except for domain_type "point"
-    if integral_type != "point":
-        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations.
@@ -299,7 +311,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     # here is not really common anymore. Think about how to
     # restructure this function.
 
-    # Add common code except for quadrature type integrals
+    # Add common code except for custom integrals
     if integral_type != "custom":
         common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
 

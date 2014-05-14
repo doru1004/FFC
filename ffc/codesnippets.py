@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-19
+# Last changed: 2014-04-02
 
 # Code snippets
 
@@ -1081,43 +1081,50 @@ OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
 
 _cell_volume_1D = """\
 // Compute cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_1D = _cell_volume_1D.format(abs='std::abs')
 _pyop2_cell_volume_1D = _cell_volume_1D.format(abs='fabs')
 
 _cell_volume_2D = """\
 // Compute cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_cell_volume_2D = _cell_volume_2D.format(abs='std::abs')
 _pyop2_cell_volume_2D = _cell_volume_2D.format(abs='fabs')
 
 _cell_volume_2D_1D = """\
 // Compute cell volume of interval in 2D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='std::abs')
 _pyop2_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='fabs')
 
 _cell_volume_3D = """\
 // Compute cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;
+"""
 _ufc_cell_volume_3D = _cell_volume_3D.format(abs='std::abs')
 _pyop2_cell_volume_3D = _cell_volume_3D.format(abs='fabs')
 
 _cell_volume_3D_1D = """\
 // Compute cell volume of interval in 3D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='std::abs')
 _pyop2_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='fabs')
 
 _cell_volume_3D_2D = """\
 // Compute cell volume of triangle in 3D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='std::abs')
 _pyop2_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='fabs')
 
 _circumradius_1D = """\
 // Compute circumradius; in 1D it is equal to half the cell length
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_1D = _circumradius_1D.format(abs='std::abs')
 _pyop2_circumradius_1D = _circumradius_1D.format(abs='fabs')
 
@@ -1126,8 +1133,8 @@ _ufc_circumradius_2D = """\
 const double v1v2%(restriction)s  = std::sqrt((vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2])*(vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2]) + (vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3]) );
 const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
 const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _pyop2_circumradius_2D = """\
 // Compute circumradius of triangle in 2D
@@ -1139,7 +1146,8 @@ const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restr
 
 _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_2D_1D = _circumradius_2D_1D.format(abs='std::abs')
 _pyop2_circumradius_2D_1D = _circumradius_2D_1D.format(abs='fabs')
 
@@ -1156,8 +1164,8 @@ const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
 const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
 const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%(restriction)s);
 const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
-
-const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );
+"""
 
 _pyop2_circumradius_3D = """\
 // Compute circumradius
@@ -1177,7 +1185,8 @@ const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(r
 
 _circumradius_3D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_3D_1D = _circumradius_3D_1D.format(abs='std::abs')
 _pyop2_circumradius_3D_1D = _circumradius_3D_1D.format(abs='fabs')
 
@@ -1186,8 +1195,8 @@ _ufc_circumradius_3D_2D = """\
 const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]));
 const double v0v2%(restriction)s = std::sqrt( J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[5]*J%(restriction)s[5]);
 const double v0v1%(restriction)s = std::sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[4]*J%(restriction)s[4]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _pyop2_circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
