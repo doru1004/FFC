@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-03-11
+# Last changed: 2014-03-19
 
 # Code snippets
 
@@ -1080,37 +1080,37 @@ OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
 }
 
 _cell_volume_1D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
 _ufc_cell_volume_1D = _cell_volume_1D.format(abs='std::abs')
 _pyop2_cell_volume_1D = _cell_volume_1D.format(abs='fabs')
 
 _cell_volume_2D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
 _ufc_cell_volume_2D = _cell_volume_2D.format(abs='std::abs')
 _pyop2_cell_volume_2D = _cell_volume_2D.format(abs='fabs')
 
 _cell_volume_2D_1D = """\
-// Cell volume of interval in 2D
+// Compute cell volume of interval in 2D
 const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
 _ufc_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='std::abs')
 _pyop2_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='fabs')
 
 _cell_volume_3D = """\
-// Cell volume
+// Compute cell volume
 const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;"""
 _ufc_cell_volume_3D = _cell_volume_3D.format(abs='std::abs')
 _pyop2_cell_volume_3D = _cell_volume_3D.format(abs='fabs')
 
 _cell_volume_3D_1D = """\
-// Cell volume of interval in 3D
+// Compute cell volume of interval in 3D
 const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
 _ufc_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='std::abs')
 _pyop2_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='fabs')
 
 _cell_volume_3D_2D = """\
-// Cell volume of triangle in 3D
+// Compute cell volume of triangle in 3D
 const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
 _ufc_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='std::abs')
 _pyop2_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='fabs')
