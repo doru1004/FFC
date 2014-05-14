@@ -28,7 +28,7 @@ from ufl.classes import Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
 # FFC modules
-from ffc.log import ffc_assert, info, error
+from ffc.log import ffc_assert, info, error, warning
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cell_to_num_entities
@@ -201,6 +201,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         (points, weights) = _create_quadrature_points_and_weights(integral_type, cell, degree, scheme)
         # The TOTAL number of weights/points
         len_weights = None if weights is None else len(weights)
+
         # Add points and rules to dictionary
         ffc_assert(len_weights not in quadrature_rules,
                    "This number of points is already present in the weight table: " + repr(quadrature_rules))
@@ -230,7 +231,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         else:
             x_element = x.element()
         if x_element not in ufl_elements:
-            ufl_elements.append(x_element)
+            if integral_type == "custom":
+                # FIXME: Not yet implemented, in progress
+                warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+            else:
+                ufl_elements.append(x_element)
 
         # Find all CellAvg and FacetAvg in integrals and extract elements
         for avg, AvgType in (("cell", CellAvg), ("facet", FacetAvg)):

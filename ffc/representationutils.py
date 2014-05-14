@@ -106,7 +106,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     expected independently of which representation is chosen."""
 
     # Mapping from recognized domain types to entity types
-    entity_types = {"cell":                  "cell",
+    entity_type = {"cell":                  "cell",
                     "exterior_facet":        "facet",
                     "interior_facet":        "facet",
                     "exterior_facet_top":    "horiz_facet",
@@ -115,16 +115,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                     "interior_facet_horiz":  "horiz_facet",
                     "interior_facet_vert":   "vert_facet",
                     "point":                 "vertex",
-                    "custom":                "cell"}
+                    "custom":                "cell"}[itg_data.integral_type]
 
-    # Check and extract entity type
-    integral_type = itg_data.integral_type
-    if not itg_data.integral_type in entity_types:
-        error("Unsupported integration domain type: %s (%s)" \
-                  % (integral_type, integral_type_to_measure_name[integral_type]))
-    entity_type = entity_types[itg_data.integral_type]
-
-    # Check topological dimension
+    # Extract data
     cell = itg_data.domain.cell()
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
