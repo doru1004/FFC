@@ -22,7 +22,7 @@ quadrature and tensor representation."""
 # Modified by Anders Logg 2014
 #
 # First added:  2013-01-08
-# Last changed: 2014-03-19
+# Last changed: 2014-04-02
 
 from ufl.measure import integral_type_to_measure_name
 
@@ -129,6 +129,12 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     tdim = itg_data.domain.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
+    # Set number of cells if not set
+    num_cells = None
+    if "num_cells" in itg_data.metadata:
+        num_cells = itg_data.metadata["num_cells"]
+
+    # Set num_facets (overrides the previous default)
     if entity_type == "horiz_facet":
         num_facets = 2  # top and bottom
     elif entity_type == "vert_facet":
@@ -147,7 +153,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "num_facets":     num_facets,
             "num_vertices":   cell_to_num_entities(cell)[0],
             "needs_oriented": needs_oriented_jacobian(form_data),
-            "num_cells":      itg_data.metadata["num_cells"]}
+            "num_cells":      num_cells}
 
 def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
