@@ -30,10 +30,10 @@ For more information about UFC and the FEniCS Project, visit
 # -*- coding: utf-8 -*-
 __author__  = "Martin Sandve Alnaes, Anders Logg, Kent-Andre Mardal, Ola Skavhaug, and Hans Petter Langtangen"
 __date__    = "2014-01-07"
-__version__ = "2.3.0+"
+__version__ = "1.3.0+"
 __license__ = "This code is released into the public domain"
 
-UFC_VERSION_MAJOR = 2
+UFC_VERSION_MAJOR = 1
 UFC_VERSION_MINOR = 3
 UFC_VERSION_MAINTENANCE = 0
 
@@ -46,33 +46,30 @@ from .integrals import *
 from .form import *
 from .build import build_ufc_module
 
-# Check if we should import development/experimental version
-#import os
-#if "UFC_DEV" in os.environ:
-#    from finite_element_1_6 import *
-#    from dofmap_1_6 import *
-
-templates = {"function_header":                        function_header,
-             "function_implementation":                function_implementation,
-             "function_combined":                      function_combined,
-             "finite_element_header":                  finite_element_header,
-             "finite_element_implementation":          finite_element_implementation,
-             "finite_element_combined":                finite_element_combined,
-             "dofmap_header":                          dofmap_header,
-             "dofmap_implementation":                  dofmap_implementation,
-             "dofmap_combined":                        dofmap_combined,
-             "cell_integral_header":                   cell_integral_header,
-             "cell_integral_implementation":           cell_integral_implementation,
-             "cell_integral_combined":                 cell_integral_combined,
-             "exterior_facet_integral_header":         exterior_facet_integral_header,
-             "exterior_facet_integral_implementation": exterior_facet_integral_implementation,
-             "exterior_facet_integral_combined":       exterior_facet_integral_combined,
-             "interior_facet_integral_header":         interior_facet_integral_header,
-             "interior_facet_integral_implementation": interior_facet_integral_implementation,
-             "interior_facet_integral_combined":       interior_facet_integral_combined,
-             "point_integral_header":                  point_integral_header,
-             "point_integral_implementation":          point_integral_implementation,
-             "point_integral_combined":                point_integral_combined,
-             "form_header":                            form_header,
-             "form_implementation":                    form_implementation,
-             "form_combined":                          form_combined}
+templates = {"function_header":                          function_header,
+             "function_implementation":                  function_implementation,
+             "function_combined":                        function_combined,
+             "finite_element_header":                    finite_element_header,
+             "finite_element_implementation":            finite_element_implementation,
+             "finite_element_combined":                  finite_element_combined,
+             "dofmap_header":                            dofmap_header,
+             "dofmap_implementation":                    dofmap_implementation,
+             "dofmap_combined":                          dofmap_combined,
+             "cell_integral_header":                     cell_integral_header,
+             "cell_integral_implementation":             cell_integral_implementation,
+             "cell_integral_combined":                   cell_integral_combined,
+             "exterior_facet_integral_header":           exterior_facet_integral_header,
+             "exterior_facet_integral_implementation":   exterior_facet_integral_implementation,
+             "exterior_facet_integral_combined":         exterior_facet_integral_combined,
+             "interior_facet_integral_header":           interior_facet_integral_header,
+             "interior_facet_integral_implementation":   interior_facet_integral_implementation,
+             "interior_facet_integral_combined":         interior_facet_integral_combined,
+             "point_integral_header":                    point_integral_header,
+             "point_integral_implementation":            point_integral_implementation,
+             "point_integral_combined":                  point_integral_combined,
+             "custom_integral_header":                   custom_integral_header,
+             "custom_integral_implementation":           custom_integral_implementation,
+             "custom_integral_combined":                 custom_integral_combined,
+             "form_header":                              form_header,
+             "form_implementation":                      form_implementation,
+             "form_combined":                            form_combined}

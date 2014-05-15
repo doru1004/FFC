@@ -17,11 +17,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Anders Logg, 2009.
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Anders Logg 2009, 2014
+# Modified by Martin Alnaes 2013
+#
+# First added:  2009-01-07
+# Last changed: 2014-04-23
 
-import numpy
-from collections import defaultdict
+# Python modules
+import numpy, itertools, collections
 
 # UFL modules
 from ufl.classes import Form, Integral
@@ -51,7 +54,7 @@ def compute_integral_ir(itg_data,
     ir = initialize_integral_ir("quadrature", itg_data, form_data, form_id)
 
     # Create and save the optisation parameters.
-    ir["optimise_parameters"] = parse_optimise_parameters(parameters)
+    ir["optimise_parameters"] = parse_optimise_parameters(parameters, itg_data)
 
     # Sort integrals into a dict with quadrature degree and rule as key
     sorted_integrals = sort_integrals(itg_data.integrals,
@@ -70,12 +73,13 @@ def compute_integral_ir(itg_data,
     ir["prim_idims"] = [create_element(ufl_element).space_dimension()
                         for ufl_element in form_data.argument_elements]
 
-    # Create transformer.
+    # Select transformer
     if ir["optimise_parameters"]["optimisation"] or parameters["pyop2-ir"]:
         QuadratureTransformerClass = QuadratureTransformerOpt
     else:
         QuadratureTransformerClass = QuadratureTransformer
 
+    # Create transformer
     transformer = QuadratureTransformerClass(psi_tables,
                                              quadrature_rules,
                                              form_data.geometric_dimension,
@@ -107,6 +111,10 @@ def compute_integral_ir(itg_data,
     # Add number of coefficients
     ir["num_coefficients"] = form_data.num_coefficients
 
+    # Extract element data for psi_tables, needed for runtime quadrature.
+    # This is used by integral type custom_integral.
+    ir["element_data"] = _extract_element_data(transformer.element_map)
+
     return ir
 
 def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule):
@@ -130,7 +138,7 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
     ffc_assert(all(subdomain_id == itg.subdomain_id() for itg in integrals),
                "Expecting only integrals on the same subdomain.")
 
-    sorted_integrands = defaultdict(list)
+    sorted_integrands = collections.defaultdict(list)
     for integral in integrals:
         # Override default degree and rule if specified in integral metadata
         integral_metadata = integral.metadata() or {}
@@ -182,6 +190,14 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
             info("Transforming point integral (%d)" % i)
             transformer.update_vertex(i)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+
+    elif integral_type == "custom":
+
+        # Compute transformed integrale: same as for cell integrals
+        info("Transforming custom integral")
+        transformer.update_cell()
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
+
     else:
         error("Unhandled domain type: " + str(integral_type))
     return terms
@@ -195,3 +211,24 @@ def _transform_integrals(transformer, integrals, integral_type):
         transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
+
+def _extract_element_data(element_map):
+    "Extract element data for psi_tables"
+
+    # Iterate over map
+    element_data = {}
+    for elements in element_map.itervalues():
+        for ufl_element, counter in elements.iteritems():
+
+            # Create corresponding FIAT element
+            fiat_element = create_element(ufl_element)
+
+            # Compute value size
+            shape = ufl_element.value_shape()
+            value_size = 1 if shape == () else itertools.product(shape)
+
+            # Store data
+            element_data[counter] = {"value_size":      value_size,
+                                     "local_dimension": fiat_element.space_dimension()}
+
+    return element_data

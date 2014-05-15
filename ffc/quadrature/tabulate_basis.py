@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009.
 # Modified by Martin Alnaes, 2013-2014
 
-import numpy
+import numpy, itertools
 
 # UFL modules
 import ufl
@@ -28,13 +28,16 @@ from ufl.classes import Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
 # FFC modules
-from ffc.log import ffc_assert, info, error
+from ffc.log import ffc_assert, info, error, warning
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cell_to_num_entities
 from ffc.quadrature_schemes import create_quadrature
 
-def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+def _create_quadrature_points_and_weights(integral_type,
+                                          cell,
+                                          degree,
+                                          rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
@@ -49,6 +52,8 @@ def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
             (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
     elif integral_type == "point":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    elif integral_type == "custom":
+        (points, weights) = (None, None)
     else:
         error("Unknown integral type: " + str(integral_type))
     return (points, weights)
@@ -83,6 +88,8 @@ def domain_to_entity_dim(integral_type, cell):
         entity_dim = tdim - 1
     elif integral_type == "point":
         entity_dim = 0
+    elif integral_type == "custom":
+        entity_dim = tdim
     else:
         error("Unknown integral_type: %s" % integral_type)
     return entity_dim
@@ -102,10 +109,31 @@ def _map_entity_points(cell, points, entity_dim, entity, integral_type):
     elif entity_dim == 0:
         return (reference_cell_vertices(cell.cellname())[entity],)
 
+def _tabulate_empty_psi_table(tdim, deriv_order):
+    "Tabulate psi table when there are no points"
+
+    # All combinations of partial derivatives up to given order
+    gdim = tdim # hack, consider passing gdim variable here
+    derivs = [d for d in itertools.product(*(gdim*[range(0, deriv_order + 1)]))]
+    derivs = [d for d in derivs if sum(d) <= deriv_order]
+
+    # Return empty table
+    table = {}
+    for d in derivs:
+        table[d] = [[]]
+
+    return {None: table}
+
 def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     "Tabulate psi table for different integral types."
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
+
+    # Handle case when list of points is empty
+    if points is None:
+        return _tabulate_empty_psi_table(tdim, deriv_order)
+
+    # Otherwise, call FIAT to tabulate
     entity_dim = domain_to_entity_dim(integral_type, cell)
     if integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
         num_entities = 2  # top and bottom
@@ -119,6 +147,7 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
         key = None if integral_type == "cell" else entity
         psi_table[key] = element.tabulate(deriv_order, entity_points)
+
     return psi_table
 
 def _tabulate_entities(integral_type, cell):
@@ -158,7 +187,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     quadrature_rules = {}
     psi_tables = {}
     integrals = {}
-    avg_elements = { "cell": [], "facet": [] }
+    avg_elements = {"cell": [], "facet": []}
 
     integral_type = itg_data.integral_type
     cell = itg_data.domain.cell()
@@ -171,7 +200,8 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         # Make quadrature rule and get points and weights.
         (points, weights) = _create_quadrature_points_and_weights(integral_type, cell, degree, scheme)
         # The TOTAL number of weights/points
-        len_weights = len(weights)
+        len_weights = None if weights is None else len(weights)
+
         # Add points and rules to dictionary
         ffc_assert(len_weights not in quadrature_rules,
                    "This number of points is already present in the weight table: " + repr(quadrature_rules))
@@ -201,7 +231,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         else:
             x_element = x.element()
         if x_element not in ufl_elements:
-            ufl_elements.append(x_element)
+            if integral_type == "custom":
+                # FIXME: Not yet implemented, in progress
+                warning("Vector elements not yet supported in custom integrals so element for coordinate function x will not be generated.")
+            else:
+                ufl_elements.append(x_element)
 
         # Find all CellAvg and FacetAvg in integrals and extract elements
         for avg, AvgType in (("cell", CellAvg), ("facet", FacetAvg)):
@@ -230,10 +264,10 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
             # Tabulate table of basis functions and derivatives in points
             psi_table = _tabulate_psi_table(integral_type, cell, fiat_element,
-                                        num_derivatives[ufl_element], points)
+                                            num_derivatives[ufl_element], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
-            psi_tables[len_weights][ufl_element] = { None: psi_table }
+            psi_tables[len_weights][ufl_element] = {None: psi_table}
 
 
     # Loop over elements found in CellAvg and tabulate basis averages

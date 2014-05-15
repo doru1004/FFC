@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2013-09-24
+# Last changed: 2014-04-24
 
 # Code snippets
 
@@ -32,7 +32,9 @@ from ufl import Cell, OuterProductCell
 __all__ = ["comment_ufc", "comment_dolfin", "comment_pyop2",
            "header_h", "header_c", "footer",
            "compute_jacobian", "compute_jacobian_interior",
-           "compute_jacobian_inverse"]
+           "compute_jacobian_inverse",
+           "eval_basis_decl", "eval_basis", "eval_basis_copy",
+           "eval_derivs_decl", "eval_derivs", "eval_derivs_copy"]
 
 __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "pyop2_facet_determinant_interior", "top_facet_determinant",
@@ -1078,44 +1080,51 @@ OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
 }
 
 _cell_volume_1D = """\
-// Cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+// Compute cell volume
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_1D = _cell_volume_1D.format(abs='std::abs')
 _pyop2_cell_volume_1D = _cell_volume_1D.format(abs='fabs')
 
 _cell_volume_2D = """\
-// Cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+// Compute cell volume
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_cell_volume_2D = _cell_volume_2D.format(abs='std::abs')
 _pyop2_cell_volume_2D = _cell_volume_2D.format(abs='fabs')
 
 _cell_volume_2D_1D = """\
-// Cell volume of interval in 2D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+// Compute cell volume of interval in 2D
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='std::abs')
 _pyop2_cell_volume_2D_1D = _cell_volume_2D_1D.format(abs='fabs')
 
 _cell_volume_3D = """\
-// Cell volume
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;"""
+// Compute cell volume
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/6.0;
+"""
 _ufc_cell_volume_3D = _cell_volume_3D.format(abs='std::abs')
 _pyop2_cell_volume_3D = _cell_volume_3D.format(abs='fabs')
 
 _cell_volume_3D_1D = """\
-// Cell volume of interval in 3D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s);"""
+// Compute cell volume of interval in 3D
+const double volume%(restriction)s = {abs}(detJ%(restriction)s);
+"""
 _ufc_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='std::abs')
 _pyop2_cell_volume_3D_1D = _cell_volume_3D_1D.format(abs='fabs')
 
 _cell_volume_3D_2D = """\
-// Cell volume of triangle in 3D
-const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+// Compute cell volume of triangle in 3D
+const double volume%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='std::abs')
 _pyop2_cell_volume_3D_2D = _cell_volume_3D_2D.format(abs='fabs')
 
 _circumradius_1D = """\
 // Compute circumradius; in 1D it is equal to half the cell length
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_1D = _circumradius_1D.format(abs='std::abs')
 _pyop2_circumradius_1D = _circumradius_1D.format(abs='fabs')
 
@@ -1124,8 +1133,8 @@ _ufc_circumradius_2D = """\
 const double v1v2%(restriction)s  = std::sqrt((vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2])*(vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2]) + (vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3]) );
 const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
 const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _pyop2_circumradius_2D = """\
 // Compute circumradius of triangle in 2D
@@ -1137,7 +1146,8 @@ const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restr
 
 _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_2D_1D = _circumradius_2D_1D.format(abs='std::abs')
 _pyop2_circumradius_2D_1D = _circumradius_2D_1D.format(abs='fabs')
 
@@ -1154,8 +1164,8 @@ const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
 const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
 const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%(restriction)s);
 const  double area%(restriction)s = std::sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
-
-const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );
+"""
 
 _pyop2_circumradius_3D = """\
 // Compute circumradius
@@ -1175,7 +1185,8 @@ const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(r
 
 _circumradius_3D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
-const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;"""
+const double circumradius%(restriction)s = {abs}(detJ%(restriction)s)/2.0;
+"""
 _ufc_circumradius_3D_1D = _circumradius_3D_1D.format(abs='std::abs')
 _pyop2_circumradius_3D_1D = _circumradius_3D_1D.format(abs='fabs')
 
@@ -1184,8 +1195,8 @@ _ufc_circumradius_3D_2D = """\
 const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]));
 const double v0v2%(restriction)s = std::sqrt( J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[5]*J%(restriction)s[5]);
 const double v0v1%(restriction)s = std::sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[4]*J%(restriction)s[4]);
-
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
+"""
 
 _pyop2_circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
@@ -1526,3 +1537,41 @@ facet_area = {1: {1: _facet_area_1D,
 min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
 
 max_facet_edge_length = {3: {3: _max_facet_edge_length_3D}}
+
+# Code snippets for runtime quadrature (calling evaluate_basis)
+
+eval_basis_decl = """\
+std::vector<std::vector<double> > %(prefix)s(num_quadrature_points);
+for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
+  %(prefix)s[ip].resize(%(macro_dim)s);
+"""
+
+eval_basis = """\
+// Get current quadrature point and compute values of basis functions
+const double* x = quadrature_points + ip*%(gdim)s;
+const double* v = vertex_coordinates + %(vertex_offset)s;
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
+
+eval_basis_copy = """\
+
+// Copy values to table %(prefix)s
+std::copy(%(values)s, %(values)s + %(space_dim)s, %(prefix)s[ip].begin() + %(values_offset)s);
+"""
+
+eval_derivs_decl = """\
+std::vector<std::vector<double> > %(prefix)s_D%(d)s(num_quadrature_points);
+for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
+  %(prefix)s_D%(d)s[ip].resize(%(macro_dim)s);
+"""
+
+eval_derivs = """\
+// Get current quadrature point and compute values of basis function derivatives
+const double* x = quadrature_points + ip*%(gdim)s;
+const double* v = vertex_coordinates + %(vertex_offset)s;
+%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
+
+eval_derivs_copy = """\
+
+// Copy values to table %(prefix)s_D%(d)s
+for (std::size_t i = 0; i < %(space_dim)s; i++)
+  %(prefix)s_D%(d)s[ip][i] = %(values)s[%(values_offset)s + %(offset)s + i*%(stride)s];"""

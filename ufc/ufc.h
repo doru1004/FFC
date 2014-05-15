@@ -366,18 +366,25 @@ namespace ufc
 
   };
 
-  /// This class defines the interface for the tabulation of the cell
+  /// This class defines the interface for the tabulation of the
   /// tensor corresponding to the local contribution to a form from
-  /// the integral over an unknown cell fragment with quadrature points given.
+  /// the integral over a custom domain defined in terms of a set of
+  /// quadrature points and weights.
 
-  class quadrature_integral
+  class custom_integral
   {
   public:
 
-    /// Destructor
-    virtual ~quadrature_integral() {}
+    /// Constructor
+    custom_integral() {}
 
-    /// Tabulate the tensor for the contribution from a local cell
+    /// Destructor
+    virtual ~custom_integral() {};
+
+    /// Return the number of cells involved in evaluation of the integral
+    virtual std::size_t num_cells() const = 0;
+
+    /// Tabulate the tensor for the contribution from custom domain
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
@@ -431,8 +438,8 @@ namespace ufc
     /// Return the number of point domains
     virtual std::size_t num_point_domains() const = 0;
 
-    /// Return the number of quadrature domains
-    virtual std::size_t num_quadrature_domains() const = 0;
+    /// Return the number of custom domains
+    virtual std::size_t num_custom_domains() const = 0;
 
     /// Return whether form has any cell integrals
     virtual bool has_cell_integrals() const = 0;
@@ -446,8 +453,8 @@ namespace ufc
     /// Return whether form has any point integrals
     virtual bool has_point_integrals() const = 0;
 
-    /// Return whether form has any quadrature integrals
-    virtual bool has_quadrature_integrals() const = 0;
+    /// Return whether form has any custom integrals
+    virtual bool has_custom_integrals() const = 0;
 
     /// Create a new finite element for argument function i
     virtual finite_element* create_finite_element(std::size_t i) const = 0;
@@ -469,8 +476,8 @@ namespace ufc
     /// Create a new point integral on sub domain i
     virtual point_integral* create_point_integral(std::size_t i) const = 0;
 
-    /// Create a new quadrature integral on sub domain i
-    virtual quadrature_integral* create_quadrature_integral(std::size_t i) const = 0;
+    /// Create a new custom integral on sub domain i
+    virtual custom_integral* create_custom_integral(std::size_t i) const = 0;
 
     /// Create a new cell integral on everywhere else
     virtual cell_integral* create_default_cell_integral() const = 0;
@@ -486,8 +493,8 @@ namespace ufc
     /// Create a new point integral on everywhere else
     virtual point_integral* create_default_point_integral() const = 0;
 
-    /// Create a new quadrature integral on everywhere else
-    virtual quadrature_integral* create_default_quadrature_integral() const = 0;
+    /// Create a new custom integral on everywhere else
+    virtual custom_integral* create_default_custom_integral() const = 0;
 
   };
 

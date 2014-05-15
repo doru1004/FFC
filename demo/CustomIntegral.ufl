@@ -1,4 +1,4 @@
-# Copyright (C) 2013-2014 Martin Alnaes
+# Copyright (C) 2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -14,15 +14,25 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
+#
+# First added:  2014-03-04
+# Last changed: 2014-04-23
+#
+# Bilinear form defined in terms of a quadrature integral dQ.
+#
+# Compile this form with FFC: ffc QuadratureIntegral.ufl
 
-from ffc.log import info
+element = FiniteElement("Lagrange", triangle, 1)
 
-def optimize_integral_ir(ir, parameters):
-    "Compute optimized intermediate representation of integral."
+u = TrialFunction(element)
+v = TestFunction(element)
 
-    info("Optimizing uflacs representation")
+dc0 = dc(0, metadata={"num_cells": 1})
+dc1 = dc(1, metadata={"num_cells": 2})
 
-    # TODO: Implement optimization of ssa representation prior to code generation here.
-    oir = ir
+#a = dot(grad(u), grad(v))*dc0 + jump(u)*jump(v)*dc1
 
-    return oir
+a = jump(u.dx(0))*jump(v)*dc1
+#a = jump(u)*jump(v)*dc1
+#a = u('+')*v('-')*dS
+#a = u('-')*v('-')*dc1

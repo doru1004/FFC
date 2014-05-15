@@ -21,7 +21,7 @@
 # Modified by Anders Logg 2009, 2013
 #
 # First added:  2009-02-09
-# Last changed: 2013-01-10
+# Last changed: 2014-04-23
 
 # Python modules.
 from numpy import shape
@@ -481,6 +481,7 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Handle affine mappings.
         if transformation == "affine":
+
             # Loop derivatives and get multi indices.
             for multi in multiindices:
                 deriv = [multi.count(i) for i in range(tdim)]
@@ -621,11 +622,12 @@ class QuadratureTransformer(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        for i, direction in enumerate(derivatives):
-            ref = multi[i]
-            t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            self.trans_set.add(t)
-            transforms.append(t)
+        if not self.integral_type == "custom":
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
+                self.trans_set.add(t)
+                transforms.append(t)
 
         # Only multiply by basis if it is present.
         if function:
@@ -698,12 +700,13 @@ class QuadratureTransformer(QuadratureTransformerBase):
     def _create_entry_data(self, val, integral_type):
         # Multiply value by weight and determinant
         # Create weight and scale factor.
+
         weight = format["weight"](self.points)
-        if self.points > 1:
+        if self.points is None or self.points > 1:
             weight += format["component"]("", format["integration points"])
 
         # Update sets of used variables.
-        if integral_type == "point":
+        if integral_type in ("point", "custom"):
             trans_set = set()
             value = format["mul"]([val, weight])
         else:

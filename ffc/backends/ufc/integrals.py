@@ -339,17 +339,18 @@ void %(classname)s::tabulate_tensor(double* %(restrict)s A,
 }
 """
 
-quadrature_integral_combined = """\
-/// This class defines the interface for the tabulation of the cell
+custom_integral_combined = """\
+/// This class defines the interface for the tabulation of the
 /// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature points given.
+/// the integral over a custom domain defined in terms of a set of
+/// quadrature points and weights.
 
-class %(classname)s: public ufc::quadrature_integral
+class %(classname)s: public ufc::custom_integral
 {%(members)s
 public:
 
   /// Constructor
-  %(classname)s(%(constructor_arguments)s) : ufc::quadrature_integral()%(initializer_list)s
+  %(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
   {
 %(constructor)s
   }
@@ -360,13 +361,19 @@ public:
 %(destructor)s
   }
 
-  /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+  /// Return the number of cells involved in evaluation of the integral
+  virtual std::size_t num_cells() const
+  {
+%(num_cells)s
+  }
+
+  /// Tabulate the tensor for the contribution from custom domain
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const double* vertex_coordinates,
                                std::size_t num_quadrature_points,
-                               const double* %(restrict)s quadrature_points,
-                               const double* %(restrict)s quadrature_weights,
+                               const double* quadrature_points,
+                               const double* quadrature_weights,
                                int cell_orientation) const
   {
 %(tabulate_tensor)s
@@ -375,12 +382,13 @@ public:
 };
 """
 
-quadrature_integral_header = """\
-/// This class defines the interface for the tabulation of the cell
+custom_integral_header = """\
+/// This class defines the interface for the tabulation of the
 /// tensor corresponding to the local contribution to a form from
-/// the integral over an unknown cell fragment with quadrature points given.
+/// the integral over a custom domain defined in terms of a set of
+/// quadrature points and weights.
 
-class %(classname)s: public ufc::quadrature_integral
+class %(classname)s: public ufc::custom_integral
 {%(members)s
 public:
 
@@ -390,20 +398,24 @@ public:
   /// Destructor
   virtual ~%(classname)s();
 
-  /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
+  /// Return the number of cells involved in evaluation of the integral
+  virtual std::size_t num_cells() const;
+
+  /// Tabulate the tensor for the contribution from custom domain
+  virtual void tabulate_tensor(double* A,
+                               const double * const * w,
+                               const double* vertex_coordinates,
                                std::size_t num_quadrature_points,
-                               const double* %(restrict)s quadrature_points,
-                               const double* %(restrict)s quadrature_weights,
+                               const double* quadrature_points,
+                               const double* quadrature_weights,
                                int cell_orientation) const;
+
 };
 """
 
-quadrature_integral_implementation = """\
+custom_integral_implementation = """\
 /// Constructor
-%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::quadrature_integral()%(initializer_list)s
+%(classname)s::%(classname)s(%(constructor_arguments)s) : ufc::custom_integral()%(initializer_list)s
 {
 %(constructor)s
 }
@@ -414,14 +426,20 @@ quadrature_integral_implementation = """\
 %(destructor)s
 }
 
-/// Tabulate the tensor for the contribution from a local cell
-void %(classname)s::tabulate_tensor(double* %(restrict)s A,
-                                    const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+/// Return the number of cells involved in evaluation of the integral
+std::size_t %(classname)s::num_cells() const
+{
+%(num_cells)s
+}
+
+/// Tabulate the tensor for the contribution from custom domain
+void %(classname)s::tabulate_tensor(double* A,
+                                    const double * const * w,
+                                    const double* vertex_coordinates,
                                     std::size_t num_quadrature_points,
-                                    const double* %(restrict)s quadrature_points,
-                                    const double* %(restrict)s quadrature_weights,
-                                    int cell_orientation) const;
+                                    const double* quadrature_points,
+                                    const double* quadrature_weights,
+                                    int cell_orientation) const
 {
 %(tabulate_tensor)s
 }

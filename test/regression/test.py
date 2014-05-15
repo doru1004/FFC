@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """This script compiles and verifies the output for all form files
 found in the 'demo' directory. The verification is performed in two
 steps. First, the generated code is compared with stored references.
@@ -403,7 +404,8 @@ def main(args):
         test_cases += ext_quad
     if use_ext_uflacs:
         test_cases = ext_uflacs
-        test_cases += ["-r quadrature -O"]
+        test_cases += ["-r quadrature"]
+        #test_cases += ["-r quadrature -O"]
     if pyop2:
         test_cases += ext_pyop2
 

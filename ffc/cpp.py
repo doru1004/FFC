@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-12-16
-# Last changed: 2013-01-25
+# Last changed: 2014-04-15
 
 # Python modules
 import re, numpy, platform
@@ -31,7 +31,8 @@ import re, numpy, platform
 from ffc.log import debug, error
 
 # Mapping of restrictions
-_choose_map = {None: "", "+": "_0", "-": "_1"}
+_fixed_map = {None: "", "+": "_0", "-": "_1"}
+_choose_map = lambda r: _fixed_map[r] if r in _fixed_map else "_%s" % str(r)
 
 # FIXME: MSA: Using a dict to collect functions in a namespace is weird
 #             and makes the code harder to follow, change to a class
@@ -73,11 +74,18 @@ format.update({
     "float declaration":              "double",
     "int declaration":                "int",
     "uint declaration":               "unsigned int",
-    "static const uint declaration":  { "ufc": "static const unsigned int", "pyop2": "const unsigned uint" },
-    "static const float declaration": { "ufc": "static const double", "pyop2": "const double" },
+    "static const uint declaration":  {"ufc": "static const unsigned int",
+                                       "pyop2": "const unsigned uint"},
+    "static const float declaration": {"ufc": "static const double",
+                                       "pyop2": "const double"},
+    "vector table declaration":       "std::vector< std::vector<double> >",
+    "double array declaration":       "double*",
+    "const double array declaration": "const double*",
     "const float declaration":        lambda v, w: "const double %s = %s;" % (v, w),
     "const uint declaration":         lambda v, w: "const unsigned int %s = %s;" % (v, w),
     "dynamic array":                  lambda t, n, s: "%s *%s = new %s[%s];" % (t, n, t, s),
+    "static array":                   lambda t, n, s: "static %s %s[%d];" % (t, n, s),
+    "fixed array":                    lambda t, n, s: "%s %s[%d];" % (t, n, s),
     "delete dynamic array":           lambda n, s=None: _delete_array(n, s),
     "create foo":                     lambda v: "new %s()" % v
 })
@@ -132,21 +140,21 @@ format.update({
     "cell":               lambda s: "ufc::%s" % s,
     "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
     "inv(J)":             lambda i, j, m, n: "K[%d]" % _flatten(i, j, m, n),
-    "det(J)":             lambda r=None: "detJ%s" % _choose_map[r],
-    "cell volume":        lambda r=None: "volume%s" % _choose_map[r],
-    "circumradius":       lambda r=None: "circumradius%s" % _choose_map[r],
+    "det(J)":             lambda r=None: "detJ%s" % _choose_map(r),
+    "cell volume":        lambda r=None: "volume%s" % _choose_map(r),
+    "circumradius":       lambda r=None: "circumradius%s" % _choose_map(r),
     "facet area":         "facet_area",
     "min facet edge length": lambda r: "min_facet_edge_length",
     "max facet edge length": lambda r: "max_facet_edge_length",
     "scale factor":       "det",
     "transform":          lambda t, i, j, m, n, r: _transform(t, i, j, m, n, r),
-    "normal component":   lambda r, j: "n%s%s" % (_choose_map[r], j),
+    "normal component":   lambda r, j: "n%s%s" % (_choose_map(r), j),
     "x coordinate":       "X",
     "y coordinate":       "Y",
     "z coordinate":       "Z",
     "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
     "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
-    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map[r]
+    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map(r)
 })
 
 # UFC function arguments and class members (names)
@@ -176,7 +184,7 @@ format.update({
     "argument derivative order":  "n",
     "argument values":            "values",
     "argument coordinates":       "dof_coordinates",
-    "facet":                      lambda r: "facet%s" % _choose_map[r],
+    "facet":                      lambda r: "facet%s" % _choose_map(r),
     "vertex":                     "vertex",
     "argument axis":              "i",
     "argument dimension":         "d",
@@ -205,26 +213,27 @@ format.update({
 # code generators.
 format.update({
     # evaluate_basis and evaluate_basis_derivatives
-    "tmp value":                lambda i: "tmp%d" % i,
-    "tmp ref value":            lambda i: "tmp_ref%d" % i,
-    "local dof":                "dof",
-    "basisvalues":              "basisvalues",
-    "coefficients":             lambda i: "coefficients%d" %(i),
-    "num derivatives":          lambda t_or_g :"num_derivatives" + t_or_g,
-    "derivative combinations":  lambda t_or_g :"combinations" + t_or_g,
-    "transform matrix":         "transform",
-    "transform Jinv":           "Jinv",
-    "dmats":                    lambda i: "dmats%s" %(i),
-    "dmats old":                "dmats_old",
-    "reference derivatives":    "derivatives",
-    "dof values":               "dof_values",
-    "dof map if":               lambda i,j: "%d <= %s && %s <= %d"\
-                                % (i, format["argument basis num"], format["argument basis num"], j),
-    "dereference pointer":      lambda n: "*%s" % n,
-    "reference variable":       lambda n: "&%s" % n,
-    "call basis":               lambda i, s: "evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis all":           "evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
-    "call basis_derivatives":   lambda i, s: "evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "tmp value":                  lambda i: "tmp%d" % i,
+    "tmp ref value":              lambda i: "tmp_ref%d" % i,
+    "local dof":                  "dof",
+    "basisvalues":                "basisvalues",
+    "coefficients":               lambda i: "coefficients%d" %(i),
+    "num derivatives":            lambda t_or_g :"num_derivatives" + t_or_g,
+    "derivative combinations":    lambda t_or_g :"combinations" + t_or_g,
+    "transform matrix":           "transform",
+    "transform Jinv":             "Jinv",
+    "dmats":                      lambda i: "dmats%s" %(i),
+    "dmats old":                  "dmats_old",
+    "reference derivatives":      "derivatives",
+    "dof values":                 "dof_values",
+    "dof map if":                 lambda i,j: "%d <= %s && %s <= %d"\
+                                  % (i, format["argument basis num"], format["argument basis num"], j),
+    "dereference pointer":        lambda n: "*%s" % n,
+    "reference variable":         lambda n: "&%s" % n,
+    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_all":             "_evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
+    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points": "ip",
@@ -240,11 +249,12 @@ format.update({
 #    "basis constant":     lambda i: "B%d" % i,
     "function value":     lambda i: "F%d" % i,
     "nonzero columns":    lambda i: "nzc%d" % i,
-    "weight":             lambda i: "W%d" % (i),
+    "weight":             lambda i: "W" if i is None else "W%d" % (i),
     "psi name":           lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
     # both
     "free indices":       ["r","s","t","u"],
-    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j))
+    "matrix index":       lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
+    "quadrature point":   lambda i, gdim: "quadrature_points + %s*%d" % (i, gdim)
 })
 
 # Misc
@@ -263,37 +273,48 @@ from codesnippets import *
 
 format.update({
     "compute_jacobian":         lambda cell, r=None: \
-                                compute_jacobian[cell] % {"restriction": _choose_map[r]},
+                                compute_jacobian[cell] % {"restriction": _choose_map(r)},
     "compute_jacobian_interior":     lambda cell, r=None: \
-                                compute_jacobian_interior[cell] % {"restriction": _choose_map[r]},
+                                compute_jacobian_interior[cell] % {"restriction": _choose_map(r)},
     "compute_jacobian_inverse": lambda cell, r=None: \
-                                compute_jacobian_inverse[cell] % {"restriction": _choose_map[r]},
-    "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else "",
-                                 "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map[r]} if tdim != gdim else ""},
+                                compute_jacobian_inverse[cell] % {"restriction": _choose_map(r)},
+    "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
+                                 "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else ""},
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
-    "generate cell volume":     {"ufc": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume),
-                                 "pyop2": lambda tdim, gdim, i: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume)},
-    "generate circumradius":    {"ufc": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, ufc_circumradius),
-                                 "pyop2": lambda tdim, gdim, i: _generate_circumradius(tdim, gdim, i, pyop2_circumradius)},
+    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume, r),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume, r)},
+    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, ufc_circumradius, r),
+                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius, r)},
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
-    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
-    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map[r]},
+    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
+    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
-                                {"restriction": _choose_map[r], "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet":     { "ufc": ufc_scale_factor, "pyop2": pyop2_scale_factor },
+                                {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
+    "scale factor snippet":     {"ufc": ufc_scale_factor,
+                                 "pyop2": pyop2_scale_factor},
     "map onto physical":        map_onto_physical,
+    "evaluate basis snippet":   eval_basis,
     "combinations":             combinations_snippet,
     "transform snippet":        transform_snippet,
     "evaluate function":        evaluate_f,
     "ufc comment":              comment_ufc,
     "dolfin comment":           comment_dolfin,
     "pyop2 comment":            comment_pyop2,
-    "header_h":                 { "ufc": header_h, "pyop2": "" },
+    "header_h":                 {"ufc": header_h,
+                                 "pyop2": ""},
     "header_c":                 header_c,
-    "footer":                   { "ufc": footer, "pyop2": "" }
-})
+    "footer":                   {"ufc": footer,
+                                 "pyop2": ""},
+    "eval_basis_decl":          eval_basis_decl,
+    "eval_basis":               eval_basis,
+    "eval_basis_copy":          eval_basis_copy,
+    "eval_derivs_decl":         eval_derivs_decl,
+    "eval_derivs":              eval_derivs,
+    "eval_derivs_copy":         eval_derivs_copy,
+    "extract_cell_coordinates": lambda offset, r : "const double* vertex_coordinates_%d = vertex_coordinates + %d;" % (r, offset)
+    })
 
 # Class names
 format.update({
@@ -329,8 +350,8 @@ format.update({
     "classname point_integral":  lambda prefix, form_id, sub_domain:\
               "%s_point_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
-    "classname quadrature_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_quadrature_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
+    "classname custom_integral":  lambda prefix, form_id, sub_domain:\
+              "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
 
     "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
 })
@@ -457,7 +478,7 @@ def _inner_product(v, w):
     return result
 
 def _transform(type, i, j, m, n, r):
-    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map[r]
+    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map(r)
     return (map_name + "[%d]") % _flatten(i, j, m, n)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
@@ -552,7 +573,7 @@ def _generate_loop(lines, loop_vars, _indent):
     indices.reverse()
     for index in indices:
         _indent -= 2
-        code.append(indent(f_end + f_comment("end loop over '%s'" % index), _indent))
+        code.append(indent(f_end + " " + f_comment("end loop over '%s'" % index), _indent))
 
     return code
 
@@ -567,7 +588,7 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg):
+def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg):
     """Generate a name for the psi table of the form:
     FE#_f#_v#_C#_D###_A#, where '#' will be an integer value.
 
@@ -590,13 +611,16 @@ def _generate_psi_name(counter, entitytype, entity, component, derivatives, avg)
 
     name = "FE%d" % counter
 
-    if entitytype == "facet":
-        name += "_f%d" % entity
-    elif entitytype == "horiz_facet":
+    if entity_type == "facet":
+        if entity is None:
+            name += "_f0"
+        else:
+            name += "_f%d" % entity
+    elif entity_type == "horiz_facet":
         name += "_fh%d" % entity
-    elif entitytype == "vert_facet":
+    elif entity_type == "vert_facet":
         name += "_fv%d" % entity
-    elif entitytype == "vertex":
+    elif entity_type == "vertex":
         name += "_v%d" % entity
 
     if component != () and component != []:
@@ -618,22 +642,22 @@ def _generate_facet_determinant(cell, p_format, integral_type, r):
     tdim = cell.topological_dimension()
     gdim = cell.geometric_dimension()
     if p_format == "ufc":
-        code = ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]}
+        code = ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)}
     elif p_format == "pyop2":
         if integral_type == "exterior_facet":
-            code = pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map[r]}
+            code = pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)}
         elif integral_type == "interior_facet":
-            code = pyop2_facet_determinant_interior[tdim][gdim] % {"restriction": _choose_map[r]}
+            code = pyop2_facet_determinant_interior[tdim][gdim] % {"restriction": _choose_map(r)}
         elif integral_type == "exterior_facet_bottom":
-            code = bottom_facet_determinant[cell] % {"restriction": _choose_map[r]}
+            code = bottom_facet_determinant[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "exterior_facet_top":
-            code = top_facet_determinant[cell] % {"restriction": _choose_map[r]}
+            code = top_facet_determinant[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "interior_facet_horiz":
-            code = top_facet_determinant_interior[cell] % {"restriction": _choose_map[r]}
+            code = top_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "exterior_facet_vert":
-            code = vert_facet_determinant[cell] % {"restriction": _choose_map[r]}
+            code = vert_facet_determinant[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "interior_facet_vert":
-            code = vert_facet_determinant_interior[cell] % {"restriction": _choose_map[r]}
+            code = vert_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
         else:
             raise RuntimeError("Invalid integral_type")
     else:
@@ -699,18 +723,18 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         code = direction % {"restriction": ""}
         code += normal % {"direction" : "", "restriction": ""}
     elif integral_type in ("interior_facet", "interior_facet_vert"):
-        code = direction % {"restriction": _choose_map["+"], "facet": "facet_0"}
-        code += normal % {"direction" : "", "restriction": _choose_map["+"]}
-        code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
+        code = direction % {"restriction": _choose_map("+"), "facet": "facet_0"}
+        code += normal % {"direction" : "", "restriction": _choose_map("+")}
+        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
     elif integral_type == "interior_facet_horiz":
-        code = direction % {"restriction": _choose_map["+"]}
-        code += normal % {"direction" : "", "restriction": _choose_map["+"]}
-        code += normal % {"direction" : "!", "restriction": _choose_map["-"]}
+        code = direction % {"restriction": _choose_map("+")}
+        code += normal % {"direction" : "", "restriction": _choose_map("+")}
+        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
+def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
     "Generate code for computing cell volume."
 
     # Choose snippets
@@ -718,28 +742,32 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume):
 
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
-                       "exterior_facet_top", "exterior_facet_vert"):
+                         "exterior_facet_top", "exterior_facet_vert"):
         code = volume % {"restriction": ""}
     elif integral_type in ("interior_facet", "interior_facet_horiz",
-                         "interior_facet_vert"):
-        code = volume % {"restriction": _choose_map["+"]}
-        code += volume % {"restriction": _choose_map["-"]}
+                           "interior_facet_vert"):
+        code = volume % {"restriction": _choose_map("+")}
+        code += volume % {"restriction": _choose_map("-")}
+    elif integral_type == "custom":
+        code = volume % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, integral_type, circumradius):
+def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
     radius = circumradius[tdim][gdim]
 
     # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "point", "quadrature"):
+    if integral_type in ("cell", "exterior_facet", "point"):
         code = radius % {"restriction": ""}
     elif integral_type == "interior_facet":
-        code = radius % {"restriction": _choose_map["+"]}
-        code += radius % {"restriction": _choose_map["-"]}
+        code = radius % {"restriction": _choose_map("+")}
+        code += radius % {"restriction": _choose_map("-")}
+    elif integral_type == "custom":
+        code = radius % {"restriction": _choose_map(r)}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code

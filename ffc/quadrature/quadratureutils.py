@@ -18,9 +18,10 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-03-16
-# Last changed: 2010-05-18
-
-# Hacked by Marie E. Rognes, 2013.
+# Last changed: 2014-04-23
+#
+# Hacked by Marie E. Rognes 2013
+# Modified by Anders Logg 2014
 
 # Python modules.
 import numpy
@@ -29,25 +30,25 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
-def create_psi_tables(tables, eliminate_zeros, entitytype):
+def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
     debug("\nQG-utils, psi_tables:\n" + str(tables))
+
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
-    element_map, flat_tables = flatten_psi_tables(tables, entitytype)
+    element_map, flat_tables = flatten_psi_tables(tables, entity_type)
     debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
     name_map, unique_tables = unique_psi_tables(flat_tables, eliminate_zeros)
-
     debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
     debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
 
     return (element_map, name_map, unique_tables)
 
-def flatten_psi_tables(tables, entitytype):
+def flatten_psi_tables(tables, entity_type):
     """Create a 'flat' dictionary of tables with unique names and a name
     map that maps number of quadrature points and element name to a unique
     element number.
@@ -106,11 +107,11 @@ def flatten_psi_tables(tables, entitytype):
                         # Iterate over the innermost tables for each scalar component
                         for component, psi_table in component_tables:
                             # Generate the table name.
-                            name = generate_psi_name(counter, entitytype, entity, component, derivs, avg)
+                            name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
-                            ffc_assert(len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points,
-                                        "This table has the wrong shape: " + str(psi_table))
+                            ffc_assert(num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points),
+                                       "This table has the wrong shape: " + str(psi_table))
                             # Verify uniqueness of names
                             ffc_assert(name not in flat_tables,
                                         "Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
@@ -157,8 +158,13 @@ def unique_psi_tables(tables, eliminate_zeros):
     non_zero_columns = {}
     if eliminate_zeros:
         for name in sorted(tables.keys()):
+
             # Get values.
             vals = tables[name]
+
+            # Skip if values are missing
+            if len(vals) == 0:
+                continue
 
             # Use the first row as reference.
             non_zeros = list(vals[0].nonzero()[0])
@@ -291,7 +297,7 @@ def unique_tables(tables):
             continue
         val0 = numpy.array(tables[name0])
 
-        for j in range(i+1, len(names)):
+        for j in range(i + 1, len(names)):
             name1 = names[j]
             if name1 in mapped:
                 continue
@@ -300,7 +306,7 @@ def unique_tables(tables):
             # Check if dimensions match.
             if numpy.shape(val0) == numpy.shape(val1):
                 # Check if values are the same.
-                if abs(val0 - val1).max() < format_epsilon:
+                if len(val0) > 0 and abs(val0 - val1).max() < format_epsilon:
                     mapped.append(name1)
                     del tables[name1]
                     if name0 in name_map:
@@ -323,7 +329,7 @@ def get_ones(tables):
     names = []
     for name in tables:
         vals = tables[name]
-        if abs(vals - numpy.ones(numpy.shape(vals))).max() < f_epsilon:
+        if len(vals) > 0 and abs(vals - numpy.ones(numpy.shape(vals))).max() < f_epsilon:
             names.append(name)
     return names
 
@@ -333,7 +339,7 @@ def contains_zeros(tables):
     names = []
     for name in tables:
         vals = tables[name]
-        if abs(vals).max() < f_epsilon:
+        if len(vals) > 0 and abs(vals).max() < f_epsilon:
             names.append(name)
     return names
 
@@ -342,6 +348,7 @@ def create_permutations(expr):
     # This is probably not used.
     if len(expr) == 0:
         return expr
+
     # Format keys and values to lists and tuples.
     if len(expr) == 1:
         new = {}
@@ -355,6 +362,7 @@ def create_permutations(expr):
             new[key] = val
 
         return new
+
     # Create permutations of two lists.
     # TODO: there could be a cleverer way of changing types of keys and vals.
     if len(expr) == 2:

@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009
 #
 # First added:  2009-03-18
-# Last changed: 2011-11-22
+# Last changed: 2014-04-23
 
 # Python modules.
 from numpy import shape
@@ -443,13 +443,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         # Multiply basis by appropriate transform.
                         if transformation == "covariant piola":
                             dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map[self.restriction])
+                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
                             basis = create_product([dxdX, basis])
                         elif transformation == "contravariant piola":
                             detJ = create_fraction(create_float(1), \
                                         create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
                             dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map[self.restriction])
+                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
                             basis = create_product([detJ, dXdx, basis])
                         else:
                             error("Transformation is not supported: " + repr(transformation))
@@ -509,12 +509,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         # Multiply basis by appropriate transform.
                         if transformation == "covariant piola":
                             dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map[self.restriction])
+                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
                             function_name = create_product([dxdX, function_name])
                         elif transformation == "contravariant piola":
                             detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
                             dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map[self.restriction])
+                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
                             function_name = create_product([detJ, dXdx, function_name])
                         else:
                             error("Transformation is not supported: ", repr(transformation))
@@ -540,10 +540,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        for i, direction in enumerate(derivatives):
-            ref = multi[i]
-            t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            transforms.append(create_symbol(t, GEO, iden=t))
+        if not self.integral_type == "custom":
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
+                transforms.append(create_symbol(t, GEO, iden=t))
+
         transforms.append(function)
         return create_product(transforms)
 
@@ -614,7 +616,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             loop_index = [format["integration points"]]
         weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
-        if integral_type == "point":
+        if integral_type in ("point", "custom"):
             trans_set = set()
             value = create_product([val, weight])
         else:
