@@ -438,7 +438,8 @@ void %(classname)s::tabulate_tensor(double* A,
                                     const double* vertex_coordinates,
                                     std::size_t num_quadrature_points,
                                     const double* quadrature_points,
-                                    const double* quadrature_weights) const
+                                    const double* quadrature_weights,
+                                    int cell_orientation) const
 {
 %(tabulate_tensor)s
 }
