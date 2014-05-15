@@ -50,6 +50,11 @@ from ffc.representationutils import transform_component
 from quadratureutils import create_psi_tables
 from symbolics import BASIS, IP, GEO, CONST
 
+
+class EmptyIntegrandError(RuntimeError):
+    pass
+
+
 class QuadratureTransformerBase(Transformer):
     "Transform UFL representation to quadrature code."
 
@@ -844,9 +849,13 @@ class QuadratureTransformerBase(Transformer):
         # Loop code and add weight and scale factor to value and sort after
         # loop ranges.
         new_terms = {}
+        if len(terms) == 0 and self.parameters["format"] == "pyop2":
+            # Integrand simplified to zero (i.e. empty) so raise
+            # exception (Firedrake catches this later)
+            raise EmptyIntegrandError('Integrand %s is empty' % integrand)
         for key, val in terms.items():
             # If value was zero continue.
-            if val is None:
+            if val is None or val.val == 0.0:
                 continue
             # Create data.
             value, ops, sets = self._create_entry_data(val, integral_type)
