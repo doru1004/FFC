@@ -20,7 +20,7 @@
 # Modified by Anders Logg, 2009
 #
 # First added:  2009-03-18
-# Last changed: 2011-11-22
+# Last changed: 2014-04-23
 
 # Python modules.
 from numpy import shape
@@ -540,10 +540,12 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Add transformation if needed.
         transforms = []
-        for i, direction in enumerate(derivatives):
-            ref = multi[i]
-            t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-            transforms.append(create_symbol(t, GEO, iden=t))
+        if not self.integral_type == "custom":
+            for i, direction in enumerate(derivatives):
+                ref = multi[i]
+                t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
+                transforms.append(create_symbol(t, GEO, iden=t))
+
         transforms.append(function)
         return create_product(transforms)
 
@@ -614,7 +616,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             loop_index = [format["integration points"]]
         weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
-        if integral_type == "point":
+        if integral_type in ("point", "custom"):
             trans_set = set()
             value = create_product([val, weight])
         else:
