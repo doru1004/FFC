@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-16
+# Last changed: 2014-04-23
 
 # Python modules
 import functools, itertools
@@ -399,17 +399,16 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
-    f_comment    = format["comment"]
-    f_ip         = format["integration points"]
-    f_I          = format["ip constant"]
-    f_loop       = format["generate loop"]
-    f_ip_coords  = format["generate ip coordinates"]
-    f_coords     = format["vertex_coordinates"]
-    f_double     = format["float declaration"]
-    f_decl       = format["declaration"]
-    f_X          = format["ip coordinates"]
-    f_C          = format["conditional"]
-
+    f_comment   = format["comment"]
+    f_ip        = format["integration points"]
+    f_I         = format["ip constant"]
+    f_loop      = format["generate loop"]
+    f_ip_coords = format["generate ip coordinates"]
+    f_coords    = format["vertex_coordinates"]
+    f_double    = format["float declaration"]
+    f_decl      = format["declaration"]
+    f_X         = format["ip coordinates"]
+    f_C         = format["conditional"]
 
     # Initialise return values.
     element_code     = []
@@ -478,6 +477,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
         # Generate code to evaluate the element tensor.
         integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters, parameters)
+
         num_ops += ops
         if points is None:
             quadrature_ops = "unknown"
@@ -603,6 +603,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
 
     # Loop terms and create code.
     for loop, (data, entry_vals) in terms.items():
+
         # If we don't have any entry values, there's no need to generate the
         # loop.
         if not entry_vals:
