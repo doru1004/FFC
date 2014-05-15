@@ -273,10 +273,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # FacetNormal, CellVolume, Circumradius, FacetArea (geometry.py).
     # -------------------------------------------------------------------------
-    def reference_coordinate(self, o):
+    def cell_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
-    def reference_facet_coordinate(self, o):
+    def facet_coordinate(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     def jacobian(self, o):
@@ -297,7 +297,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def facet_jacobian_inverse(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
-    def reference_facet_jacobian(self, o):
+    def cell_facet_jacobian(self, o):
         error("This object should be implemented by the child class.") # FIXME
 
     #def cell_barycenter(self, o):
