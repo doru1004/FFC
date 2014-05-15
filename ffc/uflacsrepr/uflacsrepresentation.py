@@ -47,7 +47,7 @@ def compute_integral_ir(itg_data,
     # Delegate to flacs to build its intermediate representation and add to ir
     # Don't laugh on the next line here :-p
     from uflacs.backends.ffc.ffc_uflacs_representation import compute_tabulate_tensor_ir
-    uflacs_ir = compute_tabulate_tensor_ir(psi_tables, ir["entity_type"], integrals_dict, form_data, parameters)
+    uflacs_ir = compute_tabulate_tensor_ir(psi_tables, ir["entitytype"], integrals_dict, form_data, parameters)
 
     # Store uflacs generated part separately
     ir["uflacs"] = uflacs_ir

@@ -84,7 +84,7 @@ def compute_integral_ir(itg_data,
                                              quadrature_rules,
                                              form_data.geometric_dimension,
                                              itg_data.domain.topological_dimension(),
-                                             ir["entity_type"],
+                                             ir["entitytype"],
                                              form_data.function_replace_map,
                                              ir["optimise_parameters"],
                                              parameters)
