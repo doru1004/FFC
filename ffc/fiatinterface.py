@@ -124,19 +124,16 @@ def create_element(ufl_element):
         debug("Reusing element from cache")
         return _cache[element_signature]
 
-    # Create regular FIAT finite element
-    if isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement)):
-        element = _create_fiat_element(ufl_element)
-
-    # Create mixed element (implemented by FFC)
-    elif isinstance(ufl_element, ufl.MixedElement):
+    if isinstance(ufl_element, ufl.MixedElement):
+        # Create mixed element (implemented by FFC)
         elements = _extract_elements(ufl_element)
         element = MixedElement(elements)
-
-    # Create restricted element(implemented by FFC)
     elif isinstance(ufl_element, ufl.RestrictedElement):
+        # Create restricted element(implemented by FFC)
         element = _create_restricted_element(ufl_element)
-
+    elif isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement)):
+        # Create regular FIAT finite element
+        element = _create_fiat_element(ufl_element)
     else:
         error("Cannot handle this element type: %s" % str(ufl_element))
 
@@ -150,9 +147,6 @@ def _create_fiat_element(ufl_element):
 
     # Get element data
     family = ufl_element.family()
-    domain, = ufl_element.domains() # Assuming single domain
-    cell = domain.cell()            # Assuming single cell in domain
-    degree = ufl_element.degree()
 
     # Check that FFC supports this element
     ffc_assert(family in supported_families,
@@ -160,59 +154,61 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     if family == "Real":
+        domain, = ufl_element.domains() # Assuming single domain
         dg0_element = ufl.FiniteElement("DG", domain, 0)
         constant = _create_fiat_element(dg0_element)
-        element = SpaceOfReals(constant)
+        return SpaceOfReals(constant)
 
     # Handle the specialized time elements
     elif family == "Lobatto" :
-        element = FFCLobattoElement(ufl_element.degree())
+        return FFCLobattoElement(ufl_element.degree())
 
     elif family == "Radau" :
-        element = FFCRadauElement(ufl_element.degree())
+        return FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
     elif family == "Quadrature":
-        element = FFCQuadratureElement(ufl_element)
+        return FFCQuadratureElement(ufl_element)
 
     else:
-        # Check if finite element family is supported by FIAT
-        if not family in FIAT.supported_elements:
-            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+        return create_actual_fiat_element(ufl_element)
 
-        # Create FIAT finite element
+    raise Exception("Something strange happened: reached end of function without returning an element")
+
+def create_actual_fiat_element(ufl_element):
+    # Check if finite element family is supported by FIAT
+    family = ufl_element.family()
+    if not family in FIAT.supported_elements:
+        error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+
+    # HDiv and HCurl elements have family "OuterProductElement",
+    # so get matching FIAT element directly rather than via lookup
+    if isinstance(ufl_element, ufl.HDiv):
+        return FIAT.Hdiv(create_element(ufl_element._element))
+    elif isinstance(ufl_element, ufl.HCurl):
+        return FIAT.Hcurl(create_element(ufl_element._element))
+    else:
+        # Look up FIAT element
         ElementClass = FIAT.supported_elements[family]
-        
-        # Enriched case
+
         if isinstance(ufl_element, ufl.EnrichedElement):
             A = create_element(ufl_element._elements[0])
             B = create_element(ufl_element._elements[1])
-            element = ElementClass(A, B)
-        # Tensor Product case
-        elif isinstance(ufl_element, ufl.HDiv):
-            element = FIAT.Hdiv(create_element(ufl_element._element))
-        elif isinstance(ufl_element, ufl.HCurl):
-            element = FIAT.Hcurl(create_element(ufl_element._element))
-        elif family == "OuterProductElement":
+            return ElementClass(A, B)
+        # OPVE is only here to satisfy calls from Firedrake
+        elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement)):
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
-            element = ElementClass(A, B)
+            return ElementClass(A, B)
         else:
+            # "Normal element" case
+            domain, = ufl_element.domains() # Assuming single domain
+            cell = domain.cell()            # Assuming single cell in domain
+            degree = ufl_element.degree()
             fiat_cell = reference_cell(cell)
-            if degree is None:
-                element = ElementClass(fiat_cell)
-            else:
-                element = ElementClass(fiat_cell, degree)
-
-    # Consistency check between UFL and FIAT elements. This will not hold for elements
-    # where the reference value shape is different from the global value shape, i.e.
-    # RT elements on a triangle in 3D.
-    #ffc_assert(element.value_shape() == ufl_element.value_shape(),
-    #           "Something went wrong in the construction of FIAT element from UFL element." + \
-    #           "Shapes are %s and %s." % (element.value_shape(), ufl_element.value_shape()))
-
-    return element
+            return ElementClass(fiat_cell, degree)
+    raise Exception("Something strange happened: reached end of function without returning an element")
 
 def create_quadrature(cell, num_points):
     """

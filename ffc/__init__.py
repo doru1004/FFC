@@ -28,6 +28,7 @@ from plot import *
 
 # Import useful extra functionality
 from extras import *
+from ffc.fiatinterface import create_actual_fiat_element
 
 # List of supported elements
 try:
