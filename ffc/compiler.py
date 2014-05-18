@@ -161,30 +161,34 @@ def compile_form(forms, object_names={}, prefix="Form",\
     oir = optimize_ir(ir, parameters)
     _print_timing(3, time() - cpu_time)
 
-    if parameters["pyop2-ir"] and parameters["representation"] in ["auto", "quadrature"]:
+    # Return IR (PyOP2 mode) or code string (otherwise)
+    if parameters["pyop2-ir"]:
         try:
             from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
         except ImportError:
             raise ImportError("Format pyop2-ir depends on PyOP2, which is not available.")
-        # Stage 4-A: build pyop2 intermediate representation
+        # Stage 4: build PyOP2 intermediate representation
+
         cpu_time = time()
         #FIXME: need a cleaner interface
         pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[2]]
         _print_timing(4, time() - cpu_time)
+
         info_green("FFC finished in %g seconds.", time() - cpu_time_0)
         return pyop2_ir
+
     else:
-        # Stage 4-B: code generation
+        # Stage 4: code generation
         cpu_time = time()
         code = generate_code(oir, prefix, parameters)
         _print_timing(4, time() - cpu_time)
 
-        # Stage 4.1-B: generate wrappers
+        # Stage 4.1: generate wrappers
         cpu_time = time()
         wrapper_code = generate_wrapper_code(analysis, prefix, parameters)
         _print_timing(4.1, time() - cpu_time)
 
-        # Stage 5-B: format code
+        # Stage 5: format code
         cpu_time = time()
         code = format_code(code, wrapper_code, prefix, parameters)
         _print_timing(5, time() - cpu_time)
