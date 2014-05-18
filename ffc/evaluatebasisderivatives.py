@@ -188,7 +188,7 @@ def _evaluate_basis_derivatives(data):
             return remove_unused("\n".join(code))
 
         # Generate geo code.
-        code += _geometry_related_code(data, tdim, gdim, element_cellname)
+        code += _geometry_related_code(data, cell, element_cellname)
 
         # Generate all possible combinations of derivatives.
         code += _generate_combinations(tdim, "", max_degree)
@@ -211,7 +211,7 @@ def _evaluate_basis_derivatives(data):
             return remove_unused("\n".join(code))
 
         # Generate geo code.
-        code += _geometry_related_code(data, tdim, gdim, element_cellname)
+        code += _geometry_related_code(data, cell, element_cellname)
 
         # Generate all possible combinations of derivatives.
         code += _generate_combinations(tdim, _t, max_degree)
@@ -253,12 +253,14 @@ def _handle_degree(max_degree):
 
     return code
 
-def _geometry_related_code(data, tdim, gdim, element_cellname):
+def _geometry_related_code(data, cell, element_cellname):
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
     code = []
     # Get code snippets for Jacobian, inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
-    code += [format["compute_jacobian"](tdim, gdim)]
-    code += [format["compute_jacobian_inverse"](tdim, gdim)]
+    code += [format["compute_jacobian"](cell)]
+    code += [format["compute_jacobian_inverse"](cell)]
     if data["needs_oriented"]:
         code += [format["orientation"](tdim, gdim)]
     code += ["", format["fiat coordinate map"](element_cellname, gdim)]
