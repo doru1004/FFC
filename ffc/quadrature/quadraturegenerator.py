@@ -52,42 +52,11 @@ def generate_integral_code(ir, prefix, parameters):
     code["num_cells"] = ret(ir["num_cells"])
     code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
-    code["arglist"] = _arglist(ir)
-    code["metadata"] = ""
 
     return code
 
-def _arglist(ir):
-    "Generate argument list for tensor tabulation function (only for pyop2)"
-
-    rank = len(ir['prim_idims'])
-    float = format['float declaration']
-
-    extent = "".join(map(lambda x: "[%s]" % x, ir["tensor_entry_size"] or (1,)))
-    localtensor = "%s A%s" % (float, extent)
-
-    coordinates = "%s **vertex_coordinates" % float
-
-    coeffs = []
-    for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
-        coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*",
-                                    n[1:] if e.family() == 'Real' else n))
-
-    itindices = {0: "int j", 1: "int k"}
-
-    arglist = [localtensor, coordinates] + coeffs
-    if ir["integral_type"] in ("exterior_facet", "exterior_facet_vert"):
-        arglist.append("unsigned int *facet_p")
-    if ir["integral_type"] in ("interior_facet", "interior_facet_vert"):
-        arglist.append("unsigned int facet_p[2]")
-    arglist += [itindices[i] for i in range(rank)]
-
-    return ", ".join(arglist)
-
 def _tabulate_tensor(ir, prefix, parameters):
     "Generate code for a single integral (tabulate_tensor())."
-
-    p_format        = parameters["format"]
 
     # Prefetch formatting to speedup code generation
     f_comment      = format["comment"]
@@ -96,7 +65,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     f_switch       = format["switch"]
     f_float        = format["float"]
     f_assign       = format["assign"]
-    f_A            = format["element tensor"][p_format]
+    f_A            = format["element tensor"]["ufc"]
     f_r            = format["free indices"][0]
     f_loop         = format["generate loop"]
     f_int          = format["int"]
@@ -127,31 +96,13 @@ def _tabulate_tensor(ir, prefix, parameters):
     affine_tables = {} # TODO: This is not populated anywhere, remove?
     quadrature_weights = ir["quadrature_weights"]
 
-    #The pyop2 format requires dereferencing constant coefficients since
-    # these are passed in as double *
-    common = []
-    if p_format == 'pyop2':
-        for n, c in zip(ir["coefficient_names"], ir["coefficient_elements"]):
-            if c.family() == 'Real':
-                shape = c.value_shape()
-                dim = len(shape)
-                if dim < 2:
-                    d = 1
-                elif dim == 2:
-                    d = shape[1]
-                else:
-                    raise RuntimeError("Don't know how to stage in Constants with shape %s" % shape)
-                common += ['double (*w%(n)s)[%(d)d] = (double (*)[%(d)d])c%(n)s;\n' %
-                           {'n': n[1:], 'd': d}]
-
     operations = []
     if integral_type == "cell":
 
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
-                                                                  opt_par,
-                                                                  parameters)
+                                                                  opt_par)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -163,23 +114,21 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
+            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += format["scale factor snippet"][p_format]
+        jacobi_code += format["scale factor snippet"]["ufc"]
 
         # Generate code for cell volume and circumradius
         jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
 
     elif integral_type == "exterior_facet":
-        if p_format == 'pyop2':
-            common += ["unsigned int facet = *facet_p;\n"]
 
         # Iterate over facets
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -196,10 +145,10 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
+            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"][p_format](tdim, gdim)
-        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["facet determinant"]["ufc"](tdim, gdim)
+        jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
@@ -214,13 +163,6 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
 
-        if p_format == 'pyop2':
-            common += ["unsigned int facet_0 = facet_p[0];"]
-            common += ["unsigned int facet_1 = facet_p[1];"]
-            common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
-            # Note that the following line is unsafe for isoparametric elements.
-            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % (num_vertices * gdim)]
-
         # Iterate over combinations of facets
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
         for i in range(num_facets):
@@ -228,8 +170,7 @@ def _tabulate_tensor(ir, prefix, parameters):
                 # Update transformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j],
                                                             sets,
-                                                            opt_par,
-                                                            parameters)
+                                                            opt_par)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -247,10 +188,10 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
-                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
+                jacobi_code += format["orientation"]["ufc"](tdim, gdim, r=_r)
             jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"][p_format](gdim, tdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"][p_format](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["facet determinant"]["ufc"](gdim, tdim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
@@ -269,8 +210,7 @@ def _tabulate_tensor(ir, prefix, parameters):
             # set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets,
-                                                        opt_par,
-                                                        parameters)
+                                                        opt_par)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -287,8 +227,9 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
+            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
         jacobi_code += "\n"
+        jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
     elif integral_type == "custom":
 
@@ -334,7 +275,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations.
-    common += [remove_unused(jacobi_code, trans_set)]
+    common = [remove_unused(jacobi_code, trans_set)]
 
     # FIXME: After introduction of custom integrals, the common code
     # here is not really common anymore. Think about how to
@@ -342,13 +283,13 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # Add common code except for custom integrals
     if integral_type != "custom":
-        common += _tabulate_weights([quadrature_weights[p] for p in used_weights], parameters)
+        common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
 
         # Add common code for updating tables
         name_map = ir["name_map"]
         tables = ir["unique_tables"]
         tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
-        common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, integral_type, gdim, parameters)
+        common += _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, integral_type, gdim)
 
     # Add special tabulation code for custom integral
     else:
@@ -361,14 +302,13 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
     # Handle functionals.
-    if p_format !=  "pyop2":
-        common += [f_comment("Reset values in the element tensor.")]
-        value = f_float(0)
-        if prim_idims == []:
-            common += [f_assign(f_A(f_int(0)), f_float(0))]
-        else:
-            dim = functools.reduce(lambda v,u: v*u, prim_idims)
-            common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
+    common += [f_comment("Reset values in the element tensor.")]
+    value = f_float(0)
+    if prim_idims == []:
+        common += [f_assign(f_A(f_int(0)), f_float(0))]
+    else:
+        dim = functools.reduce(lambda v,u: v*u, prim_idims)
+        common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
@@ -395,7 +335,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
+def _generate_element_tensor(integrals, sets, optimise_parameters):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -476,7 +416,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters, parameters)
+        integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters)
 
         num_ops += ops
         if points is None:
@@ -509,7 +449,7 @@ def _generate_functions(functions, sets):
     f_F       = format["function value"]
     f_float   = format["floating point"]
     f_decl    = format["declaration"]
-    f_r       = format["free indices"]
+    f_r       = format["free indices"][0]
     f_iadd    = format["iadd"]
     f_loop    = format["generate loop"]
 
@@ -539,8 +479,6 @@ def _generate_functions(functions, sets):
         for function in list_of_functions:
             # Get name and number.
             number, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
-            if not isinstance(range_i, tuple):
-                range_i = tuple([range_i])
 
             # Add name to used psi names and non zeros name to used_nzcs.
             used_psi_tables.add(psi_name)
@@ -554,7 +492,7 @@ def _generate_functions(functions, sets):
             function_expr[number] = function
 
             # Get number of operations to compute entry and add to function operations count.
-            func_ops += (ops + 1)*sum(range_i)
+            func_ops += (ops + 1)*range_i
 
         # Add function operations to total count
         total_ops += func_ops
@@ -562,34 +500,20 @@ def _generate_functions(functions, sets):
 
         # Sort the functions according to name and create loop to compute the function values.
         lines = [f_iadd(f_F(n), function_expr[n]) for n in sorted(function_expr.keys())]
-        if isinstance(loop_range, tuple):
-            if not all(map(lambda x: x==loop_range[0], loop_range)):
-                raise RuntimeError("General mixed elements not yet supported in PyOP2")
-            loop_vars = [ (f_r[0], 0, loop_range[0]), (f_r[1], 0, len(loop_range)) ]
-        else:
-            loop_vars = [(f_r[0], 0, loop_range)]
-        # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
-        code += f_loop(lines, loop_vars)
+        code += f_loop(lines, [(f_r, 0, loop_range)]) # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
 
     return code, total_ops
 
-def _generate_integral_code(points, terms, sets, optimise_parameters, parameters):
+def _generate_integral_code(points, terms, sets, optimise_parameters):
     "Generate code to evaluate the element tensor."
 
-    # For checking if the integral code is for a matrix
-    def is_matrix(loop):
-        loop_indices = [ l[0] for l in loop ]
-        return (format["first free index"] in loop_indices and \
-                format["second free index"] in loop_indices)
-
     # Prefetch formats to speed up code generation.
-    p_format        = parameters["format"]
     f_comment       = format["comment"]
     f_mul           = format["mul"]
     f_scale_factor  = format["scale factor"]
     f_iadd          = format["iadd"]
     f_add           = format["add"]
-    f_A             = format["element tensor"][p_format]
+    f_A             = format["element tensor"]["ufc"]
     f_loop          = format["generate loop"]
     f_B             = format["basis constant"]
 
@@ -647,21 +571,16 @@ def _generate_integral_code(points, terms, sets, optimise_parameters, parameters
         # Add number of operations for current loop to total count.
         num_ops += prim_ops
         code += ["", f_comment("Number of operations for primary indices: %d" % prim_ops)]
-        if p_format=="pyop2":
-            # Strip out primary indices from loop
-            loop = [ l for l in loop if l[0] in format["free indices"] ]
         code += f_loop(lines, loop)
 
     return code, num_ops
 
-def _tabulate_weights(quadrature_weights, parameters):
+def _tabulate_weights(quadrature_weights):
     "Generate table of quadrature weights."
 
     # Prefetch formats to speed up code generation.
-    p_format    = parameters["format"]
-
     f_float     = format["floating point"]
-    f_table     = format["static const float declaration"][p_format]
+    f_table     = format["static const float declaration"]["ufc"]
     f_sep       = format["list separator"]
     f_weight    = format["weight"]
     f_component = format["component"]
@@ -731,18 +650,16 @@ def _tabulate_weights(quadrature_weights, parameters):
 
     return code
 
-def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, integral_type, gdim, parameters):
+def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_parameters, integral_type, gdim):
     "Tabulate values of basis functions and their derivatives at quadrature points."
 
     # Prefetch formats to speed up code generation.
-    p_format    = parameters["format"]
-
     f_comment      = format["comment"]
-    f_table        = format["static const float declaration"][p_format]
+    f_table        = format["static const float declaration"]["ufc"]
     f_vector_table = format["vector table declaration"]
     f_double_array = format["const double array declaration"]
     f_component    = format["component"]
-    f_const_uint   = format["static const uint declaration"][p_format]
+    f_const_uint   = format["static const uint declaration"]["ufc"]
     f_nzcolumns    = format["nonzero columns"]
     f_list         = format["list"]
     f_decl         = format["declaration"]
