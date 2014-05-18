@@ -176,10 +176,10 @@ def _pyop2_coefficient(count, indices):
     return format["component"]("w%s" % count, indices)
 
 format.update({
-    "element tensor":             { "ufc"  : _ufc_element_tensor,
-                                    "pyop2": _pyop2_element_tensor },
+    "element tensor":             {"ufc"  : _ufc_element_tensor,
+                                   "pyop2": _pyop2_element_tensor},
     "element tensor term":        lambda i, j: "A%d[%s]" % (j, i),
-    "coefficient":                { "ufc": _ufc_coefficient, "pyop2": _pyop2_coefficient },
+    "coefficient":                {"ufc": _ufc_coefficient, "pyop2": _pyop2_coefficient},
     "argument basis num":         "i",
     "argument derivative order":  "n",
     "argument values":            "values",
