@@ -888,9 +888,6 @@ class QuadratureTransformerBase(Transformer):
 
         indices = {0: format["first free index"],  1: format["second free index"]}
 
-        # Whether we're generating PyOP2 code
-        pyop2 = self.parameters["format"]=="pyop2"
-
         # Create appropriate entries.
         # FIXME: We only support rank 0, 1 and 2.
         entry = ""
@@ -907,7 +904,7 @@ class QuadratureTransformerBase(Transformer):
             loop = ((indices[index_j], 0, range_j),)
             if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
                 loop = ()
-            if pyop2:
+            if self.parameters["format"] == "pyop2":
                 entry = (entry, )
         elif len(key) == 2:
             # PyOP2 mixed element assembling a rank-1 form
@@ -939,7 +936,7 @@ class QuadratureTransformerBase(Transformer):
                     loop.append((indices[index_j], 0, range_j))
                 if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
                     loop.append((indices[index_k], 0, range_k))
-                if pyop2:
+                if self.parameters["format"] == "pyop2":
                     entry = (entry_j, entry_k)
                 else:
                     entry = format["add"]([format["mul"]([entry_j, str(space_dim_k)]), entry_k])
@@ -950,7 +947,7 @@ class QuadratureTransformerBase(Transformer):
             for k in key:
                 ffc_assert(k[0] in indices, \
                 "Bilinear forms must be defined using test and trial functions (index -2, -1, 0, 1): " + repr(k))
-                if k[0] == -2 or k[0] ==0:
+                if k[0] == -2 or k[0] == 0:
                     key0.append(k)
                 else:
                     key1.append(k)
@@ -1059,8 +1056,6 @@ class QuadratureTransformerBase(Transformer):
         # Only support test and trial functions.
         indices = {0: format["first free index"],
                    1: format["second free index"]}
-
-        index2map = {-2: 0, -1: 1, 0: 0, 1: 1}
 
         # Check that we have a basis function.
         ffc_assert(ufl_argument.number() in indices,
