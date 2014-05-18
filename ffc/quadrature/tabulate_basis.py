@@ -34,10 +34,7 @@ from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.fiatinterface import cell_to_num_entities
 from ffc.quadrature_schemes import create_quadrature
 
-def _create_quadrature_points_and_weights(integral_type,
-                                          cell,
-                                          degree,
-                                          rule):
+def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
@@ -187,7 +184,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
     quadrature_rules = {}
     psi_tables = {}
     integrals = {}
-    avg_elements = {"cell": [], "facet": []}
+    avg_elements = { "cell": [], "facet": [] }
 
     integral_type = itg_data.integral_type
     cell = itg_data.domain.cell()
@@ -267,7 +264,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                                             num_derivatives[ufl_element], points)
 
             # Insert table into dictionary based on UFL elements. (None=not averaged)
-            psi_tables[len_weights][ufl_element] = {None: psi_table}
+            psi_tables[len_weights][ufl_element] = { None: psi_table }
 
 
     # Loop over elements found in CellAvg and tabulate basis averages
