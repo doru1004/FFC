@@ -90,8 +90,7 @@ def compute_integral_ir(itg_data,
                                              parameters)
 
     # Transform integrals.
-    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer,
-                                                         integrals_dict,
+    ir["trans_integrals"] = _transform_integrals_by_type(ir, transformer, integrals_dict,
                                                          itg_data.integral_type)
 
     # Save tables populated by transformer
