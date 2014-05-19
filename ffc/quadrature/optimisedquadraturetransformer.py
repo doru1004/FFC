@@ -175,13 +175,15 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
-            sym = create_symbol(format["std power"][self.parameters["format"]](str(val), exp), val.t, val, 1)
+            var = format["std power"][self.parameters["format"]](str(val), exp)
+            sym = create_symbol(var, val.t, val, 1, iden=var)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)[()]
 #            print "pow exp: ", exp
 #            print "pow val: ", val
-            sym = create_symbol(format["std power"][self.parameters["format"]](str(val), exp), val.t, val, 1)
+            var = format["std power"][self.parameters["format"]](str(val), exp)
+            sym = create_symbol(var, val.t, val, 1, iden=var)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))
@@ -209,7 +211,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         c, = operands
         ffc_assert(len(c) == 1 and c.keys()[0] == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
-        sym = create_symbol(format["not"](str(c[()])), c[()].t, base_op=c[()].ops()+1)
+        var = format["not"](str(c[()]))
+        sym = create_symbol(var, c[()].t, base_op=c[()].ops()+1, iden=var)
         return {(): sym}
 
     def binary_condition(self, o, *operands):
@@ -232,7 +235,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         t = min(lhs[()].t, rhs[()].t)
         ops = lhs[()].ops() + rhs[()].ops() + 1
         cond = str(lhs[()])+format[name_map[o._name]]+str(rhs[()])
-        sym = create_symbol(format["grouping"](cond), t, base_op=ops)
+        var = format["grouping"](cond)
+        sym = create_symbol(var, t, base_op=ops, iden=var)
         return {(): sym}
 
     def conditional(self, o, *operands):
@@ -260,14 +264,17 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Create expression for conditional
         # TODO: Handle this differently to expose the variables which are used
         # to create the expressions.
-        expr = create_symbol(format["evaluate conditional"](cond[()], t_val, f_val), t)
+        var = format["evaluate conditional"](cond[()], t_val, f_val)
+        expr = create_symbol(var, t, iden=var)
         num = len(self.conditionals)
-        name = create_symbol(format["conditional"](num), t)
+        var = format["conditional"](num)
+        name = create_symbol(var, t, iden=var)
         if not expr in self.conditionals:
             self.conditionals[expr] = (t, ops, num)
         else:
             num = self.conditionals[expr][2]
-            name = create_symbol(format["conditional"](num), t)
+            var = format["conditional"](num)
+            name = create_symbol(var, t, iden=var)
         return {():name}
 
     # -------------------------------------------------------------------------
