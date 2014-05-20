@@ -1097,6 +1097,15 @@ class QuadratureTransformerBase(Transformer):
                     offset.append(str(cur))
                     cur += e.space_dimension()
 
+        # If we have a restricted function multiply space_dim by two.
+        if self.restriction in ("+", "-"):
+            space_dim *= 2
+
+        # If we have a restricted function and domain type is custom,
+        # then offset also the basis function access
+        if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
+            loop_index = format["add"]([loop_index, offset])
+
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         # NOT TRUE FOR MIXED-ELT-INT-FACET MODE
@@ -1112,19 +1121,6 @@ class QuadratureTransformerBase(Transformer):
                 f_ip = "0"
             index_calc = loop_index
             basis_access = format["component"]("", [f_ip, index_calc])
-
-        # If we have a restricted function multiply space_dim by two.
-        if self.restriction in ("+", "-"):
-            space_dim *= 2
-
-        # If we have a restricted function and domain type is custom,
-        # then offset also the basis function access
-        if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
-            loop_index = format["add"]([loop_index, offset])
-
-        # Create basis access, we never need to map the entry in the basis table
-        # since we will either loop the entire space dimension or the non-zeros.
-        basis_access = format["component"]("", [f_ip, loop_index])
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
