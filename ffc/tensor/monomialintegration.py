@@ -120,11 +120,11 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
         if integral_type == Measure.CELL:
             table[(ufl_element, None)] = fiat_element.tabulate(order, points)
         elif integral_type == Measure.EXTERIOR_FACET:
-            x = map_facet_points(points, facet0)
+            x = map_facet_points(points, facet0, "facet")
             table[(ufl_element, None)] = fiat_element.tabulate(order, x)
         elif integral_type == Measure.INTERIOR_FACET:
-            x0 = map_facet_points(points, facet0)
-            x1 = map_facet_points(points, facet1)
+            x0 = map_facet_points(points, facet0, "facet")
+            x1 = map_facet_points(points, facet1, "facet")
             table[(ufl_element, "+")] = fiat_element.tabulate(order, x0)
             table[(ufl_element, "-")] = fiat_element.tabulate(order, x1)
 
