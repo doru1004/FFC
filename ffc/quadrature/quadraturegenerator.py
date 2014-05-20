@@ -168,8 +168,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += format["scale factor snippet"][p_format]
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
 
     elif integral_type == "exterior_facet":
         if p_format == 'pyop2':
@@ -206,8 +206,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
 
     elif integral_type == "interior_facet":
 
@@ -257,8 +257,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
 
     elif integral_type == "point":
 
@@ -320,9 +320,9 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate cell volume"]["ufc"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
 
         # FIXME: Jacobi code does not seem to be needed for custom
