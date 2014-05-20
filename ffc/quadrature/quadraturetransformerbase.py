@@ -864,7 +864,7 @@ class QuadratureTransformerBase(Transformer):
             raise EmptyIntegrandError('Integrand %s is empty' % integrand)
         for key, val in terms.items():
             # If value was zero continue.
-            if val is None or val.val == 0.0:
+            if val is None or (self.parameters["format"] == "pyop2" and val.val == 0.0):
                 continue
             # Create data.
             value, ops, sets = self._create_entry_data(val, integral_type)
