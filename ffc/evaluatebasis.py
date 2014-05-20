@@ -338,7 +338,7 @@ def _compute_basisvalues(data, dof_data):
     f_sub         = format["sub"]
     f_group       = format["grouping"]
     f_assign      = format["assign"]
-    f_sqrt        = format["sqrt"]['ufc']
+    f_sqrt        = format["sqrt"]["ufc"]
     f_x           = format["x coordinate"]
     f_y           = format["y coordinate"]
     f_z           = format["z coordinate"]

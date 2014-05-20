@@ -90,7 +90,7 @@ def _evaluate_basis_derivatives_all(data):
         return "\n".join(code)
 
     # Compute number of derivatives.
-    if data["cell"].topological_dimension()==data["cell"].geometric_dimension():
+    if data["cell"].topological_dimension() == data["cell"].geometric_dimension():
         _g = ""
     else:
         _g = "_g"
@@ -660,7 +660,7 @@ def _transform_derivatives(data, dof_data):
     f_r, f_s      = format["free indices"][:2]
     f_index       = format["matrix index"]
 
-    if data["cell"].topological_dimension()==data["cell"].geometric_dimension():
+    if data["cell"].topological_dimension() == data["cell"].geometric_dimension():
         _t = ""
         _g = ""
     else:
