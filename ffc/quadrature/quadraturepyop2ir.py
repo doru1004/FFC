@@ -149,9 +149,8 @@ def _tabulate_tensor(ir, parameters):
     operations = []
     if integral_type == "cell":
         # Update transformer with facets and generate code + set of used geometry terms.
-        tensor_code, nest_ir, mem_code, num_ops = _generate_element_tensor(integrals, sets, \
-                                         opt_par, parameters)
-        tensor_code = "\n".join(tensor_code)
+        nest_ir, num_ops = _generate_element_tensor(integrals, sets, \
+                                                    opt_par, parameters)
 
         # Set operations equal to num_ops (for printing info on operations).
         operations.append([num_ops])
@@ -175,7 +174,7 @@ def _tabulate_tensor(ir, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
-            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
+            nest_ir, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += [nest_ir.gencode()]
             cases[i] = "\n".join(case)
@@ -217,10 +216,10 @@ def _tabulate_tensor(ir, parameters):
     # is a start.
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
         if integral_type == "exterior_facet_bottom":
-            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[0], sets, opt_par, parameters)
+            nest_ir, ops = _generate_element_tensor(integrals[0], sets, opt_par, parameters)
             operations.append([ops])
         elif integral_type == "exterior_facet_top":
-            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[1], sets, opt_par, parameters)
+            nest_ir, ops = _generate_element_tensor(integrals[1], sets, opt_par, parameters)
             operations.append([ops])
         else:
             raise RuntimeError("Invalid integral_type")
@@ -251,8 +250,8 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_facets):
             for j in range(num_facets):
                 # Update transformer with facets and generate case code + set of used geometry terms.
-                c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                            opt_par, parameters)
+                nest_ir, ops = _generate_element_tensor(integrals[i][j], sets, \
+                                                        opt_par, parameters)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += [nest_ir.gencode()]
                 cases[i][j] = "\n".join(case)
@@ -305,8 +304,8 @@ def _tabulate_tensor(ir, parameters):
 
         # Generate the code we need, corresponding to facet 1 [top] of
         # the lower element, and facet 0 [bottom] of the top element
-        c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[1][0], sets, \
-                                                    opt_par, parameters)
+        nest_ir, ops = _generate_element_tensor(integrals[1][0], sets, \
+                                                opt_par, parameters)
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])
@@ -333,8 +332,8 @@ def _tabulate_tensor(ir, parameters):
         for i in range(num_vertices):
             # Update transformer with vertices and generate case code +
             # set of used geometry terms.
-            c, nest_ir, mem_code, ops = _generate_element_tensor(integrals[i],
-                                                        sets, opt_par, parameters)
+            nest_ir, ops = _generate_element_tensor(integrals[i],
+                                                    sets, opt_par, parameters)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -430,20 +429,11 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
 
     # Initialise return values.
-    element_code     = []
     tensor_ops_count = 0
 
-    # TODO: KBO: The members_code was used when I generated the load_table.h
-    # file which could load tables of basisfunction. This feature has not
-    # been reimplemented. However, with the new design where we only
-    # tabulate unique tables (and only non-zero entries) it doesn't seem to
-    # be necessary. Should it be deleted?
-    members_code = ""
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
-
-        element_code += ["", f_comment("Loop quadrature points for integral.")]
 
         ip_code = []
         ip_ir = []
@@ -451,6 +441,8 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
         # Generate code to compute coordinates if used.
         if coordinate:
+            raise RuntimeError("Don't know how to compute coordinates")
+            # Left in place for posterity
             name, gdim, ip, r = coordinate
             element_code += ["", f_comment("Declare array to hold physical coordinate of quadrature point.")]
             element_code += [f_decl(f_double, f_X(points, gdim))]
@@ -473,20 +465,21 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # TODO: Some conditionals might only depend on geometry so they
         # should be moved outside if possible.
         if conditionals:
-            ip_code += [f_decl(f_double, f_C(len(conditionals)))]
+            ip_ir.append(pyop2.Decl(f_double, c_sym(f_C(len(conditionals)))))
             # Sort conditionals (need to in case of nested conditionals).
             reversed_conds = dict([(n, (o, e)) for e, (t, o, n) in conditionals.items()])
             for num in range(len(conditionals)):
                 name = format["conditional"](num)
                 ops, expr = reversed_conds[num]
-                ip_code += [f_comment("Compute conditional, operations: %d." % ops)]
-                ip_code += [format["assign"](name, expr)]
+                ip_ir.append(pyop2.Assign(c_sym(name), c_sym(expr)))
                 num_ops += ops
 
         # Generate code for ip constant declarations.
         # TODO: this code should be removable as only executed when ffc's optimisations are on
         ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
                                         format["assign"], True)
+        if len(ip_const_code) > 0:
+            raise RuntimeError("IP Const code not supported")
         num_ops += ip_const_ops
         if ip_const_code:
             ip_code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
@@ -499,22 +492,16 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         tensor_ops_count += num_ops*points
         ip_ir += nest_ir
 
-        element_code.append(f_comment\
-            ("Number of operations to compute element tensor for following IP loop = %d" %(num_ops*points)) )
-
         # Loop code over all IPs.
         # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
-            element_code += f_loop(ip_code, [(f_ip, 0, points)])
             it_var = pyop2.Symbol(f_ip, ())
             nest_ir = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
                         pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True))
         else:
-            element_code.append(f_comment("Only 1 integration point, omitting IP loop."))
-            element_code += ip_code
             nest_ir = pyop2.Block(ip_ir, open_scope=False)
 
-    return (element_code, nest_ir, members_code, tensor_ops_count)
+    return (nest_ir, tensor_ops_count)
 
 
 def visit_rhs(node):
