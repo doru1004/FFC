@@ -33,18 +33,13 @@ from ffc.cpp import format
 def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
-    debug("\nQG-utils, psi_tables:\n" + str(tables))
-
     # Create element map {points:{element:number,},}
     # and a plain dictionary {name:values,}.
     element_map, flat_tables = flatten_psi_tables(tables, entity_type)
-    debug("\nQG-utils, psi_tables, flat_tables:\n" + str(flat_tables))
 
     # Reduce tables such that we only have those tables left with unique values
     # Create a name map for those tables that are redundant.
     name_map, unique_tables = unique_psi_tables(flat_tables, eliminate_zeros)
-    debug("\nQG-utils, psi_tables, unique_tables:\n" + str(unique_tables))
-    debug("\nQG-utils, psi_tables, name_map:\n" + str(name_map))
 
     return (element_map, name_map, unique_tables)
 
@@ -110,11 +105,13 @@ def flatten_psi_tables(tables, entity_type):
                             name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
-                            ffc_assert(num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points),
-                                       "This table has the wrong shape: " + str(psi_table))
+                            # Changing ffc_assert to raise Exception, as
+                            # ffc_assert evaluates unconditionally
+                            if not (num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points)):
+                                raise Exception("This table has the wrong shape: " + str(psi_table))
                             # Verify uniqueness of names
-                            ffc_assert(name not in flat_tables,
-                                        "Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
+                            if not (name not in flat_tables):
+                                raise Exception("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
 
                             # Store table with unique name
                             flat_tables[name] = psi_table
@@ -135,10 +132,6 @@ def unique_psi_tables(tables, eliminate_zeros):
 
     # Get unique tables (from old table utility).
     name_map, inverse_name_map = unique_tables(tables)
-
-    debug("\ntables: " + str(tables))
-    debug("\nname_map: " + str(name_map))
-    debug("\ninv_name_map: " + str(inverse_name_map))
 
     # Set values to zero if they are lower than threshold.
     format_epsilon = format["epsilon"]
