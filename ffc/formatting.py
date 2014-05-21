@@ -32,34 +32,16 @@ ufc_utils.
 # Python modules
 import os
 
-# Code generation templates
-try:
-    from ffc.backends.ufc import templates as ufc_templates
-except ImportError:
-    ufc_templates = None
-try:
-    from pyop2_utils import templates as pyop2_templates
-except ImportError:
-    pyop2_templates = None
-templates_dict = { "ufc":   ufc_templates,
-                   "pyop2": pyop2_templates }
-
 # FFC modules
 from ffc.log import info, error, begin, end, dstr
-from ffc.constants import FFC_VERSION, UFC_VERSION, PYOP2_VERSION
+from ffc.constants import FFC_VERSION, UFC_VERSION
 from ffc.cpp import format
+from ffc.backends.ufc import templates
 
 def format_code(code, wrapper_code, prefix, parameters):
     "Format given code in UFC format."
 
     begin("Compiler stage 5: Formatting code")
-
-    # Choose format
-    format_name = parameters["format"]
-    templates = templates_dict[format_name]
-    if templates is None:
-        raise ImportError("Format %s depends on %s_utils, which is not available."
-                          % (format_name, format_name))
 
     # Extract code
     code_elements, code_dofmaps, code_integrals, code_forms = code
@@ -73,88 +55,77 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_c += _generate_comment(parameters) + "\n"
 
     # Generate code for header
-    code_h += format["header_h"][format_name] % {"prefix_upper": prefix.upper()}
+    code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
     code_h += _generate_additional_includes(code_integrals)  + "\n"
     code_c += format["header_c"] % {"prefix": prefix}
 
     # Generate code for elements
     if code_elements:
         for code_element in code_elements:
-            code_h += _format_h("finite_element", code_element, parameters, templates)
-            code_c += _format_c("finite_element", code_element, parameters, templates)
+            code_h += _format_h("finite_element", code_element, parameters)
+            code_c += _format_c("finite_element", code_element, parameters)
 
     # Generate code for dofmaps
     if code_dofmaps:
         for code_dofmap in code_dofmaps:
-            code_h += _format_h("dofmap", code_dofmap, parameters, templates)
-            code_c += _format_c("dofmap", code_dofmap, parameters, templates)
+            code_h += _format_h("dofmap", code_dofmap, parameters)
+            code_c += _format_c("dofmap", code_dofmap, parameters)
 
     # Generate code for integrals
     if code_integrals:
         for code_integral in code_integrals:
             classname = code_integral["classname"]
             if "cell_integral" in classname:
-                code_h += _format_h("cell_integral", code_integral, parameters, templates)
-                code_c += _format_c("cell_integral", code_integral, parameters, templates)
+                code_h += _format_h("cell_integral", code_integral, parameters)
+                code_c += _format_c("cell_integral", code_integral, parameters)
             elif "exterior_facet_integral" in classname:
-                code_h += _format_h("exterior_facet_integral", code_integral, parameters, templates)
-                code_c += _format_c("exterior_facet_integral", code_integral, parameters, templates)
+                code_h += _format_h("exterior_facet_integral", code_integral, parameters)
+                code_c += _format_c("exterior_facet_integral", code_integral, parameters)
             elif "interior_facet_integral" in classname:
-                code_h += _format_h("interior_facet_integral", code_integral, parameters, templates)
-                code_c += _format_c("interior_facet_integral", code_integral, parameters, templates)
+                code_h += _format_h("interior_facet_integral", code_integral, parameters)
+                code_c += _format_c("interior_facet_integral", code_integral, parameters)
             elif "point_integral" in classname:
-                code_h += _format_h("point_integral", code_integral, parameters, templates)
-                code_c += _format_c("point_integral", code_integral, parameters, templates)
+                code_h += _format_h("point_integral", code_integral, parameters)
+                code_c += _format_c("point_integral", code_integral, parameters)
             elif "custom_integral" in classname:
-                code_h += _format_h("custom_integral", code_integral, parameters, templates)
-                code_c += _format_c("custom_integral", code_integral, parameters, templates)
+                code_h += _format_h("custom_integral", code_integral, parameters)
+                code_c += _format_c("custom_integral", code_integral, parameters)
             else:
                 error("Unable to figure out base class for %s" % classname)
 
     # Generate code for form
     if code_forms:
         for code_form in code_forms:
-            code_h += _format_h("form", code_form, parameters, templates)
-            code_c += _format_c("form", code_form, parameters, templates)
+            code_h += _format_h("form", code_form, parameters)
+            code_c += _format_c("form", code_form, parameters)
 
     # Add wrappers
     if wrapper_code:
         code_h += wrapper_code
 
     # Generate code for footer
-    code_h += format["footer"][format_name]
+    code_h += format["footer"]
 
     # Write file(s)
-    if parameters['write_file']:
-        if parameters["split"]:
-            _write_file(code_h, prefix, ".h", parameters)
-            _write_file(code_c, prefix, ".cpp", parameters)
-        else:
-            _write_file(code_h, prefix, ".h", parameters)
+    if parameters["split"]:
+        _write_file(code_h, prefix, ".h", parameters)
+        _write_file(code_c, prefix, ".cpp", parameters)
+    else:
+        _write_file(code_h, prefix, ".h", parameters)
 
     end()
-    return code_h
 
-def _format_h(class_type, code, parameters, templates):
+def _format_h(class_type, code, parameters):
     "Format header code for given class type."
     if parameters["split"]:
-        if code is None:
-            return ""
-        else:
-            return templates[class_type + "_header"] % code + "\n"
+        return templates[class_type + "_header"] % code + "\n"
     else:
-        if code is None:
-            return ""
-        else:
-            return templates[class_type + "_combined"] % code + "\n"
+        return templates[class_type + "_combined"] % code + "\n"
 
-def _format_c(class_type, code, parameters, templates):
+def _format_c(class_type, code, parameters):
     "Format implementation code for given class type."
     if parameters["split"]:
-        if code is None:
-            return ""
-        else:
-            return templates[class_type + "_implementation"] % code + "\n"
+        return templates[class_type + "_implementation"] % code + "\n"
     else:
         return ""
 
@@ -172,13 +143,11 @@ def _generate_comment(parameters):
     "Generate code for comment on top of file."
 
     # Generate top level comment
-    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION, "pyop2_version": PYOP2_VERSION }
+    args = {"ffc_version": FFC_VERSION, "ufc_version": UFC_VERSION}
     if parameters["format"] == "ufc":
         comment = format["ufc comment"] % args
     elif parameters["format"] == "dolfin":
         comment = format["dolfin comment"] % args
-    elif parameters["format"] == "pyop2":
-        comment = format["pyop2 comment"] % args
     else:
         error("Unable to format code, unknown format \"%s\".", parameters["format"])
 
