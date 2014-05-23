@@ -51,8 +51,9 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "vert_facet_normal", "vert_facet_normal_interior",
            "ip_coordinates",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
-           "pyop2_circumradius", "facet_area", "min_facet_edge_length",
-           "max_facet_edge_length", "ufc_orientation_snippet", "pyop2_orientation_snippet"]
+           "pyop2_circumradius", "pyop2_circumradius_interior",
+           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
+           "ufc_orientation_snippet", "pyop2_orientation_snippet"]
 
 __all__ += __old__
 
@@ -1503,6 +1504,13 @@ pyop2_circumradius = {1: {1: _pyop2_circumradius_1D,
                       2: {2: _pyop2_circumradius_2D,
                           3: _pyop2_circumradius_3D_2D},
                       3: {3: _pyop2_circumradius_3D}}
+
+pyop2_circumradius_interior = {1: {1: _pyop2_circumradius_1D,
+                                   2: _pyop2_circumradius_2D_1D,
+                                   3: _pyop2_circumradius_3D_1D},
+                               2: {2: _pyop2_circumradius_2D,
+                                   3: _pyop2_circumradius_3D_2D},
+                               3: {3: _pyop2_circumradius_3D}}
 
 facet_area = {1: {1: _facet_area_1D,
                   2: _facet_area_2D_1D,

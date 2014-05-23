@@ -132,7 +132,7 @@ def _tabulate_tensor(ir, parameters):
     #The pyop2 format requires dereferencing constant coefficients since
     # these are passed in as double *
     common = []
-    if p_format == 'pyop2':
+    if p_format == "pyop2":
         for n, c in zip(ir["coefficient_names"], ir["coefficient_elements"]):
             if c.family() == 'Real':
                 shape = c.value_shape()
@@ -166,6 +166,11 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += format["scale factor snippet"][p_format]
+
+        # Generate code for cell volume and circumradius -- note that the
+        # former will be incorrect on extruded meshes by a constant factor.
+        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     elif integral_type in ("exterior_facet", "exterior_facet_vert"):
         if p_format == 'pyop2':
@@ -203,6 +208,11 @@ def _tabulate_tensor(ir, parameters):
             if tdim == 3:
                 jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
                 jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
+
+            # Generate code for cell volume and circumradius
+            jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
+            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
+
         elif integral_type == "exterior_facet_vert":
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
             jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
@@ -288,6 +298,10 @@ def _tabulate_tensor(ir, parameters):
                 jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
                 jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
+            # Generate code for cell volume and circumradius
+            jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
+            jacobi_code += "\n\n" + format["generate circumradius interior"](tdim, gdim, integral_type)
+
         elif integral_type == "interior_facet_vert":
             # THE REST IS NOT IMPLEMENTED YET
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
@@ -356,22 +370,6 @@ def _tabulate_tensor(ir, parameters):
 
     else:
         error("Unhandled integral type: " + str(integral_type))
-
-    # Add common (for cell, exterior and interior) geo code.
-    # @@@: adding circumradius, area, ... after the jacobian
-    if integral_type != "point":
-        # In the other cases, these snippets are just not included
-        # in the kernel code (i.e. unsupported), as I can't be
-        # bothered to write another batch of codesnippets for a
-        # short-term fix.  Cell volume isn't actually too
-        # difficult (just points at det), but circumradius is bleurgh.
-        # EDIT: reenabling cell volume for horiz/vert facet integrals
-        # technically this is incorrect by a factor of 2 (quads) or
-        # 3 (prisms), but it's only used for stabilisation anyway.
-        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
-        if integral_type in ("cell", "exterior_facet") or p_format != "pyop2":
-            # pyop2+interior has different coord layout
-            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
     # Embedded manifold, need to pass in cell orientations
     if oriented and tdim != gdim and p_format == 'pyop2':
