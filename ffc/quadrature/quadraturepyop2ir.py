@@ -597,15 +597,18 @@ def _generate_functions(functions, sets):
             # number more than once for mixed element + interior facets
             # ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
 
-            # Convert function (that might be a symbol) to a simple string and save.
+            # Convert function to COFFEE ast node, save string
+            # representation for sorting (such that we're reproducible
+            # in parallel).
+            key = str(function)
             function = visit_rhs(function)
-            function_expr.append((number, function))
+            function_expr.append((number, function, key))
 
             # Get number of operations to compute entry and add to function operations count.
             func_ops += (ops + 1)*sum(range_i)
 
-        # Sort the functions according to name and create loop to compute the function values.
-        lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn in sorted(function_expr)]
+        # Gather, sorted by string rep of function.
+        lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn, _ in sorted(function_expr, key=lambda x: x[2])]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
