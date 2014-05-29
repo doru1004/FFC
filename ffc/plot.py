@@ -28,6 +28,8 @@ import sys
 
 from ffc.fiatinterface import create_element
 from ffc.log import warning, error, info
+from ufl import OuterProductCell
+from FIAT import ufc_cell
 
 # Import Soya3D
 try:
@@ -83,7 +85,7 @@ def plot(element, rotate=True):
 
         # Create title
         if element.degree() is not None:
-            title = "%s of degree %d on a %s" % (element.family(), element.degree(), cellname)
+            title = "%s of degree %s on a %s" % (element.family(), str(element.degree()), cellname)
         else:
             title = "%s on a %s" % (element.family(), cellname)
 
@@ -309,76 +311,6 @@ def Arrow(scene, x, n, center=False):
     return scene.to_model()
 
 
-def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
-    "Return model for unit tetrahedron."
-
-    info("Plotting unit tetrahedron")
-
-    # Create separate scene (since we will extract a model, not render)
-    scene = soya.World()
-
-    # Create vertices
-    v0 = soya.Vertex(scene, 0.0, 0.0, 0.0, diffuse=color)
-    v1 = soya.Vertex(scene, 1.0, 0.0, 0.0, diffuse=color)
-    v2 = soya.Vertex(scene, 0.0, 1.0, 0.0, diffuse=color)
-    v3 = soya.Vertex(scene, 0.0, 0.0, 1.0, diffuse=color)
-
-    # Create edges
-    e0 = Cylinder(scene, v0, v1, 0.007)
-    e1 = Cylinder(scene, v0, v2, 0.007)
-    e2 = Cylinder(scene, v0, v3, 0.007)
-    e3 = Cylinder(scene, v1, v2, 0.007)
-    e4 = Cylinder(scene, v1, v3, 0.007)
-    e5 = Cylinder(scene, v2, v3, 0.007)
-
-    # Create faces
-    f0 = soya.Face(scene, (v1, v2, v3))
-    f1 = soya.Face(scene, (v0, v2, v3))
-    f2 = soya.Face(scene, (v0, v1, v3))
-    f3 = soya.Face(scene, (v0, v1, v2))
-
-    # Make faces double sided
-    f0.double_sided = 1
-    f1.double_sided = 1
-    f2.double_sided = 1
-    f3.double_sided = 1
-
-    # Extract model
-    model = scene.to_model()
-
-    return model
-
-
-def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
-    "Return model for unit tetrahedron."
-
-    info("Plotting unit triangle")
-
-    # Create separate scene (since we will extract a model, not render)
-    scene = soya.World()
-
-    # Create vertice
-    v0 = soya.Vertex(scene, 0.0, 0.0, 0.0, diffuse=color)
-    v1 = soya.Vertex(scene, 1.0, 0.0, 0.0, diffuse=color)
-    v2 = soya.Vertex(scene, 0.0, 1.0, 0.0, diffuse=color)
-
-    # Create edges
-    e0 = Cylinder(scene, v0, v1, 0.007)
-    e1 = Cylinder(scene, v0, v2, 0.007)
-    e2 = Cylinder(scene, v1, v2, 0.007)
-
-    # Create face
-    f = soya.Face(scene, (v0, v1, v2))
-
-    # Make face double sided
-    f.double_sided = 1
-
-    # Extract model
-    model = scene.to_model()
-
-    return model
-
-
 def PointEvaluation(x):
     "Return model for point evaluation at given point."
 
@@ -580,14 +512,47 @@ def create_cell_model(element):
     color = element_colors[family]
     color = (color[0], color[1], color[2], 0.7)
 
-    # Create model based on cell type
-    cellname = element.cell().cellname()
-    if cellname == "triangle":
-        return UnitTriangle(color), False
-    elif cellname == "tetrahedron":
-        return UnitTetrahedron(color), True
+    # Create separate scene (since we will extract a model, not render)
+    scene = soya.World()
 
-    error("Unable to plot element, unhandled cell type: %s" % str(cellname))
+    # Get FIAT cell
+    FIAT_cell = ufc_cell(element.cell())
+
+    # Create vertices
+    vert3d = [to3d(vert) for vert in FIAT_cell.vertices]
+    v = [soya.Vertex(scene, v3d[0], v3d[1], v3d[2], diffuse=color) for v3d in vert3d]
+
+    # Create edges
+    if not isinstance(element.cell(), OuterProductCell):
+        FIAT_edges = FIAT_cell.topology[1]
+        e = [Cylinder(scene, v[FIAT_edges[e_idx][0]], v[FIAT_edges[e_idx][1]], 0.007) for e_idx in FIAT_edges]
+    else:
+        FIAT_edges = FIAT_cell.topology[(1, 0)]
+        e = [Cylinder(scene, v[FIAT_edges[e_idx][0]], v[FIAT_edges[e_idx][1]], 0.007) for e_idx in FIAT_edges]
+        FIAT_edges = FIAT_cell.topology[(0, 1)]
+        e += [Cylinder(scene, v[FIAT_edges[e_idx][0]], v[FIAT_edges[e_idx][1]], 0.007) for e_idx in FIAT_edges]
+
+    # Create faces
+    if len(FIAT_cell.vertices[0]) >= 2:
+        if not isinstance(element.cell(), OuterProductCell):
+            FIAT_faces = FIAT_cell.topology[2]
+            f = [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
+        else:
+            FIAT_faces = FIAT_cell.topology[(1, 1)]
+            f = [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][3]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
+            FIAT_faces = FIAT_cell.topology[(2, 0)]
+            f += [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
+
+        # Make faces double sided
+        for ff in f:
+            ff.double_sided = 1
+
+    # Extract model
+    model = scene.to_model()
+
+    is3d = len(FIAT_cell.vertices[0]) == 3
+
+    return model, is3d
 
 
 def create_dof_models(element):
@@ -746,6 +711,8 @@ def to3d(x):
     "Make sure point is 3D."
     if len(x) == 2:
         x = (x[0], x[1], 0.0)
+    elif len(x) == 1:
+        x = (x[0], 0.0, 0.0)
     return x
 
 
