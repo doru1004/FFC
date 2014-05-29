@@ -539,9 +539,11 @@ def create_cell_model(element):
             f = [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
         else:
             FIAT_faces = FIAT_cell.topology[(1, 1)]
+            # note these are quads.  visit vertices in 0132 order.
             f = [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][3]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
-            FIAT_faces = FIAT_cell.topology[(2, 0)]
-            f += [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
+            if (2, 0) in FIAT_cell.topology:  # not present for interval x interval
+                FIAT_faces = FIAT_cell.topology[(2, 0)]
+                f += [soya.Face(scene, (v[FIAT_faces[f_idx][0]], v[FIAT_faces[f_idx][1]], v[FIAT_faces[f_idx][2]])) for f_idx in FIAT_faces]
 
         # Make faces double sided
         for ff in f:
