@@ -22,7 +22,7 @@
 
 __all__ = ["plot"]
 
-from numpy import dot, cross, array, sin, cos, pi, sqrt
+from numpy import cross, array, sin, cos, pi, sqrt
 from numpy.linalg import norm
 import sys
 
@@ -33,7 +33,6 @@ from ffc.log import warning, error, info
 try:
     import soya
     from soya.sphere import Sphere
-    from soya.label3d import Label3D
     from soya.sdlconst import QUIT
     _soya_imported = True
 except:
@@ -53,6 +52,7 @@ element_colors = {"Argyris":                      (0.45, 0.70, 0.80),
                   "Nedelec 1st kind H(curl)":     (0.90, 0.30, 0.00),
                   "Nedelec 2nd kind H(curl)":     (0.70, 0.20, 0.00),
                   "Raviart-Thomas":               (0.90, 0.60, 0.00)}
+
 
 def plot(element, rotate=True):
     "Plot finite element."
@@ -76,7 +76,7 @@ def plot(element, rotate=True):
         # Create cell model
         cell, is3d = create_cell_model(element)
 
-        cellname = element.cell().cellname() # Assuming single cell
+        cellname = element.cell().cellname()  # Assuming single cell
 
         # Create dof models
         dofs, num_moments = create_dof_models(element)
@@ -89,6 +89,7 @@ def plot(element, rotate=True):
 
         # Render plot window
         render([cell] + dofs, title, num_moments, is3d, rotate)
+
 
 def render(models, title, num_moments, is3d, rotate):
     "Render given list of models."
@@ -108,11 +109,6 @@ def render(models, title, num_moments, is3d, rotate):
         scene.atmosphere.bg_color = (0.0, 1.0, 0.0, 1.0)
     else:
         scene.atmosphere.bg_color = (1.0, 1.0, 1.0, 1.0)
-
-    # Not used, need to manually handle rotation
-    #label = Label3D(scene, text=str(num_moments), size=0.005)
-    #label.set_xyz(1.0, 1.0, 1.0)
-    #label.set_color((0.0, 0.0, 0.0, 1.0))
 
     # Define rotation
     if is3d:
@@ -180,6 +176,7 @@ def render(models, title, num_moments, is3d, rotate):
     idler = Idler(scene)
     idler.idle()
 
+
 def tangents(n):
     "Return normalized tangent vectors for plane defined by given vector."
 
@@ -196,6 +193,7 @@ def tangents(n):
     t1 = t1 / norm(t0)
 
     return t0, t1
+
 
 def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
     "Return model for cylinder from p0 to p1 with radius r."
@@ -241,6 +239,7 @@ def Cylinder(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
 
     return model
 
+
 def Cone(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
     "Return model for cone from p0 to p1 with radius r."
 
@@ -272,13 +271,14 @@ def Cone(scene, p0, p1, r, color=(0.0, 0.0, 0.0, 1.0)):
         # Create face
         v0 = soya.Vertex(scene, x0[0], x0[1], x0[2], diffuse=color)
         v1 = soya.Vertex(scene, x1[0], x1[1], x1[2], diffuse=color)
-        f  = soya.Face(scene, (v0, v1, v2))
+        f = soya.Face(scene, (v0, v1, v2))
         f.double_sided = 1
 
     # Extract model
     model = scene.to_model()
 
     return model
+
 
 def Arrow(scene, x, n, center=False):
     "Return model for arrow from x in direction n."
@@ -307,6 +307,7 @@ def Arrow(scene, x, n, center=False):
 
     # Extract model
     return scene.to_model()
+
 
 def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
     "Return model for unit tetrahedron."
@@ -347,6 +348,7 @@ def UnitTetrahedron(color=(0.0, 1.0, 0.0, 0.5)):
 
     return model
 
+
 def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
     "Return model for unit tetrahedron."
 
@@ -375,6 +377,7 @@ def UnitTriangle(color=(0.0, 1.0, 0.0, 0.5)):
     model = scene.to_model()
 
     return model
+
 
 def PointEvaluation(x):
     "Return model for point evaluation at given point."
@@ -405,6 +408,7 @@ def PointEvaluation(x):
 
     return model
 
+
 def PointDerivative(x):
     "Return model for evaluation of derivatives at given point."
 
@@ -433,6 +437,7 @@ def PointDerivative(x):
     model = scene.to_model()
 
     return model
+
 
 def PointSecondDerivative(x):
     "Return model for evaluation of second derivatives at given point."
@@ -463,6 +468,7 @@ def PointSecondDerivative(x):
 
     return model
 
+
 def DirectionalEvaluation(x, n, flip=False, center=False):
     "Return model for directional evaluation at given point in given direction."
 
@@ -492,6 +498,7 @@ def DirectionalEvaluation(x, n, flip=False, center=False):
 
     return model
 
+
 def DirectionalDerivative(x, n):
     "Return model for directional derivative at given point in given direction."
 
@@ -516,6 +523,7 @@ def DirectionalDerivative(x, n):
 
     return model
 
+
 def IntegralMoment(cellname, num_moments, x=None):
     "Return model for integral moment for given element."
 
@@ -523,10 +531,10 @@ def IntegralMoment(cellname, num_moments, x=None):
 
     # Set position
     if x is None and cellname == "triangle":
-        a = 1.0 / (2 + sqrt(2)) # this was a fun exercise
+        a = 1.0 / (2 + sqrt(2))  # this was a fun exercise
         x = (a, a, 0.0)
     elif x is None:
-        a = 1.0 / (3 + sqrt(3)) # so was this
+        a = 1.0 / (3 + sqrt(3))  # so was this
         x = (a, a, a)
 
     # Make sure point is 3D
@@ -560,12 +568,13 @@ def IntegralMoment(cellname, num_moments, x=None):
 
     return model
 
+
 def create_cell_model(element):
     "Create Soya3D model for cell."
 
     # Get color
     family = element.family()
-    if not family in element_colors:
+    if family not in element_colors:
         warning("Don't know a good color for elements of type '%s', using default color." % family)
         family = "Lagrange"
     color = element_colors[family]
@@ -579,6 +588,7 @@ def create_cell_model(element):
         return UnitTetrahedron(color), True
 
     error("Unable to plot element, unhandled cell type: %s" % str(cellname))
+
 
 def create_dof_models(element):
     "Create Soya3D models for dofs."
@@ -597,7 +607,7 @@ def create_dof_models(element):
 
     # Check if element is supported
     family = element.family()
-    if not family in unsupported:
+    if family not in unsupported:
         # Create FIAT element and get dofs
         fiat_element = create_element(element)
         dofs = [(dof.get_type_tag(), dof.get_point_dict()) for dof in fiat_element.dual_basis()]
@@ -684,6 +694,7 @@ def create_dof_models(element):
 
     return models, num_moments
 
+
 def create_notation_models():
     "Create Soya 3D models for notation."
 
@@ -723,11 +734,13 @@ def create_notation_models():
 
     return models
 
+
 def pointing_outwards(x, n):
     "Check if n is pointing inwards, used for flipping dofs."
     eps = 1e-10
     x = array(x) + 0.1*array(n)
     return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
+
 
 def to3d(x):
     "Make sure point is 3D."
@@ -735,36 +748,39 @@ def to3d(x):
         x = (x[0], x[1], 0.0)
     return x
 
+
 def arnold_winther_dofs(element):
     "Special fix for Arnold-Winther elements until Rob fixes in FIAT."
 
     if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
 
-    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointScaledNormalEval", {(1.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(3.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(4.0/5, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(4.0/5, 1.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(3.0/5, 2.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/5, 3.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(1.0/5, 4.0/5.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   1.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   2.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   3.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   4.0/5.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
+    # hack, same dof three times
+    return [("PointEval", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointScaledNormalEval", {(0.2, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.4, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.6, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.8, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.8, 0.2): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.6, 0.4): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.4, 0.6): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.2, 0.8): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 0.2): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 0.4): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 0.6): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 0.8): [(-1.0, (0,)), (0.0, (1,))]}),
             ("IntegralMoment", None),
             ("IntegralMoment", None),
             ("IntegralMoment", None)]
+
 
 def argyris_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
@@ -775,67 +791,72 @@ def argyris_dofs(element):
     if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Argyris on triangles.")
 
-    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
-            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
-            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
-            ("PointDeriv",       {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointDeriv",       {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointDeriv",       {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointDeriv",       {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointDeriv",       {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointDeriv",       {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointSecondDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-            ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
-            ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
-            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})]
+    # hack, same dof twice/thrice
+    return [("PointEval",        {(0.0, 0.0): [(1.0, ())]}),
+            ("PointEval",        {(1.0, 0.0): [(1.0, ())]}),
+            ("PointEval",        {(0.0, 1.0): [(1.0, ())]}),
+            ("PointDeriv",       {(0.0, 0.0): [(1.0, ())]}),
+            ("PointDeriv",       {(0.0, 0.0): [(1.0, ())]}),
+            ("PointDeriv",       {(1.0, 0.0): [(1.0, ())]}),
+            ("PointDeriv",       {(1.0, 0.0): [(1.0, ())]}),
+            ("PointDeriv",       {(0.0, 1.0): [(1.0, ())]}),
+            ("PointDeriv",       {(0.0, 1.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointSecondDeriv", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointNormalDeriv", {(0.5, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointNormalDeriv", {(0.5, 0.5): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), (0.0, (1,))]})]
+
 
 def hermite_dofs(element):
     "Special fix for Hermite elements until Rob fixes in FIAT."
 
-    dofs_2d = [("PointEval",  {(0.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(1.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(0.0, 1.0): [ (1.0, ()) ]}),
-               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointDeriv", {(0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof twice
-               ("PointEval",  {(1.0/3, 1.0/3): [ (1.0, ()) ]})]
+    # hack, same dof twice
+    dofs_2d = [("PointEval",  {(0.0, 0.0): [(1.0, ())]}),
+               ("PointEval",  {(1.0, 0.0): [(1.0, ())]}),
+               ("PointEval",  {(0.0, 1.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(1.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(1.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 1.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 1.0): [(1.0, ())]}),
+               ("PointEval",  {(1.0/3, 1.0/3): [(1.0, ())]})]
 
-    dofs_3d = [("PointEval",  {(0.0, 0.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(1.0, 0.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(0.0, 1.0, 0.0): [ (1.0, ()) ]}),
-               ("PointEval",  {(0.0, 0.0, 1.0): [ (1.0, ()) ]}),
-               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(1.0, 0.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 1.0, 0.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointDeriv", {(0.0, 0.0, 1.0): [ (1.0, ()) ]}), # hack, same dof three times
-               ("PointEval",  {(1.0/3, 1.0/3, 1.0/3): [ (1.0, ()) ]}),
-               ("PointEval",  {(0.0,   1.0/3, 1.0/3): [ (1.0, ()) ]}),
-               ("PointEval",  {(1.0/3, 0.0,   1.0/3): [ (1.0, ()) ]}),
-               ("PointEval",  {(1.0/3, 1.0/3, 0.0):   [ (1.0, ()) ]})]
+    # hack, same dof three times
+    dofs_3d = [("PointEval", {(0.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointEval", {(1.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointEval", {(0.0, 1.0, 0.0): [(1.0, ())]}),
+               ("PointEval", {(0.0, 0.0, 1.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(1.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(1.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(1.0, 0.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 1.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 1.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 1.0, 0.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 1.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 1.0): [(1.0, ())]}),
+               ("PointDeriv", {(0.0, 0.0, 1.0): [(1.0, ())]}),
+               ("PointEval", {(1.0/3, 1.0/3, 1.0/3): [(1.0, ())]}),
+               ("PointEval", {(0.0,   1.0/3, 1.0/3): [(1.0, ())]}),
+               ("PointEval", {(1.0/3, 0.0,   1.0/3): [(1.0, ())]}),
+               ("PointEval", {(1.0/3, 1.0/3, 0.0): [(1.0, ())]})]
 
     if element.cell().cellname() == "triangle":
         return dofs_2d
     else:
         return dofs_3d
+
 
 def mardal_tai_winther_dofs(element):
     "Special fix for Mardal-Tai-Winther elements until Rob fixes in FIAT."
@@ -843,15 +864,16 @@ def mardal_tai_winther_dofs(element):
     if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Mardal-Tai-Winther on triangles.")
 
-    return [("PointScaledNormalEval", {(1.0/3, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/3, 0.0):     [  (0.0, (0,)), (-1.0, (1,))]}),
-            ("PointScaledNormalEval", {(2.0/3, 1.0/3.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(1.0/3, 2.0/3.0): [  (1.0, (0,)),  (1.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   1.0/3.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointScaledNormalEval", {(0.0,   2.0/3.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointEdgeTangent", {(0.5, 0.0): [ (-1.0, (0,)),  (0.0, (1,))]}),
-            ("PointEdgeTangent", {(0.5, 0.5): [ (-1.0, (0,)),  (1.0, (1,))]}),
-            ("PointEdgeTangent", {(0.0, 0.5): [  (0.0, (0,)), (-1.0, (1,))]})]
+    return [("PointScaledNormalEval", {(1.0/3, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/3, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointScaledNormalEval", {(2.0/3, 1.0/3): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(1.0/3, 2.0/3): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 1.0/3): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointScaledNormalEval", {(0.0, 2.0/3): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointEdgeTangent", {(0.5, 0.0): [(-1.0, (0,)), (0.0, (1,))]}),
+            ("PointEdgeTangent", {(0.5, 0.5): [(-1.0, (0,)), (1.0, (1,))]}),
+            ("PointEdgeTangent", {(0.0, 0.5): [(0.0, (0,)), (-1.0, (1,))]})]
+
 
 def morley_dofs(element):
     "Special fix for Morley elements until Rob fixes in FIAT."
@@ -859,9 +881,9 @@ def morley_dofs(element):
     if not element.cell().cellname() == "triangle":
         error("Unable to plot element, only know how to plot Morley on triangles.")
 
-    return [("PointEval",        {(0.0, 0.0): [ (1.0, ()) ]}),
-            ("PointEval",        {(1.0, 0.0): [ (1.0, ()) ]}),
-            ("PointEval",        {(0.0, 1.0): [ (1.0, ()) ]}),
-            ("PointNormalDeriv", {(0.5, 0.0): [ (0.0, (0,)), (-1.0,  (1,))]}),
-            ("PointNormalDeriv", {(0.5, 0.5): [ (1.0, (0,)), ( 1.0,  (1,))]}),
-            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), ( 0.0,  (1,))]})]
+    return [("PointEval", {(0.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(1.0, 0.0): [(1.0, ())]}),
+            ("PointEval", {(0.0, 1.0): [(1.0, ())]}),
+            ("PointNormalDeriv", {(0.5, 0.0): [(0.0, (0,)), (-1.0, (1,))]}),
+            ("PointNormalDeriv", {(0.5, 0.5): [(1.0, (0,)), (1.0, (1,))]}),
+            ("PointNormalDeriv", {(0.0, 0.5): [(-1.0, (0,)), (0.0, (1,))]})]
