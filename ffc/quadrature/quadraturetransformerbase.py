@@ -882,6 +882,10 @@ class QuadratureTransformerBase(Transformer):
                     new_terms[loop][0][i].update(s)
                 new_terms[loop][1].append((entry, value, ops))
 
+        if len(new_terms) == 0 and self.parameters["format"] == "pyop2":
+            # Integrand simplified to zero (i.e. empty) so raise
+            # exception (Firedrake catches this later)
+            raise EmptyIntegrandError('Integrand %s is empty' % integrand)
         return new_terms
 
     def _create_loop_entry(self, key, f_nzc):
