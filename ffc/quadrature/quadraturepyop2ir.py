@@ -497,7 +497,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         if points > 1:
             it_var = pyop2.Symbol(f_ip, ())
             nest_ir = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
-                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True))
+                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")
         else:
             nest_ir = pyop2.Block(ip_ir, open_scope=False)
 
