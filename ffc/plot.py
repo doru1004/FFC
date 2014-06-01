@@ -53,7 +53,8 @@ element_colors = {"Argyris":                      (0.45, 0.70, 0.80),
                   "Morley":                       (0.40, 0.40, 0.40),
                   "Nedelec 1st kind H(curl)":     (0.90, 0.30, 0.00),
                   "Nedelec 2nd kind H(curl)":     (0.70, 0.20, 0.00),
-                  "Raviart-Thomas":               (0.90, 0.60, 0.00)}
+                  "Raviart-Thomas":               (0.90, 0.60, 0.00),
+                  "Other":                        (0.90, 0.90, 0.90)}
 
 
 def plot(element, rotate=True):
@@ -508,7 +509,7 @@ def create_cell_model(element):
     family = element.family()
     if family not in element_colors:
         warning("Don't know a good color for elements of type '%s', using default color." % family)
-        family = "Lagrange"
+        family = "Other"
     color = element_colors[family]
     color = (color[0], color[1], color[2], 0.7)
 
