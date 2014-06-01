@@ -457,18 +457,28 @@ def DirectionalDerivative(x, n):
     return model
 
 
-def IntegralMoment(cellname, num_moments, x=None):
+def IntegralMoment(cell, num_moments, x=None):
     "Return model for integral moment for given element."
 
     info("Plotting dof: integral moment")
 
     # Set position
-    if x is None and cellname == "triangle":
-        a = 1.0 / (2 + sqrt(2))  # this was a fun exercise
-        x = (a, a, 0.0)
-    elif x is None:
-        a = 1.0 / (3 + sqrt(3))  # so was this
-        x = (a, a, a)
+    if x is None:
+        if cell.cellname() == "triangle":
+            a = 1.0 / (2 + sqrt(2))  # this was a fun exercise
+            x = (a, a, 0.0)
+        elif cell.cellname() == "tetrahedron":
+            a = 1.0 / (3 + sqrt(3))  # so was this
+            x = (a, a, a)
+        elif cell.cellname() == "interval":  # probably can't happen
+            a = 0.5
+            x = (a, 0.0, 0.0)
+        elif cell.cellname() == "OuterProductCell":
+            if cell._A.cellname() == "triangle":
+                a = 1.0 / (2 + sqrt(2))  # as above
+                x = (a, a, 0.5)
+            elif cell._A.cellname() == "interval":
+                x = (0.5, 0.5, 0)
 
     # Make sure point is 3D
     x = to3d(x)
@@ -652,7 +662,7 @@ def create_dof_models(element):
         elif dof_type in ("FrobeniusIntegralMoment", "IntegralMoment", "ComponentPointEval"):
 
             # Generate model
-            models.append(IntegralMoment(element.cell().cellname(), num_moments))
+            models.append(IntegralMoment(element.cell(), num_moments))
 
             # Count the number of integral moments
             num_moments += 1
@@ -696,9 +706,9 @@ def create_notation_models():
     y += dy
 
     # Create model for integral moments
-    models.append(IntegralMoment("tetrahedron", 0, [0, y]))
-    models.append(IntegralMoment("tetrahedron", 1, [0, y]))
-    models.append(IntegralMoment("tetrahedron", 2, [0, y]))
+    models.append(IntegralMoment(None, 0, (0, y)))
+    models.append(IntegralMoment(None, 1, (0, y)))
+    models.append(IntegralMoment(None, 2, (0, y)))
 
     return models
 
