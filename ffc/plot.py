@@ -151,9 +151,9 @@ def render(models, title, num_moments, is3d, rotate):
             camera.fov = 2.1
             p.set_xyz(0.0, 0.4, 0.0)
         else:
-            camera.set_xyz(-20, 10, 50.0)
+            camera.set_xyz(-10, 20, 50.0)
             camera.fov = 1.6
-            p.set_xyz(0.3, 0.42, 0.5)
+            p.set_xyz(0.3, 0.82, 0.5)
     else:
         if rotate:
             camera.set_xyz(0, 10, 50.0)
@@ -711,13 +711,18 @@ def pointing_outwards(x, n):
 
     # use for prisms:
     # return x[0] < -eps or x[1] < -eps or x[1] > 1.0 - x[0] + eps or x[2] < -eps or x[2] > 1 + eps
+    # hacked version, with x[0] -> x[0], x[1] -> -x[2], x[2] -> x[1]
+    return x[0] < -eps or -x[2] < -eps or -x[2] > 1.0 - x[0] + eps or x[1] < -eps or x[1] > 1 + eps
 
     # use for simplices
-    return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
+    # return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
 
 
 def to3d(x):
     "Make sure point is 3D."
+    if len(x) == 3:
+        # epic hack
+        return (x[0], x[2], -x[1])
     if len(x) == 2:
         x = (x[0], x[1], 0.0)
     elif len(x) == 1:
