@@ -706,6 +706,13 @@ def pointing_outwards(x, n):
     "Check if n is pointing inwards, used for flipping dofs."
     eps = 1e-10
     x = array(x) + 0.1*array(n)
+    # use for squares:
+    # return x[0] < -eps or x[0] > 1 + eps or x[1] < -eps or x[1] > 1 + eps
+
+    # use for prisms:
+    # return x[0] < -eps or x[1] < -eps or x[1] > 1.0 - x[0] + eps or x[2] < -eps or x[2] > 1 + eps
+
+    # use for simplices
     return x[0] < -eps or x[1] < -eps or x[2] < -eps or x[2] > 1.0 - x[0] - x[1] + eps
 
 
