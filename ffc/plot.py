@@ -54,7 +54,7 @@ element_colors = {"Argyris":                      (0.45, 0.70, 0.80),
                   "Nedelec 1st kind H(curl)":     (0.90, 0.30, 0.00),
                   "Nedelec 2nd kind H(curl)":     (0.70, 0.20, 0.00),
                   "Raviart-Thomas":               (0.90, 0.60, 0.00),
-                  "Other":                        (0.90, 0.90, 0.90)}
+                  "Other":                        (0.50, 1.00, 0.50)}
 
 
 def plot(element, rotate=True):
@@ -153,7 +153,7 @@ def render(models, title, num_moments, is3d, rotate):
             p.set_xyz(0.0, 0.4, 0.0)
         else:
             camera.set_xyz(-10, 20, 50.0)
-            camera.fov = 1.6
+            camera.fov = 2.0
             p.set_xyz(0.3, 0.82, 0.5)
     else:
         if rotate:
@@ -162,8 +162,8 @@ def render(models, title, num_moments, is3d, rotate):
             p.set_xyz(0.0, 0.0, 0.0)
         else:
             camera.set_xyz(0, 10, 50.0)
-            camera.fov = 1.7
-            p.set_xyz(0.5, 0.4, 0.0)
+            camera.fov = 1.8
+            p.set_xyz(0.5, 0.5, 0.0)
     camera.look_at(p)
     soya.set_root_widget(camera)
 
@@ -478,7 +478,7 @@ def IntegralMoment(cell, num_moments, x=None):
                 a = 1.0 / (2 + sqrt(2))  # as above
                 x = (a, a, 0.5)
             elif cell._A.cellname() == "interval":
-                x = (0.5, 0.5, 0)
+                x = (0.5, 0.5)
 
     # Make sure point is 3D
     x = to3d(x)
