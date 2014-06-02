@@ -19,9 +19,9 @@
 # Modified by Johannes Ring 2014
 #
 # First added:  2005-05-20
-# Last changed: 2014-01-07
+# Last changed: 2014-06-02
 
-FFC_VERSION = "1.3.0+"
-UFC_VERSION = "2.3.0+"
+FFC_VERSION = "1.4.0+"
+UFC_VERSION = "1.4.0+"
 PYOP2_VERSION_INFO = (0, 6, 0)
 PYOP2_VERSION = ".".join(map(str, PYOP2_VERSION_INFO))
