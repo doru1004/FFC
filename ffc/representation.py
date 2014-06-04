@@ -228,7 +228,7 @@ def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
                                    form_id,
                                    element_numbers,
                                    parameters)
-        ir['coefficient_names'] = form_data.coefficient_names
+        ir['coefficient_names'] = [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)]
         ir['coefficient_elements'] = form_data.coefficient_elements
 
         # Append representation
