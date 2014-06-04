@@ -23,7 +23,7 @@
 # Modified by Martin Alnaes, 2013
 #
 # First added:  2007-02-28
-# Last changed: 2014-04-24
+# Last changed: 2014-05-22
 
 # Code snippets
 
@@ -1545,7 +1545,7 @@ eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_all(%(values)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
 
@@ -1563,10 +1563,10 @@ eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
 const double* v = vertex_coordinates + %(vertex_offset)s;
-%(form_prefix)s_finite_element_%(counter)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
+%(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_derivatives_all(%(n)s, %(values)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\
 
 // Copy values to table %(prefix)s_D%(d)s
 for (std::size_t i = 0; i < %(space_dim)s; i++)
-  %(prefix)s_D%(d)s[ip][i] = %(values)s[%(values_offset)s + %(offset)s + i*%(stride)s];"""
+  %(prefix)s_D%(d)s[ip][i + %(values_offset)s] = %(values)s[%(offset)s + i*%(stride)s];"""
