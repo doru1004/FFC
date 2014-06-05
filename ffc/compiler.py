@@ -153,7 +153,7 @@ def compile_form(forms, object_names={}, prefix="Form",\
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, parameters)
+    ir = compute_ir(analysis, object_names, parameters)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization

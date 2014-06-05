@@ -66,7 +66,7 @@ def pick_representation(representation):
 
 not_implemented = None
 
-def compute_ir(analysis, parameters):
+def compute_ir(analysis, object_names, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -95,7 +95,7 @@ def compute_ir(analysis, parameters):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, element_numbers, parameters) \
+    irs = [_compute_integral_ir(fd, i, element_numbers, object_names, parameters) \
                for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -210,7 +210,7 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
-def _compute_integral_ir(form_data, form_id, element_numbers, parameters):
+def _compute_integral_ir(form_data, form_id, element_numbers, object_names, parameters):
     "Compute intermediate represention for form integrals."
 
     irs = []
