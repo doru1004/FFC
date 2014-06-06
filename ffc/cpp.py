@@ -170,7 +170,9 @@ def _ufc_element_tensor(i):
 def _ufc_coefficient(count, index):
     return format["component"]("w", [count, index])
 
-def _pyop2_coefficient(count, indices):
+def _pyop2_coefficient(count, indices=None):
+    if not indices:
+        return "w%s" % count
     if not isinstance(indices, list):
         indices = [indices, '0']
     return format["component"]("w%s" % count, indices)

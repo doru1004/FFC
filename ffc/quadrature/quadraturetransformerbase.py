@@ -1313,6 +1313,8 @@ class QuadratureTransformerBase(Transformer):
             coefficient = [format["coefficient"][p_format](str(ufl_function.count()), ca) for ca in coefficient_access]
         else:
             coefficient = format["coefficient"][p_format](str(ufl_function.count()), coefficient_access)
+            coefficient_name = format["coefficient"][p_format](str(ufl_function.count()))
+            coefficient_li = [coefficient_access, 0] 
 
         # Build and cache some function data only if we need the basis
         # MSA: I don't understand the mix of loop index range check and ones check here, but that's how it was.
@@ -1342,7 +1344,8 @@ class QuadratureTransformerBase(Transformer):
                 basis_name = [psi_name + ba for ba in basis_access]
             else:
                 basis_index = "0" if loop_index_range == 1 else loop_index
-                basis_access = format["component"]("", [f_ip, basis_index])
+                basis_itvars = [f_ip, basis_index]
+                basis_access = format["component"]("", basis_itvars)
                 basis_name = psi_name + basis_access
             # Try to set access to the outermost possible loop
             if f_ip == "0" and basis_access == "0":
@@ -1360,8 +1363,10 @@ class QuadratureTransformerBase(Transformer):
                              for bn, co in zip(basis_name, coefficient)]
             else:
                 function_expr = self._create_product(\
-                            [self._create_symbol(basis_name, B_ACCESS, _iden=basis_name)[()], \
-                             self._create_symbol(coefficient, C_ACCESS, _iden=coefficient)[()]])
+                            [self._create_symbol(basis_name, B_ACCESS, _iden=psi_name,
+                                                 _loop_index=basis_itvars)[()], \
+                             self._create_symbol(coefficient, C_ACCESS, _iden=coefficient_name,
+                                                 _loop_index=coefficient_li)[()]])
              
             # Check if the expression to compute the function value is already in
             # the dictionary of used function. If not, generate a new name and add.
