@@ -22,7 +22,7 @@
 # Modified by Martin Alnaes 2013
 #
 # First added:  2009-01-07
-# Last changed: 2014-04-23
+# Last changed: 2014-06-03
 
 # Python modules
 import functools, itertools
@@ -71,7 +71,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     f_int          = format["int"]
     f_facet        = format["facet"]
 
-    # Get data.
+    # Get data
     opt_par       = ir["optimise_parameters"]
     integral_type = ir["integral_type"]
     cell          = ir["cell"]
@@ -86,7 +86,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     element_data  = ir["element_data"]
     num_cells     = ir["num_cells"]
 
-    # Create sets of used variables.
+    # Create sets of used variables
     used_weights    = set()
     used_psi_tables = set()
     used_nzcs       = set()
@@ -102,7 +102,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
-                                                                  opt_par)
+                                                                  opt_par,
+                                                                  gdim)
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
@@ -128,7 +129,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         cases = [None for i in range(num_facets)]
         for i in range(num_facets):
             # Update transformer with facets and generate case code + set of used geometry terms.
-            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par)
+            c, mem_code, ops = _generate_element_tensor(integrals[i], sets, opt_par, gdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -170,7 +171,8 @@ def _tabulate_tensor(ir, prefix, parameters):
                 # Update transformer with facets and generate case code + set of used geometry terms.
                 c, mem_code, ops = _generate_element_tensor(integrals[i][j],
                                                             sets,
-                                                            opt_par)
+                                                            opt_par,
+                                                            gdim)
                 case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
                 case += c
                 cases[i][j] = "\n".join(case)
@@ -210,7 +212,8 @@ def _tabulate_tensor(ir, prefix, parameters):
             # set of used geometry terms.
             c, mem_code, ops = _generate_element_tensor(integrals[i],
                                                         sets,
-                                                        opt_par)
+                                                        opt_par,
+                                                        gdim)
             case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
             case += c
             cases[i] = "\n".join(case)
@@ -239,14 +242,27 @@ def _tabulate_tensor(ir, prefix, parameters):
         if num_cells > 2:
             warning("Custom integrals with more than two cells only partly supported.")
 
+        # Modify the dimensions of the primary indices because we have a macro element
+        if num_cells == 2:
+            prim_idims = [d*2 for d in prim_idims]
+
+        # Check whether we need to generate facet normals
+        generate_custom_facet_normal = num_cells == 2
+
         # Generate code for computing element tensor
         tensor_code, mem_code, num_ops = _generate_element_tensor(integrals,
                                                                   sets,
-                                                                  opt_par)
+                                                                  opt_par,
+                                                                  gdim,
+                                                                  generate_custom_facet_normal)
+
         tensor_code = "\n".join(tensor_code)
 
         # Set operations equal to num_ops (for printing info on operations).
         operations.append([num_ops])
+
+        # FIXME: Jacobi code is only needed when we use cell volume or circumradius.
+        # FIXME: Does not seem to be removed by removed_unused.
 
         # Generate code for basic geometric quantities
         jacobi_code = ""
@@ -265,10 +281,6 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
-
-        # FIXME: Jacobi code does not seem to be needed for custom
-        # integrals, so some of the above code can be removed
-        jacobi_code = ""
 
     else:
         error("Unhandled integral type: " + str(integral_type))
@@ -307,7 +319,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     if prim_idims == []:
         common += [f_assign(f_A(f_int(0)), f_float(0))]
     else:
-        dim = functools.reduce(lambda v,u: v*u, prim_idims)
+        dim = functools.reduce(lambda v, u: v*u, prim_idims)
         common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
@@ -335,7 +347,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     return "\n".join(common) + "\n" + tensor_code
 
-def _generate_element_tensor(integrals, sets, optimise_parameters):
+def _generate_element_tensor(integrals, sets, optimise_parameters, gdim, generate_custom_facet_normal=False):
     "Construct quadrature code for element tensors."
 
     # Prefetch formats to speed up code generation.
@@ -417,7 +429,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
 
         # Generate code to evaluate the element tensor.
         integral_code, ops = _generate_integral_code(points, terms, sets, optimise_parameters)
-
         num_ops += ops
         if points is None:
             quadrature_ops = "unknown"
@@ -428,6 +439,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters):
         ip_code += integral_code
         element_code.append(f_comment\
             ("Number of operations to compute element tensor for following IP loop = %s" % str(quadrature_ops)))
+
+        # Generate code for custom facet normal if necessary
+        if generate_custom_facet_normal:
+            for line in ip_code:
+                if "n_00" in line:
+                    ip_code = [format["facet_normal_custom"](gdim)] + ip_code
+                    break
 
         # Loop code over all IPs.
         if points == 0:
@@ -559,7 +577,6 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
 
             # Create comment for number of operations
             entry_ops_comment = f_comment("Number of operations to compute entry: %d" % entry_ops)
-
             entry_code = f_iadd(f_A(entry), value)
             loops[loop][0] += entry_ops
             loops[loop][1] += [entry_ops_comment, entry_code]
@@ -737,7 +754,6 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         new_nzcs.remove(inv_name_map[n][1])
     return code
 
-
 def _evaluate_basis_at_quadrature_points(psi_tables,
                                          gdim,
                                          element_data,
@@ -772,6 +788,8 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     for prefix in prefixes:
         derivatives = set()
         for table in psi_tables:
+            if not prefix in table:
+                continue
             if "_C" in table:
                 # FIXME: Bailout for now, add support for this later
                 error("custom integrals not yet supported for vector valued function spaces")
@@ -795,6 +813,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         counter = int(prefix.split("FE")[1])
         space_dim = element_data[counter]["local_dimension"]
         value_size = element_data[counter]["value_size"]
+        element_number = element_data[counter]["element_number"]
         macro_dim = space_dim*num_cells
 
         # Iterate over derivative orders
@@ -823,20 +842,21 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     values_offset = cell_number*num_vals
 
                     # Name of values array
-                    values = "values_%d" % cell_number
+                    values = "%s_values_%d" % (prefix, cell_number)
 
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_basis      % {"prefix":        prefix,
-                                                   "form_prefix":   form_prefix,
-                                                   "gdim":          gdim,
-                                                   "counter":       counter,
-                                                   "vertex_offset": vertex_offset,
-                                                   "values":        values}]
-                    block += [f_eval_basis_copy % {"prefix":        prefix,
-                                                   "space_dim":     space_dim,
-                                                   "values_offset": values_offset,
-                                                   "values":        values}]
+                    block += [f_eval_basis      % {"prefix":         prefix,
+                                                   "form_prefix":    form_prefix,
+                                                   "gdim":           gdim,
+                                                   "counter":        counter,
+                                                   "element_number": element_number,
+                                                   "vertex_offset":  vertex_offset,
+                                                   "values":         values}]
+                    block += [f_eval_basis_copy % {"prefix":         prefix,
+                                                   "space_dim":      space_dim,
+                                                   "values_offset":  values_offset,
+                                                   "values":         values}]
 
                     # Generate code
                     code += [f_comment("Evaluate basis functions at all quadrature points")]
@@ -870,30 +890,31 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                     vertex_offset = cell_number*num_vertices*gdim
 
                     # Cell offset for array of values
-                    values_offset = cell_number*num_vals
+                    values_offset = cell_number*space_dim
 
                     # Stride for values array
                     stride = value_size*len(derivs)
 
                     # Name of values array
-                    values = "dvalues_%d_%d" % (n, cell_number)
+                    values = "%s_dvalues_%d_%d" % (prefix, n, cell_number)
 
                     # Generate block of code for loop
                     block = []
-                    block += [f_eval_derivs %       {"prefix":        prefix,
-                                                     "form_prefix":   form_prefix,
-                                                     "gdim":          gdim,
-                                                     "n":             n,
-                                                     "counter":       counter,
-                                                     "vertex_offset": vertex_offset,
-                                                     "values":        values}]
-                    block += [(f_eval_derivs_copy % {"prefix":        prefix,
-                                                     "space_dim":     space_dim,
-                                                     "values_offset": values_offset,
-                                                     "d":             d,
-                                                     "offset":        i,
-                                                     "stride":        stride,
-                                                     "values":        values
+                    block += [f_eval_derivs %       {"prefix":         prefix,
+                                                     "form_prefix":    form_prefix,
+                                                     "gdim":           gdim,
+                                                     "n":              n,
+                                                     "counter":        counter,
+                                                     "element_number": element_number,
+                                                     "vertex_offset":  vertex_offset,
+                                                     "values":         values}]
+                    block += [(f_eval_derivs_copy % {"prefix":         prefix,
+                                                     "space_dim":      space_dim,
+                                                     "values_offset":  values_offset,
+                                                     "d":              d,
+                                                     "offset":         i,
+                                                     "stride":         stride,
+                                                     "values":         values
                                                      }) for (i, d) in enumerate(derivs)]
 
                     # Generate code

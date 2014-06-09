@@ -394,13 +394,14 @@ namespace ufc
     /// Return the number of cells involved in evaluation of the integral
     virtual std::size_t num_cells() const = 0;
 
-    /// Tabulate the tensor for the contribution from custom domain
+    /// Tabulate the tensor for the contribution from a custom domain
     virtual void tabulate_tensor(double* A,
                                  const double * const * w,
                                  const double* vertex_coordinates,
                                  std::size_t num_quadrature_points,
                                  const double* quadrature_points,
                                  const double* quadrature_weights,
+                                 const double* facet_normals,
                                  int cell_orientation) const = 0;
 
   };
@@ -429,6 +430,9 @@ namespace ufc
 
     /// Return a string identifying the form
     virtual const char* signature() const = 0;
+
+    /// Return original coefficient position for each coefficient (0 <= i < n)
+    virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
     /// Return the rank of the global tensor (r)
     virtual std::size_t rank() const = 0;

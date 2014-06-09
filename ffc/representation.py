@@ -12,7 +12,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2013 Anders Logg
+# Copyright (C) 2009-2014 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -31,10 +31,7 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2009-12-16
-# Last changed: 2014-04-24
+# Modified by Martin Alnaes, 2013-2014
 
 # Python modules
 from itertools import chain
@@ -69,7 +66,7 @@ def pick_representation(representation):
 
 not_implemented = None
 
-def compute_ir(analysis, parameters):
+def compute_ir(analysis, object_names, parameters):
     "Compute intermediate representation."
 
     begin("Compiler stage 2: Computing intermediate representation")
@@ -98,7 +95,7 @@ def compute_ir(analysis, parameters):
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, parameters) \
+    irs = [_compute_integral_ir(fd, i, element_numbers, object_names, parameters) \
                for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -213,7 +210,7 @@ def _needs_mesh_entities(element):
     else:
         return [d > 0 for d in num_dofs_per_entity]
 
-def _compute_integral_ir(form_data, form_id, parameters):
+def _compute_integral_ir(form_data, form_id, element_numbers, object_names, parameters):
     "Compute intermediate represention for form integrals."
 
     irs = []
@@ -229,8 +226,9 @@ def _compute_integral_ir(form_data, form_id, parameters):
         ir = r.compute_integral_ir(itg_data,
                                    form_data,
                                    form_id,
+                                   element_numbers,
                                    parameters)
-        ir['coefficient_names'] = form_data.coefficient_names
+        ir['coefficient_names'] = [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)]
         ir['coefficient_elements'] = form_data.coefficient_elements
 
         # Append representation
@@ -249,36 +247,21 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["members"] = not_implemented
     ir["constructor"] = not_implemented
     ir["destructor"] = not_implemented
-    ir["signature"] = form_data.signature
-    ir["rank"] = form_data.rank
-    ir["num_coefficients"] = form_data.num_coefficients
+    ir["signature"] = form_data.original_form.signature()
 
-    ir["num_cell_domains"] = form_data.num_sub_domains.get("cell",0)
-    ir["num_exterior_facet_domains"] = form_data.num_sub_domains.get("exterior_facet",0)
-    ir["num_interior_facet_domains"] = form_data.num_sub_domains.get("interior_facet",0)
-    ir["num_point_domains"] = form_data.num_sub_domains.get("point",0)
-    ir["num_custom_domains"] = form_data.num_sub_domains.get("custom",0)
-
-    ir["has_cell_integrals"] = _has_foo_integrals("cell", form_data)
-    ir["has_exterior_facet_integrals"] = _has_foo_integrals("exterior_facet", form_data)
-    ir["has_interior_facet_integrals"] = _has_foo_integrals("interior_facet", form_data)
-    ir["has_point_integrals"] = _has_foo_integrals("point", form_data)
-    ir["has_custom_integrals"] = _has_foo_integrals("custom", form_data)
+    ir["rank"] = len(form_data.original_form.arguments())
+    ir["num_coefficients"] = len(form_data.reduced_coefficients)
+    ir["original_coefficient_positions"] = form_data.original_coefficient_positions
 
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
 
-    ir["create_cell_integral"] = _create_foo_integral("cell", form_data)
-    ir["create_exterior_facet_integral"] = _create_foo_integral("exterior_facet", form_data)
-    ir["create_interior_facet_integral"] = _create_foo_integral("interior_facet", form_data)
-    ir["create_point_integral"] = _create_foo_integral("point", form_data)
-    ir["create_custom_integral"] = _create_foo_integral("custom", form_data)
-
-    ir["create_default_cell_integral"] = _create_default_foo_integral("cell", form_data)
-    ir["create_default_exterior_facet_integral"] = _create_default_foo_integral("exterior_facet", form_data)
-    ir["create_default_interior_facet_integral"] = _create_default_foo_integral("interior_facet", form_data)
-    ir["create_default_point_integral"] = _create_default_foo_integral("point", form_data)
-    ir["create_default_custom_integral"] = _create_default_foo_integral("custom", form_data)
+    integral_types = ["cell", "exterior_facet", "interior_facet", "point", "custom"]
+    for integral_type in integral_types:
+        ir["num_%s_domains" % integral_type] = _num_foo_domains(integral_type, form_data)
+        ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
+        ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
+        ir["create_default_%s_integral" % integral_type] = _create_default_foo_integral(integral_type, form_data)
 
     return ir
 
@@ -581,6 +564,10 @@ def _create_foo_integral(integral_type, form_data):
     "Compute intermediate representation of create_foo_integral."
     return [itg_data.subdomain_id for itg_data in form_data.integral_data
            if itg_data.integral_type == integral_type and isinstance(itg_data.subdomain_id, int)]
+
+def _num_foo_domains(integral_type, form_data):
+    "Compute intermediate representation of num_foo_domains."
+    return form_data.num_sub_domains.get(integral_type, 0)
 
 def _has_foo_integrals(integral_type, form_data):
     "Compute intermediate representation of has_foo_integrals."

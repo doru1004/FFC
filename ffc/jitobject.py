@@ -16,9 +16,6 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Martin Alnaes, 2013
-#
-# First added:  2008-09-04
-# Last changed: 2014-02-20
 
 # Python modules.
 from hashlib import sha1
@@ -48,14 +45,10 @@ class JITObject:
 
     def __hash__(self):
         "Return unique integer for form + parameters"
-
         # Check if we have computed the hash before
-        if not self._hash is None:
-            return self._hash
-
-        # Compute hash based on signature
-        self._hash = int(self.signature(), 16)
-
+        if self._hash is None:
+            # Compute hash based on signature
+            self._hash = int(self.signature(), 16)
         return self._hash
 
     def __eq__(self, other):
@@ -69,13 +62,12 @@ class JITObject:
         if not self._signature is None:
             return self._signature
 
-        # Get signature from assumed precomputed form_data
-        form_signature = self.form.form_data().signature
+        # Get signature from form
+        form_signature = self.form.signature()
 
         # Compute other relevant signatures
         parameters_signature = _parameters_signature(self.parameters)
         ffc_signature = str(FFC_VERSION)
-        #cell_signature = str(self.form.form_data().cell)
 
         # Compute signature of all ufc headers combined
         from ffc.backends import ufc
@@ -89,7 +81,6 @@ class JITObject:
         signatures = [form_signature,
                       parameters_signature,
                       ffc_signature,
-                      #cell_signature,
                       ufc_signature]
         string = ";".join(signatures)
         self._signature = sha1(string).hexdigest()
@@ -98,7 +89,6 @@ class JITObject:
         #print "form_signature       =", form_signature
         #print "parameters_signature =", parameters_signature
         #print "ffc_signature        =", ffc_signature
-        #print "cell_signature       =", cell_signature
         #print "signature            =", self._signature
 
         return self._signature

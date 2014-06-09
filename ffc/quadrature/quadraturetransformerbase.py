@@ -22,7 +22,7 @@ transformers to translate UFL expressions."""
 # Modified by Garth N. Wells, 2013
 #
 # First added:  2009-10-13
-# Last changed: 2014-04-23
+# Last changed: 2014-05-13
 
 # Python modules.
 from itertools import izip
@@ -848,11 +848,10 @@ class QuadratureTransformerBase(Transformer):
         # Set domain type
         self.integral_type = integral_type
 
-        #print integrand
-        #print tree_format(integrand, 0, False)
-        # Get terms.
+        # Get terms
         terms = self.visit(integrand)
 
+        # Get formatting
         f_nzc = format["nonzero columns"](0).split("0")[0]
 
         # Loop code and add weight and scale factor to value and sort after
@@ -1034,8 +1033,6 @@ class QuadratureTransformerBase(Transformer):
         tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
         multiindices = FFCMultiIndex([range(tdim)]*len(derivatives)).indices
 
-        #print "in create_auxiliary"
-        #print "component = ", component
         return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
 
     def _get_current_entity(self):
@@ -1105,11 +1102,6 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction in ("+", "-"):
             space_dim *= 2
 
-        # If we have a restricted function and domain type is custom,
-        # then offset also the basis function access
-        if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
-            loop_index = format["add"]([loop_index, offset])
-
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         # NOT TRUE FOR MIXED-ELT-INT-FACET MODE
@@ -1124,7 +1116,12 @@ class QuadratureTransformerBase(Transformer):
             if self.points == 1:
                 f_ip = "0"
             index_calc = loop_index
-            basis_access = format["component"]("", [f_ip, index_calc])
+            if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
+                # Special case access for custom integrals (all basis functions stored in flattened array)
+                basis_access = format["component"]("", [f_ip, format["add"]([loop_index, offset])])
+            else:
+                # Normal basis function access
+                basis_access = format["component"]("", [f_ip, loop_index])
 
         # Get current cell entity, with current restriction considered
         entity = self._get_current_entity()
@@ -1133,6 +1130,11 @@ class QuadratureTransformerBase(Transformer):
         # don't overwrite this if we set it already
         if not self.mixed_elt_int_facet_mode:
             loop_index_range = shape(self.unique_tables[name])[1]
+
+        # If domain type is custom, then special-case set loop index
+        # range since table is empty
+        if self.integral_type == "custom":
+            loop_index_range = ffc_element.space_dimension() # different from `space_dimension`...
 
         basis = ""
         # Ignore zeros if applicable
