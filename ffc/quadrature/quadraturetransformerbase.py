@@ -365,7 +365,9 @@ class QuadratureTransformerBase(Transformer):
         tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if basis is None or self.optimise_parameters["optimisation"]:
+        # PyOP2 format always uses optimised quadrature transformer,
+        # hence we must take this route
+        if basis is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate basis
             (component, local_elem, local_comp, local_offset,
              ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
@@ -459,7 +461,9 @@ class QuadratureTransformerBase(Transformer):
         function_code = self.function_cache.get(key)
 
         # FIXME: Why does using a code dict from cache make the expression manipulations blow (MemoryError) up later?
-        if function_code is None or self.optimise_parameters["optimisation"]:
+        # PyOP2 format always uses optimised quadrature transformer,
+        # hence we must take this route
+        if function_code is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate function
             (component, local_elem, local_comp, local_offset,
              ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
