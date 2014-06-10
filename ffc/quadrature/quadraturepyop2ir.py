@@ -600,8 +600,8 @@ def _generate_functions(functions, sets):
             # Convert function to COFFEE ast node, save string
             # representation for sorting (such that we're reproducible
             # in parallel).
-            key = str(function)
             function = visit_rhs(function)
+            key = str(function)
             function_expr.append((number, function, key))
 
             # Get number of operations to compute entry and add to function operations count.
