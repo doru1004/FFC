@@ -30,6 +30,7 @@ from symbolics import create_float
 from symbolics import create_product
 from symbolics import create_sum
 from symbolics import create_fraction
+from symbolics import CONST
 from expr import Expr
 
 class Symbol(Expr):
@@ -84,7 +85,9 @@ class Symbol(Expr):
     # Print functions.
     def __str__(self):
         "Simple string representation which will appear in the generated code."
-#        print "sym str: ", self.v
+        # print "sym str: ", self.v
+        if self.t == CONST:
+            return "%s%s" % (self.v, ''.join('[%d]' % idx for idx in self.loop_index))
         return self.v
 
     # Binary operators.
