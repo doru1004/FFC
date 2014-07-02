@@ -30,6 +30,18 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
+
+class EnrichedNumpyArray(numpy.ndarray):
+    """A numpy array that also tracks the number of geometric components
+    of the element from which the array was extracted."""
+
+    def set_vfs_components(self, num_components):
+        self.num_components = num_components
+
+    def get_vfs_components(self):
+        return self.num_components
+
+
 def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
@@ -115,6 +127,8 @@ def flatten_psi_tables(tables, entity_type):
                                 raise Exception("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
 
                             # Store table with unique name
+                            psi_table = psi_table.view(EnrichedNumpyArray)
+                            psi_table.set_vfs_components(entity_tables.get_vfs_components())
                             flat_tables[name] = psi_table
 
             # Increase unique numpoints*element counter
