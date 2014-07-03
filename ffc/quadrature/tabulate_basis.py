@@ -336,7 +336,4 @@ class EnrichedPsiTable(dict):
 
     def __init__(self, element):
         super(EnrichedPsiTable, self).__init__()
-        self.num_components = element.num_components() if isinstance(element, MixedElement) else -1
-
-    def get_vfs_components(self):
-        return self.num_components
+        self._is_mixed = isinstance(element, MixedElement)

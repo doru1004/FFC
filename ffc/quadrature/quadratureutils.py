@@ -32,14 +32,17 @@ from ffc.cpp import format
 
 
 class EnrichedNumpyArray(numpy.ndarray):
-    """A numpy array that also tracks the number of geometric components
-    of the element from which the array was extracted."""
+    """A numpy array that also tracks the number of zero columns if the array
+    comes from a mixed element."""
 
-    def set_vfs_components(self, num_components):
-        self.num_components = num_components
+    def track_zeros(self, _is_mixed):
+        if not _is_mixed:
+            self.zeros = None
+            return
+        self.zeros = (self.view() == 0).all(axis=0)
 
-    def get_vfs_components(self):
-        return self.num_components
+    def get_zeros(self):
+        return self.zeros
 
 
 def create_psi_tables(tables, eliminate_zeros, entity_type):
@@ -128,7 +131,7 @@ def flatten_psi_tables(tables, entity_type):
 
                             # Store table with unique name
                             psi_table = psi_table.view(EnrichedNumpyArray)
-                            psi_table.set_vfs_components(entity_tables.get_vfs_components())
+                            psi_table.track_zeros(entity_tables._is_mixed)
                             flat_tables[name] = psi_table
 
             # Increase unique numpoints*element counter
