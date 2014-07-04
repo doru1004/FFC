@@ -375,7 +375,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Embedded manifold, need to pass in cell orientations
     if oriented and tdim != gdim and p_format == 'pyop2':
-        if integral_type in ("interior_facet", "interior_facet_vert"):
+        if integral_type in ("interior_facet", "interior_facet_vert", "interior_facet_horiz"):
             common += ["const int cell_orientation%s = cell_orientation_[0][0];" % _choose_map('+'),
                        "const int cell_orientation%s = cell_orientation_[1][0];" % _choose_map('-')]
         else:
