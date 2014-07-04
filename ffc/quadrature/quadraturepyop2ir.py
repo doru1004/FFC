@@ -404,8 +404,8 @@ def _tabulate_tensor(ir, parameters):
         feo_sym = pyop2.Symbol(name, rank)
         pragma = ""
         init = pyop2.ArrayInit(value)
-        if zeroflags is not None:
-            nonzero_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j]
+        if zeroflags is not None and not zeroflags.all():
+            nonzero_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
             nonzero_bounds = (nonzero_indices[0], nonzero_indices[-1])
             pragma = "#pragma pyop2 mfs(%d, %d)" % nonzero_bounds
             init = pyop2.ColSparseArrayInit(value, nonzero_bounds)
