@@ -689,6 +689,7 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         elif integral_type == "interior_facet_horiz":
             normal_direction = top_normal_direction_interior
             facet_normal = top_facet_normal_interior
+            facet_normal_2 = bottom_facet_normal_interior
         elif integral_type == "exterior_facet_vert":
             normal_direction = vert_normal_direction
             facet_normal = vert_facet_normal
@@ -716,6 +717,8 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         assert (facet_normal.has_key(cell)),\
             "Facet normal not yet implemented for this cell"
         normal = facet_normal[cell]
+        if integral_type == "interior_facet_horiz":
+            normal_2 = facet_normal_2[cell]
     
     # Choose restrictions
     if integral_type in ("exterior_facet", "exterior_facet_vert"):
@@ -731,7 +734,7 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
     elif integral_type == "interior_facet_horiz":
         code = direction % {"restriction": _choose_map("+")}
         code += normal % {"direction" : "", "restriction": _choose_map("+")}
-        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
+        code += normal_2 % {"direction" : "!", "restriction": _choose_map("-")}
     else:
         error("Unsupported integral_type: %s" % str(integral_type))
     return code

@@ -44,8 +44,9 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "pyop2_normal_direction_interior", "bottom_normal_direction",
            "top_normal_direction", "top_normal_direction_interior",
            "vert_normal_direction", "vert_normal_direction_interior",
-           "ufc_facet_normal", "pyop2_facet_normal",
-           "pyop2_facet_normal_interior", "bottom_facet_normal",
+           "ufc_facet_normal",
+           "pyop2_facet_normal", "pyop2_facet_normal_interior",
+           "bottom_facet_normal", "bottom_facet_normal_interior",
            "top_facet_normal", "top_facet_normal_interior",
            "vert_facet_normal", "vert_facet_normal_interior",
            "ip_coordinates",
@@ -1006,6 +1007,15 @@ OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
 OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
 OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _horiz_facet_normal_quad % {'bt': 0, 'x': 0, 'y': 4, 'z': 8, 'other': 1},
 OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_normal_quad % {'bt': 0, 'x': 0, 'y': 4, 'z': 8, 'other': 1},
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
+}
+
+bottom_facet_normal_interior = {
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_normal_2D,
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _horiz_facet_normal_quad % {'bt': 0, 'x': 0, 'y': 8, 'z': 16, 'other': 1},
+OuterProductCell(Cell("interval", 3), Cell("interval")): _horiz_facet_normal_quad % {'bt': 0, 'x': 0, 'y': 8, 'z': 16, 'other': 1},
 OuterProductCell(Cell("triangle"), Cell("interval")): _facet_normal_3D,
 OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_normal_3D
 }
