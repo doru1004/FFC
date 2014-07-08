@@ -471,7 +471,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             for num in range(len(conditionals)):
                 name = format["conditional"](num)
                 ops, expr = reversed_conds[num]
-                ip_ir.append(pyop2.Assign(c_sym(name), c_sym(expr)))
+                ip_ir.append(pyop2.Assign(c_sym(name), c_sym(str(expr))))
                 num_ops += ops
 
         # Generate code for ip constant declarations.
