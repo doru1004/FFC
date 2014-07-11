@@ -400,15 +400,17 @@ def _tabulate_tensor(ir, parameters):
     code, decl = _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
     pyop2_basis = []
     for name, data in decl.items():
-        rank, value, zeroflags = data
+        rank, value, numpy_value = data
+        # Get position of zero columns
+        zeroflags = numpy_value.get_zeros()
         feo_sym = pyop2.Symbol(name, rank)
         pragma = ""
         init = pyop2.ArrayInit(value)
         if zeroflags is not None and not zeroflags.all():
-            nonzero_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
-            nonzero_bounds = (nonzero_indices[0], nonzero_indices[-1])
-            pragma = "#pragma pyop2 mfs(%d, %d)" % nonzero_bounds
-            init = pyop2.ColSparseArrayInit(value, nonzero_bounds)
+            nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
+            nz_bounds = (nz_indices[0], nz_indices[-1])
+            pragma = "#pragma pyop2 mfs(%d, %d)" % nz_bounds
+            init = pyop2.ColSparseArrayInit(value, nz_bounds, numpy_value[:nz_bounds[0],nz_bounds[1]])
         pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"], pragma=pragma))
 
     # Build the root of the PyOP2' ast
@@ -844,7 +846,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
             code += [f_decl(f_table, decl_name, f_new_line + value), ""]
 
             # Store the information for creating PyOP2'ast declarations
-            pyop2_decl[name] = ((ip, dofs), value, vals.get_zeros())
+            pyop2_decl[name] = ((ip, dofs), value, vals)
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:
