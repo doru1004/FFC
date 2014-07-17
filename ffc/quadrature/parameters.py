@@ -42,4 +42,8 @@ def parse_optimise_parameters(parameters, itg_data):
         optimise_parameters["remove zero terms"]  = True
         optimise_parameters["ignore zero tables"] = True
 
+        if parameters["optimize"] == "ffc -O":
+            optimise_parameters["eliminate zeros"] = True
+            optimise_parameters["optimisation"]    = "simplify_expressions"
+
     return optimise_parameters

@@ -825,8 +825,8 @@ class QuadratureTransformerBase(Transformer):
                         "Linear forms must be defined using test functions only: " + repr(key))
             index_j, entry, range_j, space_dim_j = key
             loop = ((indices[index_j], 0, range_j),)
-            if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
-                loop = ()
+            #if range_j == 1 and self.optimise_parameters["ignore ones"] and not (f_nzc in entry):
+                #loop = ()
             if self.parameters["format"] == "pyop2":
                 entry = (entry, )
         elif len(key) == 2:
@@ -855,10 +855,12 @@ class QuadratureTransformerBase(Transformer):
                 index_k, entry_k, range_k, space_dim_k = key1
 
                 loop = []
-                if not (range_j == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_j:
-                    loop.append((indices[index_j], 0, range_j))
-                if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
-                    loop.append((indices[index_k], 0, range_k))
+                #if not (range_j == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_j:
+                #    loop.append((indices[index_j], 0, range_j))
+                #if not (range_k == 1 and self.optimise_parameters["ignore ones"]) or f_nzc in entry_k:
+                #    loop.append((indices[index_k], 0, range_k))
+                loop.append((indices[index_j], 0, range_j))
+                loop.append((indices[index_k], 0, range_k))
                 if self.parameters["format"] == "pyop2":
                     entry = (entry_j, entry_k)
                 else:

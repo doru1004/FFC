@@ -83,7 +83,7 @@ format.update({
     "int declaration":                "int",
     "uint declaration":               "unsigned int",
     "static const uint declaration":  {"ufc": "static const unsigned int",
-                                       "pyop2": "const unsigned uint"},
+                                       "pyop2": "const unsigned int"},
     "static const float declaration": {"ufc": "static const double",
                                        "pyop2": "const double"},
     "vector table declaration":       "std::vector< std::vector<double> >",
