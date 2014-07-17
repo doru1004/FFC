@@ -217,6 +217,7 @@ def unique_psi_tables(tables, eliminate_zeros):
 
                     # Compress values.
                     tables[name] = vals[:, non_zeros]
+                    tables[name].track_zeros(False)
                     i += 1
 
             # Check if the remaining rows are nonzero in the same positions, else expand.
@@ -239,6 +240,7 @@ def unique_psi_tables(tables, eliminate_zeros):
 
                         # Compress values.
                         tables[name] = vals[:, non_zeros]
+                        tables[name].track_zeros(False)
                         i += 1
 
     # Check if we have some zeros in the tables.

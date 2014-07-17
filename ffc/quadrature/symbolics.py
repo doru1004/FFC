@@ -318,7 +318,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
                     geo_consts[geo] = len(geo_consts)
 
                 # Substitute geometry expression.
-                geo = create_symbol(format_G(geo_consts[geo]), GEO)
+                geo = create_symbol(format_G(geo_consts[geo]), GEO, iden='G', loop_index=[geo_consts[geo]])
 
             # If we did not have any ip_declarations use geo, else create a
             # product and append to the list of ip_values.
@@ -346,7 +346,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
 
             # Substitute ip expression.
 #            ip_expr = create_symbol(format_G + format_ip + str(ip_consts[ip_expr]), IP)
-            ip_expr = create_symbol(format_I(ip_consts[ip_expr]), IP)
+            ip_expr = create_symbol(format_I(ip_consts[ip_expr]), IP, iden='I', loop_index=[ip_consts[ip_expr]])
 
         # Multiply by basis and append to basis vals.
 #        prod = create_product([basis, ip_expr])

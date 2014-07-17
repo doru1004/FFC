@@ -342,7 +342,7 @@ def _tabulate_tensor(ir, parameters):
     tables.update(affine_tables) # TODO: This is not populated anywhere, remove?
 
     # @@@: const double FE0[] = {{...}}
-    code, decl = _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
+    nzc, decl = _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
     pyop2_basis = []
     for name, data in decl.items():
         rank, _, values = data
@@ -359,9 +359,17 @@ def _tabulate_tensor(ir, parameters):
             init = pyop2.SparseArrayInit(values, precision, nz_bounds)
         pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"]))
 
+    # Create the constant geometry declarations (only generated if -O enabled).
+    _, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
+    if geo_code:
+        geo_code = [format["declaration"](format["float declaration"], f_G(len(geo_consts)))] + geo_code 
+        geo_code = [pyop2.FlatBlock("\n".join(geo_code) + "\n")]
+    else:
+        geo_code = []
+
     # Build the root of the PyOP2' ast
     pyop2_tables = pyop2_weights + [tab for tab in pyop2_basis]
-    root = pyop2.Root([jacobi_ir] + pyop2_tables + nest_ir)
+    root = pyop2.Root([jacobi_ir] + pyop2_tables + nzc + geo_code + nest_ir)
 
     return root
 
@@ -434,9 +442,12 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # TODO: this code should be removable as only executed when ffc's optimisations are on
         ip_const_ops, ip_const_code = generate_aux_constants(ip_consts, f_I,\
                                         format["assign"], True)
-        if len(ip_const_code) > 0:
-            raise RuntimeError("IP Const code not supported")
         num_ops += ip_const_ops
+        if ip_const_code:
+            ip_code = ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
+            ip_code += [format["declaration"](format["float declaration"], f_I(len(ip_consts)))]
+            ip_code += ip_const_code
+            ip_ir += [pyop2.FlatBlock("\n".join([i for i in ip_code if i and not i.startswith("//")]) + "\n")]
 
         # Generate code to evaluate the element tensor.
         code, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
@@ -800,6 +811,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
     # Loop items in table and tabulate.
     pyop2_decl = {}
+    pyop2_nzc = []
     for name in sorted(list(used_psi_tables)):
         # Only proceed if values are still used (if they're not remapped).
         vals = tables[name]
@@ -826,7 +838,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
                         code += [f_comment("Array of non-zero columns")]
                         value = f_list([f_int(c) for c in list(cols)])
                         name_col = f_component(f_nzcolumns(i), len(cols))
-                        code += [f_decl(f_const_uint, name_col, value), ""]
+                        pyop2_nzc += [f_decl(f_const_uint, name_col, value), ""]
 
                         # Store the nzc info for creating PyOP2'ast declarations
                         # TODO: to be tested yet, and lack the size of the array
@@ -834,4 +846,5 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
                         # Remove from list of columns.
                         new_nzcs.remove(inv_name_map[n][1])
-    return code, pyop2_decl
+    pyop2_nzc = [pyop2.FlatBlock("\n".join(pyop2_nzc))] if pyop2_nzc else []
+    return pyop2_nzc, pyop2_decl
