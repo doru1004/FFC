@@ -141,7 +141,7 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     if integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
         num_entities = 2  # top and bottom
     elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
-        num_entities = cell._A.num_entities(entity_dim)  # number of "base cell" facets
+        num_entities = cell._A.num_facets()  # number of "base cell" facets
     else:
         num_entities = cell.num_entities(entity_dim)
     psi_table = {}
