@@ -201,6 +201,16 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         new_val = create_symbol(var, val.t, val, 1, iden=var)
         return {():new_val}
 
+    def min_value(self, o, *operands):
+        # FIXME: I don't know how to implement this the optimized way
+        f_min = format["min value"]
+        return {():f_min(operands[0][()], operands[1][()])}
+
+    def max_value(self, o, *operands):
+        # FIXME: I don't know how to implement this the optimized way
+        f_max = format["max value"]
+        return {():f_max(operands[0][()], operands[1][()])}
+
     # -------------------------------------------------------------------------
     # Condition, Conditional (conditional.py).
     # -------------------------------------------------------------------------

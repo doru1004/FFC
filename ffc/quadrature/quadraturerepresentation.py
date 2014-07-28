@@ -31,7 +31,6 @@ from ufl.sorting import sorted_expr_sum
 from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import cell_to_num_entities
 
 from ffc.representationutils import initialize_integral_ir
 from ffc.quadrature.tabulate_basis import tabulate_basis
@@ -158,6 +157,7 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
 def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type):
     num_vertices = ir["num_vertices"]
     num_facets = ir["num_facets"]
+
     if integral_type == "cell":
         # Compute transformed integrals.
         info("Transforming cell integral")
