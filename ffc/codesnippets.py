@@ -51,8 +51,9 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "vert_facet_normal", "vert_facet_normal_interior",
            "ip_coordinates",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
-           "pyop2_circumradius", "facet_area", "min_facet_edge_length",
-           "max_facet_edge_length", "ufc_orientation_snippet", "pyop2_orientation_snippet"]
+           "pyop2_circumradius", "pyop2_circumradius_interior",
+           "facet_area", "min_facet_edge_length", "max_facet_edge_length",
+           "ufc_orientation_snippet", "pyop2_orientation_snippet"]
 
 __all__ += __old__
 
@@ -1115,11 +1116,12 @@ const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restr
 
 _pyop2_circumradius_2D = """\
 // Compute circumradius of triangle in 2D
-const double v1v2%(restriction)s  = sqrt((vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0])*(vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0]) + (vertex_coordinates%(restriction)s[5][0] - vertex_coordinates%(restriction)s[4][0])*(vertex_coordinates%(restriction)s[5][0] - vertex_coordinates%(restriction)s[4][0]) );
-const double v0v2%(restriction)s  = sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
-const double v0v1%(restriction)s  = sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2]);
+const double v1v2%%(restriction)s  = sqrt((vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0])*(vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0]) + (vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0])*(vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0]) );
+const double v0v2%%(restriction)s  = sqrt(J%%(restriction)s[3]*J%%(restriction)s[3] + J%%(restriction)s[1]*J%%(restriction)s[1]);
+const double v0v1%%(restriction)s  = sqrt(J%%(restriction)s[0]*J%%(restriction)s[0] + J%%(restriction)s[2]*J%%(restriction)s[2]);
 
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%%(restriction)s = 0.25*(v1v2%%(restriction)s*v0v2%%(restriction)s*v0v1%%(restriction)s)/(volume%%(restriction)s);
+"""
 
 _circumradius_2D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
@@ -1146,19 +1148,20 @@ const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(r
 
 _pyop2_circumradius_3D = """\
 // Compute circumradius
-const double v1v2%(restriction)s  = sqrt( (vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0])*(vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0]) + (vertex_coordinates%(restriction)s[6][0] - vertex_coordinates%(restriction)s[5][0])*(vertex_coordinates%(restriction)s[6][0] - vertex_coordinates%(restriction)s[5][0]) + (vertex_coordinates%(restriction)s[10][0] - vertex_coordinates%(restriction)s[9][0])*(vertex_coordinates%(restriction)s[10][0] - vertex_coordinates%(restriction)s[9][0]) );
-const double v0v2%(restriction)s  = sqrt(J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[4]*J%(restriction)s[4] + J%(restriction)s[7]*J%(restriction)s[7]);
-const double v0v1%(restriction)s  = sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[6]*J%(restriction)s[6]);
-const double v0v3%(restriction)s  = sqrt(J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[5]*J%(restriction)s[5] + J%(restriction)s[8]*J%(restriction)s[8]);
-const double v1v3%(restriction)s  = sqrt( (vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[1][0])*(vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[1][0]) + (vertex_coordinates%(restriction)s[7][0] - vertex_coordinates%(restriction)s[5][0])*(vertex_coordinates%(restriction)s[7][0] - vertex_coordinates%(restriction)s[5][0]) + (vertex_coordinates%(restriction)s[11][0] - vertex_coordinates%(restriction)s[9][0])*(vertex_coordinates%(restriction)s[11][0] - vertex_coordinates%(restriction)s[9][0]) );
-const double v2v3%(restriction)s  = sqrt( (vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[2][0])*(vertex_coordinates%(restriction)s[3][0] - vertex_coordinates%(restriction)s[2][0]) + (vertex_coordinates%(restriction)s[7][0] - vertex_coordinates%(restriction)s[6][0])*(vertex_coordinates%(restriction)s[7][0] - vertex_coordinates%(restriction)s[6][0]) + (vertex_coordinates%(restriction)s[11][0] - vertex_coordinates%(restriction)s[10][0])*(vertex_coordinates%(restriction)s[11][0] - vertex_coordinates%(restriction)s[10][0]) );
-const  double la%(restriction)s   = v1v2%(restriction)s*v0v3%(restriction)s;
-const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
-const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
-const  double s%(restriction)s    = 0.5*(la%(restriction)s+lb%(restriction)s+lc%(restriction)s);
-const  double area%(restriction)s = sqrt(s%(restriction)s*(s%(restriction)s-la%(restriction)s)*(s%(restriction)s-lb%(restriction)s)*(s%(restriction)s-lc%(restriction)s));
+const double v1v2%%(restriction)s  = sqrt( (vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0])*(vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0]) + (vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0])*(vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0]) + (vertex_coordinates%%(restriction)s[%(z)s + 2][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0])*(vertex_coordinates%%(restriction)s[%(z)s + 2][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0]) );
+const double v0v2%%(restriction)s  = sqrt(J%%(restriction)s[1]*J%%(restriction)s[1] + J%%(restriction)s[4]*J%%(restriction)s[4] + J%%(restriction)s[7]*J%%(restriction)s[7]);
+const double v0v1%%(restriction)s  = sqrt(J%%(restriction)s[0]*J%%(restriction)s[0] + J%%(restriction)s[3]*J%%(restriction)s[3] + J%%(restriction)s[6]*J%%(restriction)s[6]);
+const double v0v3%%(restriction)s  = sqrt(J%%(restriction)s[2]*J%%(restriction)s[2] + J%%(restriction)s[5]*J%%(restriction)s[5] + J%%(restriction)s[8]*J%%(restriction)s[8]);
+const double v1v3%%(restriction)s  = sqrt( (vertex_coordinates%%(restriction)s[3][0] - vertex_coordinates%%(restriction)s[1][0])*(vertex_coordinates%%(restriction)s[3][0] - vertex_coordinates%%(restriction)s[1][0]) + (vertex_coordinates%%(restriction)s[%(y)s + 3][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0])*(vertex_coordinates%%(restriction)s[%(y)s + 3][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0]) + (vertex_coordinates%%(restriction)s[%(z)s + 3][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0])*(vertex_coordinates%%(restriction)s[%(z)s + 3][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0]) );
+const double v2v3%%(restriction)s  = sqrt( (vertex_coordinates%%(restriction)s[3][0] - vertex_coordinates%%(restriction)s[2][0])*(vertex_coordinates%%(restriction)s[3][0] - vertex_coordinates%%(restriction)s[2][0]) + (vertex_coordinates%%(restriction)s[%(y)s + 3][0] - vertex_coordinates%%(restriction)s[%(y)s + 2][0])*(vertex_coordinates%%(restriction)s[%(y)s + 3][0] - vertex_coordinates%%(restriction)s[%(y)s + 2][0]) + (vertex_coordinates%%(restriction)s[%(z)s + 3][0] - vertex_coordinates%%(restriction)s[%(z)s + 2][0])*(vertex_coordinates%%(restriction)s[%(z)s + 3][0] - vertex_coordinates%%(restriction)s[%(z)s + 2][0]) );
+const  double la%%(restriction)s   = v1v2%%(restriction)s*v0v3%%(restriction)s;
+const  double lb%%(restriction)s   = v0v2%%(restriction)s*v1v3%%(restriction)s;
+const  double lc%%(restriction)s   = v0v1%%(restriction)s*v2v3%%(restriction)s;
+const  double s%%(restriction)s    = 0.5*(la%%(restriction)s+lb%%(restriction)s+lc%%(restriction)s);
+const  double area%%(restriction)s = sqrt(s%%(restriction)s*(s%%(restriction)s-la%%(restriction)s)*(s%%(restriction)s-lb%%(restriction)s)*(s%%(restriction)s-lc%%(restriction)s));
 
-const double circumradius%(restriction)s = area%(restriction)s / ( 6.0*volume%(restriction)s );"""
+const double circumradius%%(restriction)s = area%%(restriction)s / ( 6.0*volume%%(restriction)s );
+"""
 
 _circumradius_3D_1D = """\
 // Compute circumradius of interval in 3D (1/2 volume)
@@ -1177,11 +1180,12 @@ const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restr
 
 _pyop2_circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
-const double v1v2%(restriction)s  = sqrt( (vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0])*(vertex_coordinates%(restriction)s[2][0] - vertex_coordinates%(restriction)s[1][0]) + (vertex_coordinates%(restriction)s[6][0] - vertex_coordinates%(restriction)s[5][0])*(vertex_coordinates%(restriction)s[6][0] - vertex_coordinates%(restriction)s[5][0]) + (vertex_coordinates%(restriction)s[10][0] - vertex_coordinates%(restriction)s[9][0])*(vertex_coordinates%(restriction)s[10][0] - vertex_coordinates%(restriction)s[9][0]));
-const double v0v2%(restriction)s = sqrt( J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[5]*J%(restriction)s[5]);
-const double v0v1%(restriction)s = sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[4]*J%(restriction)s[4]);
+const double v1v2%%(restriction)s  = sqrt( (vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0])*(vertex_coordinates%%(restriction)s[2][0] - vertex_coordinates%%(restriction)s[1][0]) + (vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0])*(vertex_coordinates%%(restriction)s[%(y)s + 2][0] - vertex_coordinates%%(restriction)s[%(y)s + 1][0]) + (vertex_coordinates%%(restriction)s[%(z)s + 2][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0])*(vertex_coordinates%%(restriction)s[%(z)s + 2][0] - vertex_coordinates%%(restriction)s[%(z)s + 1][0]));
+const double v0v2%%(restriction)s = sqrt( J%%(restriction)s[3]*J%%(restriction)s[3] + J%%(restriction)s[1]*J%%(restriction)s[1] + J%%(restriction)s[5]*J%%(restriction)s[5]);
+const double v0v1%%(restriction)s = sqrt( J%%(restriction)s[0]*J%%(restriction)s[0] + J%%(restriction)s[2]*J%%(restriction)s[2] + J%%(restriction)s[4]*J%%(restriction)s[4]);
 
-const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);"""
+const double circumradius%%(restriction)s = 0.25*(v1v2%%(restriction)s*v0v2%%(restriction)s*v0v1%%(restriction)s)/(volume%%(restriction)s);
+"""
 
 _facet_area_1D = """\
 // Facet area (FIXME: Should this be 0.0?)
@@ -1500,9 +1504,16 @@ ufc_circumradius = {1: {1: _ufc_circumradius_1D,
 pyop2_circumradius = {1: {1: _pyop2_circumradius_1D,
                           2: _pyop2_circumradius_2D_1D,
                           3: _pyop2_circumradius_3D_1D},
-                      2: {2: _pyop2_circumradius_2D,
-                          3: _pyop2_circumradius_3D_2D},
-                      3: {3: _pyop2_circumradius_3D}}
+                      2: {2: _pyop2_circumradius_2D % {'y': 3} ,
+                          3: _pyop2_circumradius_3D_2D % {'y': 3, 'z': 6}},
+                      3: {3: _pyop2_circumradius_3D % {'y': 4, 'z': 8}}}
+
+pyop2_circumradius_interior = {1: {1: _pyop2_circumradius_1D,
+                                   2: _pyop2_circumradius_2D_1D,
+                                   3: _pyop2_circumradius_3D_1D},
+                               2: {2: _pyop2_circumradius_2D % {'y': 6},
+                                   3: _pyop2_circumradius_3D_2D % {'y': 6, 'z': 12}},
+                               3: {3: _pyop2_circumradius_3D % {'y': 8, 'z': 16}}}
 
 facet_area = {1: {1: _facet_area_1D,
                   2: _facet_area_2D_1D,
