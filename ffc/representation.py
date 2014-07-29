@@ -39,11 +39,12 @@ from itertools import chain
 # Import UFL
 import ufl
 from ufl.classes import Measure
+from ufl.cell import cell2dim
 
 # FFC modules
 from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.fiatinterface import create_element, cell_to_num_entities, reference_cell
+from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
 from ffc.enrichedelement import SpaceOfReals
 from ffc.quadratureelement import QuadratureElement
@@ -448,7 +449,7 @@ def _tabulate_dofs(element, cell):
         return None
 
     # Extract number of entities for each dimension for this cell
-    num_entities = cell_to_num_entities(cell)
+    num_entities = cell.num_entities()
 
     # Extract number of dofs per entity for each element
     elements = all_elements(element)
@@ -483,8 +484,7 @@ def _tabulate_facet_dofs(element, cell):
     D = max([pair[0][0] for pair in incidence])
 
     # Get the number of facets
-    num_facets = cell_to_num_entities(cell)[-2]
-    # Doesn't need fixing for extrusion/PyOP2, since this is for dofmaps
+    num_facets = cell.num_facets()
 
     # Find out which entities are incident to each facet
     incident = num_facets*[None]

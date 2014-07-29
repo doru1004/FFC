@@ -20,14 +20,10 @@ quadrature and tensor representation."""
 #
 # Modified by Martin Alnaes 2013
 # Modified by Anders Logg 2014
-#
-# First added:  2013-01-08
-# Last changed: 2014-04-15
 
 from ufl.measure import integral_type_to_measure_name
 
 from ffc.fiatinterface import create_element
-from ffc.fiatinterface import cell_to_num_entities
 from ffc.cpp import format
 from ffc.log import error
 
@@ -119,7 +115,8 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
 
     # Extract data
     cell = itg_data.domain.cell()
-    tdim = itg_data.domain.topological_dimension()
+    cellname = cell.cellname()
+    tdim = cell.topological_dimension()
     assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from number of domains
@@ -129,9 +126,9 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
     if entity_type == "horiz_facet":
         num_facets = 2  # top and bottom
     elif entity_type == "vert_facet":
-        num_facets = cell_to_num_entities(cell._A)[-2]  # number of facets on base
+        num_facets = cell._A.num_facets()  # number of facets on base
     else:
-        num_facets = cell_to_num_entities(cell)[-2]
+        num_facets = cell.num_facets()
 
     # Initialize integral intermediate representation
     return {"representation":        representation,
@@ -142,7 +139,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
             "cell":                  cell,
             "entitytype":            entity_type,
             "num_facets":            num_facets,
-            "num_vertices":          cell_to_num_entities(cell)[0],
+            "num_vertices":          cell.num_vertices(),
             "needs_oriented":        needs_oriented_jacobian(form_data),
             "num_cells":             num_cells,
             "enabled_coefficients":  itg_data.enabled_coefficients,

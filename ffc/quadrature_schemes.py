@@ -49,8 +49,8 @@ from ffc.log import debug, error
 from ffc.fiatinterface import reference_cell
 from ffc.fiatinterface import create_quadrature as fiat_create_quadrature
 
-# Dictionary mapping from cell to dimension
-from ufl.geometry import cell2dim
+# Dictionary mapping from cellname to dimension
+from ufl.cell import cell2dim
 
 def create_quadrature(cell, degree, scheme="default"):
     """

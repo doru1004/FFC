@@ -40,37 +40,8 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import SpaceOfReals
 
-# Dictionary mapping from cell to dimension
-from ufl.geometry import cell2dim
-
-# Number of entities associated with each cell name
-# Need to pass in the full cell for OuterProduct compatibility
-# though no useful functionality implemented yet.
-def cell_to_num_entities(cell):
-    if isinstance(cell, str):
-        return cellname_to_num_entities[cell]
-    else:
-        if isinstance(cell, ufl.OuterProductCell):
-            temp_a = cell_to_num_entities(cell._A)
-            temp_b = cell_to_num_entities(cell._B)
-            temp_list = polymul(temp_a, temp_b)
-            # set number of facets to 0 for safety -- we will
-            # deal with OP facets separately
-            temp_list[-2] = 0
-            return tuple(temp_list)
-        else:
-            return cellname_to_num_entities[cell.cellname()]
-
-cellname_to_num_entities = {
-    "cell1D": None,
-    "cell2D": None,
-    "cell3D": None,
-    "interval": (2, 1),
-    "triangle": (3, 3, 1),
-    "tetrahedron": (4, 6, 4, 1),
-    "quadrilateral": (4, 4, 1),
-    "hexahedron": (8, 12, 6, 1),
-    }
+# Dictionary mapping from cellname to dimension
+from ufl.cell import cell2dim
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini",
@@ -91,12 +62,6 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "EnrichedElement",
                       "BrokenElement",
                       "TraceElement")
-
-# Mapping from dimension to number of mesh sub-entities. (In principle,
-# cellname_to_num_entities contains the same information, but with string keys.)
-# DISABLED ON PURPOSE: It's better to use cell name instead of dimension
-#                      to stay generic w.r.t. future box elements.
-#entities_per_dim = {1: [2, 1], 2: [3, 3, 1], 3: [4, 6, 4, 1]}
 
 # Cache for computed elements
 _cache = {}

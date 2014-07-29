@@ -22,6 +22,7 @@ from hashlib import sha1
 
 # UFL modules.
 import ufl
+from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
 from constants import FFC_VERSION
@@ -73,7 +74,7 @@ class JITObject:
         from ffc.backends import ufc
         ufc_signature = sha1(''.join(getattr(ufc, header)
                                      for header in
-                                     (k for k in vars(ufc).keys()
+                                     (k for k in sorted(vars(ufc).keys())
                                       if k.endswith("_header")))
                                       ).hexdigest()
 
@@ -83,6 +84,7 @@ class JITObject:
                       ffc_signature,
                       ufc_signature]
         string = ";".join(signatures)
+
         self._signature = sha1(string).hexdigest()
 
         # Uncomment for debugging
@@ -100,4 +102,4 @@ def _parameters_signature(parameters):
     for ignore in ignores:
         if ignore in parameters:
             del parameters[ignore]
-    return str(parameters)
+    return str(canonicalize_metadata(parameters))
