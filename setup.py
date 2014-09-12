@@ -234,7 +234,8 @@ def run_install():
                                  "ffc/ext/time_elements.cpp",
                                  "ffc/ext/LobattoQuadrature.cpp",
                                  "ffc/ext/RadauQuadrature.cpp",
-                                 "ffc/ext/Legendre.cpp"])
+                                 "ffc/ext/Legendre.cpp"],
+                                extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix])
 
     # Setup extension module for UFC
     ext_module_ufc = Extension("ufc._ufc",
@@ -248,6 +249,7 @@ def run_install():
                                           "-fastinit", "-fastunpack",
                                           "-fastquery", "-nobuildnone"],
                                extra_compile_args=CXX_FLAGS.split(),
+                               extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix],
                                include_dirs=[os.path.join("ufc")])
 
     # Call distutils to perform installation
