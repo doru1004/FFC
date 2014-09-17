@@ -30,6 +30,21 @@ import numpy
 from ffc.log import debug, error, ffc_assert
 from ffc.cpp import format
 
+
+class EnrichedNumpyArray(numpy.ndarray):
+    """A numpy array that also tracks the number of zero columns if the array
+    comes from a mixed element."""
+
+    def track_zeros(self, _is_mixed):
+        if not _is_mixed:
+            self.zeros = None
+            return
+        self.zeros = (self.view() == 0).all(axis=0)
+
+    def get_zeros(self):
+        return self.zeros
+
+
 def create_psi_tables(tables, eliminate_zeros, entity_type):
     "Create names and maps for tables and non-zero entries if appropriate."
 
@@ -115,6 +130,8 @@ def flatten_psi_tables(tables, entity_type):
                                 raise Exception("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
 
                             # Store table with unique name
+                            psi_table = psi_table.view(EnrichedNumpyArray)
+                            psi_table.track_zeros(entity_tables._is_mixed)
                             flat_tables[name] = psi_table
 
             # Increase unique numpoints*element counter

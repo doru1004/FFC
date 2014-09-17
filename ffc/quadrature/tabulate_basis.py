@@ -34,6 +34,7 @@ from ffc.utils import product
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points, reference_cell_vertices
 from ffc.quadrature_schemes import create_quadrature
+from ffc.mixedelement import MixedElement
 
 def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
@@ -144,7 +145,8 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
         num_entities = cell._A.num_facets()  # number of "base cell" facets
     else:
         num_entities = cell.num_entities(entity_dim)
-    psi_table = {}
+    # Track geometric dimension of tables
+    psi_table = EnrichedPsiTable(element)
     for entity in range(num_entities):
         entity_points = _map_entity_points(cell, points, entity_dim, entity, integral_type)
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
@@ -323,3 +325,15 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                 insert_nested_dict(psi_tables, (len_weights, element, avg, entity, deriv), avg_psi_table)
 
     return (integrals, psi_tables, quadrature_rules)
+
+
+class EnrichedPsiTable(dict):
+    """Represent a psi table and tracks the number of geometric components in the element
+    from which it was generated if the element comes from a vector function space.
+    The number of geometric components is set to -1 if the element does not come from a
+    vector function space.
+    """
+
+    def __init__(self, element):
+        super(EnrichedPsiTable, self).__init__()
+        self._is_mixed = isinstance(element, MixedElement)
