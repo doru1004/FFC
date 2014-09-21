@@ -152,6 +152,12 @@ double J%(restriction)s[9];
 compute_jacobian_hex_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
 """
 
+_compute_jacobian_extr_tet = """\
+// Compute Jacobian
+double J%(restriction)s[16];
+compute_jacobian_extr_tet(J%(restriction)s, vertex_coordinates%(restriction)s);
+"""
+
 compute_jacobian = {
 Cell("interval"): _compute_jacobian_interval_1d,
 Cell("interval", 2): _compute_jacobian_interval_2d,
@@ -168,7 +174,8 @@ OuterProductCell(Cell("interval", 3), Cell("interval")): _compute_jacobian_quad_
 OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_prism_3d,
 OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_prism_3d,
 OuterProductCell(Cell("quadrilateral"), Cell("interval")): _compute_jacobian_hex_3d,
-OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _compute_jacobian_hex_3d
+OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _compute_jacobian_hex_3d,
+OuterProductCell(Cell("tetrahedron"), Cell("interval")): _compute_jacobian_extr_tet
 }
 
 # Code snippets for computing Jacobians within interior facet integrals
@@ -326,6 +333,13 @@ double detJ%(restriction)s;
 compute_jacobian_inverse_hex_3d(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
 """
 
+_compute_jacobian_inverse_extr_tet = """\
+// Compute Jacobian inverse and determinant
+double K%(restriction)s[16];
+double detJ%(restriction)s;
+compute_jacobian_inverse_extr_tet(K%(restriction)s, detJ%(restriction)s, J%(restriction)s);
+"""
+
 compute_jacobian_inverse = {
 Cell("interval"): _compute_jacobian_inverse_interval_1d,
 Cell("interval", 2): _compute_jacobian_inverse_interval_2d,
@@ -342,7 +356,8 @@ OuterProductCell(Cell("interval", 3), Cell("interval")): _compute_jacobian_inver
 OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_inverse_prism_3d,
 OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_inverse_prism_3d,
 OuterProductCell(Cell("quadrilateral"), Cell("interval")): _compute_jacobian_inverse_hex_3d,
-OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _compute_jacobian_inverse_hex_3d
+OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _compute_jacobian_inverse_hex_3d,
+OuterProductCell(Cell("tetrahedron"), Cell("interval")): _compute_jacobian_inverse_extr_tet
 }
 
 # Code snippet for scale factor
@@ -1671,7 +1686,8 @@ pyop2_cell_volume = {1: {1: _pyop2_cell_volume_1D,
                          3: _pyop2_cell_volume_3D_1D},
                      2: {2: _pyop2_cell_volume_2D,
                          3: _pyop2_cell_volume_3D_2D},
-                     3: {3: _pyop2_cell_volume_3D}}
+                     3: {3: _pyop2_cell_volume_3D},
+                     4: {4: ""}}
 
 ufc_circumradius = {1: {1: _ufc_circumradius_1D,
                         2: _ufc_circumradius_2D_1D,
@@ -1685,7 +1701,9 @@ pyop2_circumradius = {1: {1: _pyop2_circumradius_1D,
                           3: _pyop2_circumradius_3D_1D},
                       2: {2: _pyop2_circumradius_2D % {'y': 3} ,
                           3: _pyop2_circumradius_3D_2D % {'y': 3, 'z': 6}},
-                      3: {3: _pyop2_circumradius_3D % {'y': 4, 'z': 8}}}
+                      3: {3: _pyop2_circumradius_3D % {'y': 4, 'z': 8}},
+                      4: {4: ""}}
+
 
 pyop2_circumradius_interior = {1: {1: _pyop2_circumradius_1D,
                                    2: _pyop2_circumradius_2D_1D,
