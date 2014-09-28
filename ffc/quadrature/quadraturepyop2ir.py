@@ -34,8 +34,8 @@ from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused, _choose_map
 
 # PyOP2 IR modules.
-from pyop2.coffee import ast_base as pyop2
-from pyop2.coffee.ast_base import c_sym
+from coffee import base as pyop2
+from coffee.base import c_sym
 
 from ffc.representationutils import initialize_integral_code
 
