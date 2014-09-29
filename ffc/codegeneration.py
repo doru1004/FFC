@@ -265,11 +265,6 @@ def _generate_integral_code(ir, parameters):
     prefix = ir["prefix"]
     code = r.generate_integral_code(ir, prefix, parameters) # TODO: Drop prefix argument and get from ir
 
-    # Indent code (unused variables should already be removed)
-    # FIXME: Remove this quick hack
-    if ir["representation"] != "uflacs":
-        _indent_code(code)
-
     return code
 
 

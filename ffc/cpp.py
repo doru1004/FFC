@@ -330,6 +330,7 @@ format.update({
     "evaluate function":        evaluate_f,
     "ufc comment":              comment_ufc,
     "dolfin comment":           comment_dolfin,
+    "pyop2 comment":            comment_pyop2,
     "header_h":                 header_h,
     "header_c":                 header_c,
     "footer":                   footer,

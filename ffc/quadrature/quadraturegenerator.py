@@ -31,7 +31,7 @@ from ufl.utils.derivativetuples import compute_derivative_tuples
 
 # FFC modules
 from ffc.log import info, debug, ffc_assert, error, warning
-from ffc.cpp import format, remove_unused
+from ffc.cpp import format, remove_unused, indent
 
 from ffc.representationutils import initialize_integral_code
 
@@ -47,10 +47,45 @@ def generate_integral_code(ir, prefix, parameters):
     # Generate code
     code = initialize_integral_code(ir, prefix, parameters)
     code["num_cells"] = ret(ir["num_cells"])
-    code["tabulate_tensor"] = _tabulate_tensor(ir, prefix, parameters)
     code["additional_includes_set"] = ir["additional_includes_set"]
-
+    code["tabulate_tensor"] = \
+"""
+void %s(%s)
+{
+%s
+}
+""" % (code["classname"], _arglist(ir), indent(_tabulate_tensor(ir, prefix, parameters), 2))
     return code
+
+def _arglist(ir):
+    "Generate argument list for tensor tabulation function (only for pyop2)"
+
+    rank = len(ir['prim_idims'])
+    float = format['float declaration']
+    integral_type = ir["integral_type"]
+    prim_idims  = ir["prim_idims"]
+
+    if integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
+        prim_idims = "".join(map(lambda x: "[%s]" % x, [d*2 for d in prim_idims]))
+    else:
+        prim_idims = "".join(map(lambda x: "[%s]" % x, prim_idims))
+    localtensor = "%s A%s" % (float, prim_idims)
+
+    coordinates = "**vertex_coordinates"
+
+    coeffs = []
+    for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
+        coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*", \
+            n[1:] if e.family() == 'Real' else n))
+
+    arglist = [localtensor, coordinates] + coeffs
+
+    if integral_type in ("exterior_facet", "exterior_facet_vert"):
+        arglist.append( "unsigned int *facet_p")
+    if integral_type in ("interior_facet", "interior_facet_vert"):
+        arglist.append( "unsigned int facet_p[2]")
+
+    return ", ".join(arglist)
 
 def _tabulate_tensor(ir, prefix, parameters):
     "Generate code for a single integral (tabulate_tensor())."
@@ -534,7 +569,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     f_scale_factor  = format["scale factor"]
     f_iadd          = format["iadd"]
     f_add           = format["add"]
-    f_A             = format["element tensor"]["ufc"]
+    f_A             = format["element tensor"]["pyop2"]
     f_loop          = format["generate loop"]
     f_B             = format["basis constant"]
 

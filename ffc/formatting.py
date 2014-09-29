@@ -54,18 +54,25 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h += _generate_comment(parameters) + "\n"
     code_c += _generate_comment(parameters) + "\n"
 
+    # Skip if dolfin-related machinery not necessary
+    if not parameters["format"] == "dolfin":
+        code_h += "\n\n".join([c['tabulate_tensor'] for c in code[2]])
+        _write_file(code_h, prefix, ".h", parameters)
+        end()
+        return
+
     # Generate code for header
     code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
     code_h += _generate_additional_includes(code_integrals)  + "\n"
     code_c += format["header_c"] % {"prefix": prefix}
 
     # Generate code for elements
-    for code_element in code_elements:
+    for code_element in [c for c in code_elements if c]:
         code_h += _format_h("finite_element", code_element, parameters)
         code_c += _format_c("finite_element", code_element, parameters)
 
     # Generate code for dofmaps
-    for code_dofmap in code_dofmaps:
+    for code_dofmap in [c for c in code_dofmaps if c]:
         code_h += _format_h("dofmap", code_dofmap, parameters)
         code_c += _format_c("dofmap", code_dofmap, parameters)
 
@@ -76,12 +83,12 @@ def format_code(code, wrapper_code, prefix, parameters):
         code_c += _format_c("coordinate_mapping", code_coordinate_mapping, parameters)
 
     # Generate code for integrals
-    for code_integral in code_integrals:
+    for code_integral in [c for c in code_integrals if c]:
         code_h += _format_h(code_integral["class_type"], code_integral, parameters)
         code_c += _format_c(code_integral["class_type"], code_integral, parameters)
 
     # Generate code for form
-    for code_form in code_forms:
+    for code_form in [c for c in code_forms if c]:
         code_h += _format_h("form", code_form, parameters)
         code_c += _format_c("form", code_form, parameters)
 
@@ -137,6 +144,8 @@ def _generate_comment(parameters):
         comment = format["ufc comment"] % args
     elif parameters["format"] == "dolfin":
         comment = format["dolfin comment"] % args
+    elif parameters["format"] == "pyop2":
+        comment = format["pyop2 comment"] % args
     else:
         error("Unable to format code, unknown format \"%s\".", parameters["format"])
 
