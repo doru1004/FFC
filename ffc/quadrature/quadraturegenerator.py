@@ -71,7 +71,7 @@ def _arglist(ir):
         prim_idims = "".join(map(lambda x: "[%s]" % x, prim_idims))
     localtensor = "%s A%s" % (float, prim_idims)
 
-    coordinates = "**vertex_coordinates"
+    coordinates = "%s %s" % (float, "**vertex_coordinates")
 
     coeffs = []
     for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
@@ -97,7 +97,7 @@ def _tabulate_tensor(ir, prefix, parameters):
     f_switch       = format["switch"]
     f_float        = format["float"]
     f_assign       = format["assign"]
-    f_A            = format["element tensor"]["ufc"]
+    f_A            = format["element tensor"]["pyop2"]
     f_r            = format["free indices"][0]
     f_loop         = format["generate loop"]
     f_int          = format["int"]
@@ -128,6 +128,16 @@ def _tabulate_tensor(ir, prefix, parameters):
     affine_tables = {} # TODO: This is not populated anywhere, remove?
     quadrature_weights = ir["quadrature_weights"]
 
+    common = []
+
+    #The pyop2 format requires dereferencing constant coefficients since
+    # these are passed in as double *
+    for n, c in zip(ir["coefficient_names"], ir["coefficient_elements"]):
+        if c.family() == 'Real':
+            # Second index is always? 0, so we cast to (double (*)[1]).
+            common += ['double (*w%(n)s)[1] = (double (*)[1])c%(n)s;\n' %
+                       {'n': n[1:]}]
+
     operations = []
     if integral_type == "cell":
 
@@ -148,15 +158,16 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
+            jacobi_code += format["orientation"]["pyop2"](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += format["scale factor snippet"]["ufc"]
+        jacobi_code += format["scale factor snippet"]["pyop2"]
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["pyop2"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["pyop2"](tdim, gdim, integral_type)
 
     elif integral_type == "exterior_facet":
+        common += ["unsigned int facet = *facet_p;\n"]
 
         # Iterate over facets
         cases = [None for i in range(num_facets)]
@@ -179,20 +190,25 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
+            jacobi_code += format["orientation"]["pyop2"](tdim, gdim)
         jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"]["ufc"](tdim, gdim)
-        jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["facet determinant"]["pyop2"](tdim, gdim)
+        jacobi_code += "\n\n" + format["generate normal"]["pyop2"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["pyop2"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["pyop2"](tdim, gdim, integral_type)
 
     elif integral_type == "interior_facet":
+        common += ["unsigned int facet_0 = facet_p[0];"]
+        common += ["unsigned int facet_1 = facet_p[1];"]
+        common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
+        # Note that the following line is unsafe for isoparametric elements.
+        common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
         # Modify the dimensions of the primary indices because we have a macro element
         prim_idims = [d*2 for d in prim_idims]
@@ -224,18 +240,18 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
             if oriented:
-                jacobi_code += format["orientation"]["ufc"](tdim, gdim, r=_r)
+                jacobi_code += format["orientation"]["pyop2"](tdim, gdim, r=_r)
             jacobi_code += "\n"
-        jacobi_code += "\n\n" + format["facet determinant"]["ufc"](gdim, tdim, r="+")
-        jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["facet determinant"]["pyop2"](gdim, tdim, r="+")
+        jacobi_code += "\n\n" + format["generate normal"]["pyop2"](tdim, gdim, integral_type)
         jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["pyop2"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["pyop2"](tdim, gdim, integral_type)
 
     elif integral_type == "vertex":
 
@@ -265,7 +281,7 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            jacobi_code += format["orientation"]["ufc"](tdim, gdim)
+            jacobi_code += format["orientation"]["pyop2"](tdim, gdim)
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"](tdim, gdim) # FIXME: This is not defined in a point???
 
@@ -315,9 +331,9 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
+            jacobi_code += format["generate cell volume"]["pyop2"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
+            jacobi_code += format["generate circumradius"]["pyop2"](tdim, gdim, integral_type, r=i)
             jacobi_code += "\n"
 
     else:
@@ -325,7 +341,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # After we have generated the element code for all facets we can remove
     # the unused transformations.
-    common = [remove_unused(jacobi_code, trans_set)]
+    common += [remove_unused(jacobi_code, trans_set)]
 
     # FIXME: After introduction of custom integrals, the common code
     # here is not really common anymore. Think about how to
@@ -349,16 +365,6 @@ def _tabulate_tensor(ir, prefix, parameters):
                                                        prefix,
                                                        num_vertices,
                                                        num_cells)
-
-    # Reset the element tensor (array 'A' given as argument to tabulate_tensor() by assembler)
-    # Handle functionals.
-    common += [f_comment("Reset values in the element tensor.")]
-    value = f_float(0)
-    if prim_idims == []:
-        common += [f_assign(f_A(f_int(0)), f_float(0))]
-    else:
-        dim = functools.reduce(lambda v, u: v*u, prim_idims)
-        common += f_loop([f_assign(f_A(f_r), f_float(0))], [(f_r, 0, dim)])
 
     # Create the constant geometry declarations (only generated if simplify expressions are enabled).
     geo_ops, geo_code = generate_aux_constants(geo_consts, f_G, f_const_double)
@@ -635,7 +641,7 @@ def _tabulate_weights(quadrature_weights):
 
     # Prefetch formats to speed up code generation.
     f_float     = format["floating point"]
-    f_table     = format["static const float declaration"]["ufc"]
+    f_table     = format["static const float declaration"]["pyop2"]
     f_sep       = format["list separator"]
     f_weight    = format["weight"]
     f_component = format["component"]
@@ -710,11 +716,11 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
     # Prefetch formats to speed up code generation.
     f_comment      = format["comment"]
-    f_table        = format["static const float declaration"]["ufc"]
+    f_table        = format["static const float declaration"]["pyop2"]
     f_vector_table = format["vector table declaration"]
     f_double_array = format["const double array declaration"]
     f_component    = format["component"]
-    f_const_uint   = format["static const uint declaration"]["ufc"]
+    f_const_uint   = format["static const uint declaration"]["pyop2"]
     f_nzcolumns    = format["nonzero columns"]
     f_list         = format["list"]
     f_decl         = format["declaration"]

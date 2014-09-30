@@ -30,6 +30,7 @@ might be (re-)implemented in a future version of FFC
 # FFC modules
 from ffc.log import info, error
 from ffc.representationutils import initialize_integral_ir
+from ffc.fiatinterface import create_element
 
 # FFC tensor representation modules
 from ffc.tensor.monomialextraction import extract_monomial_form
@@ -93,6 +94,11 @@ def compute_integral_ir(itg_data,
     # Initialize representation and store terms
     ir = initialize_integral_ir("tensor", itg_data, form_data, form_id)
     ir["AK"] = terms
+
+    # Create dimensions of primary indices, needed to reset the argument 'A'
+    # given to tabulate_tensor() by the assembler.
+    ir["prim_idims"] = [create_element(ufl_element).space_dimension()
+                        for ufl_element in form_data.argument_elements]
 
     return ir
 

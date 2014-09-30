@@ -28,7 +28,7 @@
 
 # FFC modules
 from ffc.log import error
-from ffc.cpp import format, remove_unused, count_ops
+from ffc.cpp import format, remove_unused, count_ops, indent
 
 # FFC tensor representation modules
 from ffc.tensor.monomialtransformation import MonomialIndex
@@ -37,9 +37,44 @@ from ffc.representationutils import initialize_integral_code
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
     code = initialize_integral_code(ir, prefix, parameters)
-    code["tabulate_tensor"] = _tabulate_tensor(ir, parameters)
+    code["tabulate_tensor"] = \
+"""
+void %s(%s)
+{
+%s
+}
+""" % (code["classname"], _arglist(ir), indent(_tabulate_tensor(ir, parameters), 2))
     return code
 
+def _arglist(ir):
+    "Generate argument list for tensor tabulation function (only for pyop2)"
+
+    rank = len(ir['prim_idims'])
+    float = format['float declaration']
+    integral_type = ir["integral_type"]
+    prim_idims  = ir["prim_idims"]
+
+    if integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
+        prim_idims = "".join(map(lambda x: "[%s]" % x, [d*2 for d in prim_idims]))
+    else:
+        prim_idims = "".join(map(lambda x: "[%s]" % x, prim_idims))
+    localtensor = "%s A%s" % (float, prim_idims)
+
+    coordinates = "%s %s" % (float, "**vertex_coordinates")
+
+    coeffs = []
+    for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
+        coeffs.append("%s *%s%s" % (float, "c" if e.family() == 'Real' else "*", \
+            n[1:] if e.family() == 'Real' else n))
+
+    arglist = [localtensor, coordinates] + coeffs
+
+    if integral_type in ("exterior_facet", "exterior_facet_vert"):
+        arglist.append( "unsigned int *facet_p")
+    if integral_type in ("interior_facet", "interior_facet_vert"):
+        arglist.append( "unsigned int facet_p[2]")
+
+    return ", ".join(arglist)
 
 def _tabulate_tensor(ir, parameters):
     "Generate code for tabulate_tensor."
@@ -61,6 +96,16 @@ def _tabulate_tensor(ir, parameters):
     oriented = ir["needs_oriented"]
     num_facets = ir["num_facets"]
 
+    common = []
+
+    #The pyop2 format requires dereferencing constant coefficients since
+    # these are passed in as double *
+    for n, c in zip(ir["coefficient_names"], ir["coefficient_elements"]):
+        if c.family() == 'Real':
+            # Second index is always? 0, so we cast to (double (*)[1]).
+            common += ['double (*w%(n)s)[1] = (double (*)[1])c%(n)s;\n' %
+                       {'n': n[1:]}]
+
     # Check integral type and generate code
     if integral_type == "cell":
 
@@ -76,11 +121,12 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            j_code += format["orientation"]["ufc"](tdim, gdim)
+            j_code += format["orientation"]["pyop2"](tdim, gdim)
         j_code += "\n"
-        j_code += format["scale factor snippet"]["ufc"]
+        j_code += format["scale factor snippet"]["pyop2"]
 
     elif integral_type == "exterior_facet":
+        common += ["unsigned int facet = *facet_p;\n"]
 
         # Generate code for num_facets tensor contractions
         cases = [None for i in range(num_facets)]
@@ -97,11 +143,16 @@ def _tabulate_tensor(ir, parameters):
         j_code += "\n"
         j_code += format["compute_jacobian_inverse"](cell)
         if oriented:
-            j_code += format["orientation"]["ufc"](tdim, gdim)
+            j_code += format["orientation"]["pyop2"](tdim, gdim)
         j_code += "\n"
-        j_code += format["facet determinant"]["ufc"](tdim, gdim)
+        j_code += format["facet determinant"]["pyop2"](tdim, gdim)
 
     elif integral_type == "interior_facet":
+        common += ["unsigned int facet_0 = facet_p[0];"]
+        common += ["unsigned int facet_1 = facet_p[1];"]
+        common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
+        # Note that the following line is unsafe for isoparametric elements.
+        common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
         # Generate code for num_facets x num_facets tensor contractions
         cases = [[None for j in range(num_facets)] for i in range(num_facets)]
@@ -121,8 +172,8 @@ def _tabulate_tensor(ir, parameters):
             j_code += format["compute_jacobian_inverse"](cell, r=_r)
             j_code += "\n"
             if oriented:
-                j_code += format["orientation"]["ufc"](tdim, gdim, r=_r)
-        j_code += format["facet determinant"]["ufc"](tdim, gdim, r="+")
+                j_code += format["orientation"]["pyop2"](tdim, gdim, r=_r)
+        j_code += format["facet determinant"]["pyop2"](tdim, gdim, r="+")
         j_code += "\n"
 
     else:
@@ -136,7 +187,7 @@ def _tabulate_tensor(ir, parameters):
     total_ops = j_ops + g_ops + t_ops
 
     # Add generated code
-    lines = []
+    lines = common
     lines.append(comment("Number of operations (multiply-add pairs) for Jacobian data:      %d" % j_ops))
     lines.append(comment("Number of operations (multiply-add pairs) for geometry tensor:    %d" % g_ops))
     lines.append(comment("Number of operations (multiply-add pairs) for tensor contraction: %d" % t_ops))
@@ -169,7 +220,7 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
     # Prefetch formats to speed up code generation
     iadd            = format["iadd"]
     assign          = format["assign"]
-    element_tensor  = format["element tensor"]["ufc"]
+    element_tensor  = format["element tensor"]["pyop2"]
     geometry_tensor = format["geometry tensor"]
     zero            = format["float"](0)
     inner_product   = format["inner product"]
@@ -195,7 +246,7 @@ def _generate_tensor_contraction_standard(terms, parameters, g_set):
     # Generate code for computing the element tensor
     lines = []
     for (k, i) in enumerate(primary_indices):
-        name = element_tensor(k)
+        name = element_tensor(i)
         coefficients = []
         entries = []
         for (gka, j) in gk_tensor:
@@ -345,7 +396,7 @@ def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     "Extract factors of given index type in GK entry."
 
     # Prefetch formats to speed up code generation
-    coefficient = format["coefficient"]["ufc"]
+    coefficient = format["coefficient"]["pyop2"]
     transform = format["transform"]
 
     # List of factors
@@ -354,7 +405,7 @@ def _extract_factors(GK, a, b, j_set, tdim, gdim, index_type):
     # Compute product of coefficients
     for c in GK.coefficients:
         if c.index.index_type == index_type:
-            factors.append(coefficient(c.number, c.index(secondary=a)))
+            factors.append(coefficient(c.number, [c.index(secondary=a), 0]))
 
     # Compute product of transforms
     for t in GK.transforms:

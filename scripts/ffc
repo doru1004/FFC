@@ -175,22 +175,25 @@ def main(argv):
             error("Expecting a UFL form file (.ufl).")
             return 1
 
+        # Set proper object names depending on format
+        object_names = ufd.object_names if parameters["format"] != "pyop2" else {}
+
         # Do additional stuff if in error-control mode
         if parameters["error_control"]:
-            return compile_with_error_control(ufd.forms, ufd.object_names,
+            return compile_with_error_control(ufd.forms, object_names,
                                               ufd.reserved_objects, prefix,
                                               parameters)
 
         # Catch exceptions only when not in debug mode
         if parameters["log_level"] <= DEBUG:
             if len(ufd.forms) > 0:
-                compile_form(ufd.forms, ufd.object_names, prefix, parameters)
+                compile_form(ufd.forms, object_names, prefix, parameters)
             else:
                 compile_element(ufd.elements, prefix, parameters)
         else:
             try:
                 if len(ufd.forms) > 0:
-                    compile_form(ufd.forms, ufd.object_names, prefix, parameters)
+                    compile_form(ufd.forms, object_names, prefix, parameters)
                 else:
                     compile_element(ufd.elements, prefix, parameters)
             except Exception as exception:
