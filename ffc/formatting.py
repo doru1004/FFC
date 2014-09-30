@@ -56,10 +56,12 @@ def format_code(code, wrapper_code, prefix, parameters):
 
     # Skip if dolfin-related machinery not necessary
     if not parameters["format"] == "dolfin":
-        code_h += "\n\n".join([c['tabulate_tensor'] for c in code[2]])
-        _write_file(code_h, prefix, ".h", parameters)
+        tabulate_tensor_codes = [c['tabulate_tensor'] for c in code_integrals]
+        if parameters.get("write_file") in [True, None]:
+            code_h += "\n\n".join(tabulate_tensor_codes)
+            _write_file(code_h, prefix, ".h", parameters)
         end()
-        return
+        return tabulate_tensor_codes
 
     # Generate code for header
     code_h += format["header_h"] % {"prefix_upper": prefix.upper()}
