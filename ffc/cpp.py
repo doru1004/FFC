@@ -267,7 +267,7 @@ format.update({
     "first free index":     "j",
     "second free index":    "k",
     "geometry constant":    lambda i: "G[%d]" % i,
-    "ip constant":          lambda i: "I[%d]" % i,
+    "ip constant":          lambda i: "Z[%d]" % i,
     "basis constant":       lambda i: "B[%d]" % i,
     "conditional":          lambda i: "C[%d]" % i,
     "evaluate conditional": lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
