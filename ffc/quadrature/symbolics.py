@@ -16,9 +16,8 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-07-12
-# Last changed: 2011-01-21
+
+from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
 from ffc.log import debug, error
@@ -107,7 +106,7 @@ def generate_aux_constants(constant_decl, name, var_type, print_ops=False):
     code = []
     append = code.append
     ops = 0
-    for num, expr in sorted([(v, k) for k, v in constant_decl.iteritems()]):
+    for num, expr in sorted((v, k) for k, v in sorted_by_key(constant_decl)):
 #        debug("expr orig: " + str(expr))
 #        print "\nnum: ", num
 #        print "expr orig: " + repr(expr)
@@ -250,7 +249,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
             # Update transformation set with those values that might be embedded in IP terms.
 #            if ip_dec:
             if ip_dec and ip_dec.val != 0.0:
-                trans_set_update(map(lambda x: str(x), ip_dec.get_unique_vars(GEO)))
+                trans_set_update([str(x) for x in ip_dec.get_unique_vars(GEO)])
 
             # Append and continue if we did not have any geo values.
 #            if not geo:
@@ -260,7 +259,7 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
                 continue
 
             # Update the transformation set with the variables in the geo term.
-            trans_set_update(map(lambda x: str(x), geo.get_unique_vars(GEO)))
+            trans_set_update([str(x) for x in geo.get_unique_vars(GEO)])
 
             # Only declare auxiliary geo terms if we can save operations.
 #            geo = geo.expand().reduce_ops()
@@ -317,9 +316,8 @@ def optimise_code(expr, ip_consts, geo_consts, trans_set):
     # Where did the values go?
     error("Values disappeared.")
 
-from floatvalue import FloatValue
-from symbol     import Symbol
-from product    import Product
-from sumobj     import Sum
-from fraction   import Fraction
-
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .product    import Product
+from .sumobj     import Sum
+from .fraction   import Fraction

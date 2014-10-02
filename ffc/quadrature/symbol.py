@@ -25,13 +25,13 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import type_to_string
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from symbolics import CONST
-from expr import Expr
+from .symbolics import type_to_string
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .symbolics import CONST
+from .expr import Expr
 
 class Symbol(Expr):
     __slots__ = ("v", "base_expr", "base_op", "exp", "cond", "ide")
@@ -131,7 +131,7 @@ class Symbol(Expr):
         # Else add variables from product.
         return create_product([self] + other.vrs)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # NOTE: We assume expanded objects.
         # If division is illegal (this should definitely not happen).
@@ -201,6 +201,8 @@ class Symbol(Expr):
         # x / 2.0 -> 0.5*x.
         return num.expand()
 
+    __div__ = __truediv__
+
     # Public functions.
     def get_unique_vars(self, var_type):
         "Get unique variables (Symbols) as a set."
@@ -226,8 +228,8 @@ class Symbol(Expr):
             return self.base_op + self.base_expr.ops()
         return self.base_op
 
-from floatvalue import FloatValue
-from product    import Product
-from sumobj    import Sum
-from fraction   import Fraction
+from .floatvalue import FloatValue
+from .product    import Product
+from .sumobj    import Sum
+from .fraction   import Fraction
 

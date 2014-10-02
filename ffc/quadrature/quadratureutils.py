@@ -121,13 +121,11 @@ def flatten_psi_tables(tables, entity_type):
                             name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
-                            # Changing ffc_assert to raise Exception, as
-                            # ffc_assert evaluates unconditionally
-                            if not (num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points)):
-                                raise Exception("This table has the wrong shape: " + str(psi_table))
+                            #if not (num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points)):
+                            #    error("This table has the wrong shape: " + str(psi_table))
                             # Verify uniqueness of names
-                            if not (name not in flat_tables):
-                                raise Exception("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
+                            if name in flat_tables:
+                                error("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
 
                             # Store table with unique name
                             psi_table = psi_table.view(EnrichedNumpyArray)

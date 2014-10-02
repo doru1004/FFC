@@ -25,11 +25,11 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from expr import Expr
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .expr import Expr
 
 class Fraction(Expr):
     __slots__ = ("num", "denom", "_expanded", "_reduced")
@@ -136,7 +136,7 @@ class Fraction(Expr):
         # '/' to reduce expression.
         return create_product([self.num, other.num]).expand()/create_product([self.denom, other.denom]).expand()
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
@@ -159,6 +159,8 @@ class Fraction(Expr):
         # that value by denominator of self. Otherwise the reduction was
         # successful and we just use the denom of self as denominator.
         return self.num/(other*self.denom)
+
+    __div__ = __truediv__
 
     # Public functions.
     def expand(self):
@@ -350,8 +352,8 @@ class Fraction(Expr):
         return [(found, remain)]
 
 # FFC quadrature modules.
-from floatvalue import FloatValue
-from symbol     import Symbol
-from product    import Product
-from sumobj    import Sum
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .product    import Product
+from .sumobj    import Sum
 

@@ -38,6 +38,7 @@ from ffc.quadrature.parameters import parse_optimise_parameters
 
 from ffc.quadrature.quadraturetransformer import QuadratureTransformer
 from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
+import six
 
 def compute_integral_ir(itg_data,
                         form_data,
@@ -148,7 +149,7 @@ def sort_integrals(integrals, default_quadrature_degree, default_quadrature_rule
 
     # Create integrals from accumulated integrands.
     sorted_integrals = {}
-    for key, integrands in sorted_integrands.items():
+    for key, integrands in list(sorted_integrands.items()):
         # Summing integrands in a canonical ordering defined by UFL
         integrand = sorted_expr_sum(integrands)
         sorted_integrals[key] = Integral(integrand, integral_type, domain, subdomain_id, {}, None)
@@ -203,7 +204,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 def _transform_integrals(transformer, integrals, integral_type):
     "Transform integrals from UFL expression to quadrature representation."
     transformed_integrals = []
-    for point, integral in integrals.items():
+    for point, integral in sorted(integrals.items()):
         transformer.update_points(point)
         terms = transformer.generate_terms(integral.integrand(), integral_type)
         transformed_integrals.append((point, terms, transformer.function_data,
@@ -215,8 +216,8 @@ def _extract_element_data(element_map, element_numbers):
 
     # Iterate over map
     element_data = {}
-    for elements in element_map.itervalues():
-        for ufl_element, counter in elements.iteritems():
+    for elements in six.itervalues(element_map):
+        for ufl_element, counter in six.iteritems(elements):
 
             # Create corresponding FIAT element
             fiat_element = create_element(ufl_element)
@@ -230,7 +231,7 @@ def _extract_element_data(element_map, element_numbers):
                 element_number = element_numbers[ufl_element]
             else:
                 # FIXME: Should not be necessary, we should always know the element number
-                warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
+                #warning("Missing element number, likely because vector elements are not yet supported in custom integrals.")
                 element_number = None
 
             # Store data

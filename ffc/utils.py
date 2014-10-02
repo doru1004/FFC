@@ -24,7 +24,7 @@ import functools
 import itertools
 
 # FFC modules.
-from log import error
+from .log import error
 
 from ufl.utils.sequences import product
 
@@ -60,3 +60,4 @@ def compute_permutations(k, n, skip = []):
            if i < p[0]:
                permutations += [(i, ) + p]
    return permutations
+

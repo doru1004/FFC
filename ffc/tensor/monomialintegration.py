@@ -41,9 +41,9 @@ from ffc.fiatinterface import map_facet_points
 from ffc.quadrature_schemes import create_quadrature
 
 # FFC tensor representation modules
-from multiindex import build_indices
-from monomialextraction import MonomialException
-from monomialtransformation import MonomialIndex
+from .multiindex import build_indices
+from .monomialextraction import MonomialException
+from .monomialtransformation import MonomialIndex
 
 def integrate(monomial,
               integral_type,
@@ -160,7 +160,7 @@ def _compute_psi(v, table, num_points, integral_type):
         cindex = [v.components[0]]
         cshape = [len(v.components[0].index_range)]
     else:
-        raise MonomialException, "Can only handle rank 0 or rank 1 tensors."
+        raise MonomialException("Can only handle rank 0 or rank 1 tensors.")
 
     # Get indices and shapes for derivatives
     dindex = [d for d in v.derivatives]
@@ -230,7 +230,7 @@ def _compute_product(psis, weights):
 
     # Initialize list of internal multiindices
     bshape = _compute_internal_shape(psis)
-    bindices = build_indices([range(b) for b in bshape]) or [[]]
+    bindices = build_indices([list(range(b)) for b in bshape]) or [[]]
 
     # Sum over quadrature points and internal indices
     num_points = len(weights)

@@ -19,22 +19,19 @@
 # Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
 # Modified by Andrew T. T. McRae, 2013
-#
-# First added:  2009-03-06
-# Last changed: 2013-11-03
 
 # Python modules
 from numpy import array, polymul, zeros, ones
+import six
 
 # UFL and FIAT modules
 import ufl
+from ufl.utils.sorting import sorted_by_key
 import FIAT
 
 # FFC modules
 from ffc.log import debug, error, ffc_assert
 from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
-from ffc.timeelements import LobattoElement as FFCLobattoElement
-from ffc.timeelements import RadauElement as FFCRadauElement
 
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
@@ -135,9 +132,11 @@ def _create_fiat_element(ufl_element):
 
     # Handle the specialized time elements
     elif family == "Lobatto" :
+        from ffc.timeelements import LobattoElement as FFCLobattoElement
         return FFCLobattoElement(ufl_element.degree())
 
     elif family == "Radau" :
+        from ffc.timeelements import RadauElement as FFCRadauElement
         return FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?
@@ -340,7 +339,7 @@ def _indices(element, restriction_domain, dim=0):
         indices = []
         for dim in range(restriction_domain.topological_dimension() + 1):
             entities = entity_dofs[dim]
-            for (entity, index) in entities.iteritems():
+            for (entity, index) in sorted_by_key(entities):
                 indices += index
         return indices
 

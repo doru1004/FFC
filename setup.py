@@ -46,7 +46,7 @@ def get_installation_prefix():
             prefix = sys.argv[sys.argv.index("--prefix")+1]
         except:
             prefix = sys.prefix
-    return prefix
+    return os.path.abspath(prefix)
 
 def get_swig_executable():
     "Get SWIG executable"
@@ -61,7 +61,7 @@ def get_swig_executable():
         raise OSError("Unable to find SWIG installation. Please install SWIG version 2.0 or higher.")
 
     # Check that SWIG version is ok
-    output = subprocess.check_output([swig_executable, "-version"])
+    output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
     swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
     swig_version_ok = True
     swig_minimum_version = [2, 0, 0]
@@ -150,8 +150,10 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
                                      FULLVERSION=VERSION))
 
     # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake", "templates", "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake", "templates", "UFCConfigVersion.cmake"),
+    write_config_file(os.path.join("cmake", "templates", \
+                                   "UFCConfigVersion.cmake.in"),
+                      os.path.join("cmake", "templates", \
+                                   "UFCConfigVersion.cmake"),
                       variables=dict(FULLVERSION=VERSION,
                                      MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
 
@@ -229,25 +231,27 @@ def run_install():
     generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
     # Setup extension module for FFC time elements
-    ext_module_time = Extension("ffc.time_elements_ext",
-                                ["ffc/ext/time_elements_interface.cpp",
-                                 "ffc/ext/time_elements.cpp",
-                                 "ffc/ext/LobattoQuadrature.cpp",
-                                 "ffc/ext/RadauQuadrature.cpp",
-                                 "ffc/ext/Legendre.cpp"],
+    ext_module_time = Extension("ffc_time_ext.time_elements_ext",
+                                ["ffc_time_ext/time_elements_interface.cpp",
+                                 "ffc_time_ext/time_elements.cpp",
+                                 "ffc_time_ext/LobattoQuadrature.cpp",
+                                 "ffc_time_ext/RadauQuadrature.cpp",
+                                 "ffc_time_ext/Legendre.cpp"],
                                 extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix])
 
     # Setup extension module for UFC
+    swig_options = ["-c++", "-shadow", "-modern",
+                    "-modernargs", "-fastdispatch",
+                    "-fvirtual", "-nosafecstrings",
+                    "-noproxydel", "-fastproxy",
+                    "-fastinit", "-fastunpack",
+                    "-fastquery", "-nobuildnone"]
+    if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
     ext_module_ufc = Extension("ufc._ufc",
                                sources=[os.path.join("ufc", "ufc.i")],
                                depends=[os.path.join("ufc", "ufc.h"),
                                         os.path.join("ufc", "ufc_geometry.h")],
-                               swig_opts=["-c++", "-shadow", "-modern",
-                                          "-modernargs", "-fastdispatch",
-                                          "-fvirtual", "-nosafecstrings",
-                                          "-noproxydel", "-fastproxy",
-                                          "-fastinit", "-fastunpack",
-                                          "-fastquery", "-nobuildnone"],
+                               swig_opts=swig_options,
                                extra_compile_args=CXX_FLAGS.split(),
                                extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix],
                                include_dirs=[os.path.join("ufc")])
@@ -284,9 +288,12 @@ def run_install():
                                [os.path.join("ufc", "ufc.h"),
                                 os.path.join("ufc", "ufc_geometry.h")]),
                               (os.path.join("share", "ufc"),
-                               [os.path.join("cmake", "templates", "UFCConfig.cmake"),
-                                os.path.join("cmake", "templates", "UFCConfigVersion.cmake"),
-                                os.path.join("cmake", "templates", "UseUFC.cmake")]),
+                               [os.path.join("cmake", "templates", \
+                                             "UFCConfig.cmake"),
+                                os.path.join("cmake", "templates", \
+                                             "UFCConfigVersion.cmake"),
+                                os.path.join("cmake", "templates", \
+                                             "UseUFC.cmake")]),
                               (os.path.join("lib", "pkgconfig"),
                                [os.path.join("cmake", "templates", "ufc-1.pc")]),
                               (os.path.join("include", "swig"),

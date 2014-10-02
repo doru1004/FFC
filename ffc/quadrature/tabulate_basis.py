@@ -73,7 +73,7 @@ def _find_element_derivatives(expr, elements, element_replace_map):
     for d in list(derivatives):
         # After UFL has evaluated derivatives, only one element
         # can be found inside any single Grad expression
-        elem, = extract_elements(d.operands()[0])
+        elem, = extract_elements(d.ufl_operands[0])
         elem = element_replace_map[elem]
         # Set the number of derivatives to the highest value encountered so far.
         num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)))
@@ -113,7 +113,7 @@ def _tabulate_empty_psi_table(tdim, deriv_order, element):
 
     # All combinations of partial derivatives up to given order
     gdim = tdim # hack, consider passing gdim variable here
-    derivs = [d for d in itertools.product(*(gdim*[range(0, deriv_order + 1)]))]
+    derivs = [d for d in itertools.product(*(gdim*[list(range(0, deriv_order + 1))]))]
     derivs = [d for d in derivs if sum(d) <= deriv_order]
 
     # Return empty table
@@ -230,11 +230,7 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
 
         # Insert elements for x and J
         domain = integral.domain() # FIXME: For all domains to be sure? Better to rewrite though.
-        x = domain.coordinates()
-        if x is None:
-            x_element = ufl.VectorElement("Lagrange", domain, 1)
-        else:
-            x_element = x.element()
+        x_element = domain.coordinate_element()
         if x_element not in ufl_elements:
             if integral_type == "custom":
                 # FIXME: Not yet implemented, in progress
@@ -301,11 +297,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
                 assert len(entity_psi_tables) == 1
                 assert avg_integral_type == "cell"
                 assert "facet" in integral_type
-                v, = entity_psi_tables.values()
+                v, = sorted(entity_psi_tables.values())
                 entity_psi_tables = dict((e, v) for e in actual_entities)
 
-            for entity, deriv_table in entity_psi_tables.items():
-                deriv, = list(deriv_table.keys()) # Not expecting derivatives of averages
+            for entity, deriv_table in sorted(entity_psi_tables.items()):
+                deriv, = sorted(deriv_table.keys()) # Not expecting derivatives of averages
                 psi_table = deriv_table[deriv]
 
                 if rank:
