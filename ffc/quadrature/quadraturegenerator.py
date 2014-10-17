@@ -26,6 +26,7 @@ import functools, itertools
 import numpy
 
 # UFL modules
+from ufl.utils.sorting import sorted_by_key
 from ufl.algorithms.printing import tree_format
 from ufl.utils.derivativetuples import compute_derivative_tuples
 
@@ -36,7 +37,7 @@ from ffc.cpp import format, remove_unused
 from ffc.representationutils import initialize_integral_code
 
 # Utility and optimization functions for quadraturegenerator
-from symbolics import generate_aux_constants
+from .symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -264,19 +265,21 @@ def _tabulate_tensor(ir, prefix, parameters):
         # Generate code for basic geometric quantities
         jacobi_code = ""
         for i in range(num_cells):
+            r = i if num_cells > 1 else None
             jacobi_code += "\n"
             jacobi_code += f_comment("--- Compute geometric quantities on cell %d ---" % i)
             jacobi_code += "\n\n"
-            jacobi_code += f_comment("Extract vertex coordinates\n")
-            jacobi_code += format["extract_cell_coordinates"]((tdim + 1)*gdim*i, r=i)
-            jacobi_code += "\n\n"
-            jacobi_code += format["compute_jacobian"](tdim, gdim, r=i)
+            if num_cells > 1:
+                jacobi_code += f_comment("Extract vertex coordinates\n")
+                jacobi_code += format["extract_cell_coordinates"]((tdim + 1)*gdim*i, r=i)
+                jacobi_code += "\n\n"
+            jacobi_code += format["compute_jacobian"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=i)
+            jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"]["ufc"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate cell volume"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=i)
+            jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
 
     else:
@@ -292,7 +295,7 @@ def _tabulate_tensor(ir, prefix, parameters):
 
     # Add common code except for custom integrals
     if integral_type != "custom":
-        common += _tabulate_weights([quadrature_weights[p] for p in used_weights])
+        common += _tabulate_weights([quadrature_weights[p] for p in sorted(used_weights)])
 
         # Add common code for updating tables
         name_map = ir["name_map"]
@@ -486,7 +489,7 @@ def _generate_functions(functions, sets):
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in function_list.items():
+    for loop_range, list_of_functions in sorted(function_list.items()):
         function_expr = {}
         function_numbers = []
         # Loop functions.
@@ -541,7 +544,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
     used_weights, used_psi_tables, used_nzcs, trans_set = sets
 
     # Loop terms and create code.
-    for loop, (data, entry_vals) in terms.items():
+    for loop, (data, entry_vals) in sorted(terms.items()):
 
         # If we don't have any entry values, there's no need to generate the
         # loop.
@@ -579,7 +582,7 @@ def _generate_integral_code(points, terms, sets, optimise_parameters):
             loops[loop][1] += [entry_ops_comment, entry_code]
 
     # Write all the loops of basis functions.
-    for loop, ops_lines in loops.items():
+    for loop, ops_lines in sorted(loops.items()):
         ops, lines = ops_lines
         prim_ops = functools.reduce(lambda i, j: i*j, [ops] + [l[2] for l in loop])
         # Add number of operations for current loop to total count.
@@ -693,13 +696,13 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
     # Get list of non zero columns, if we ignore ones, ignore columns with one component.
     if optimise_parameters["ignore ones"]:
         nzcs = []
-        for key, val in inv_name_map.items():
+        for key, val in sorted(inv_name_map.items()):
             # Check if we have a table of ones or if number of non-zero columns
             # is larger than one.
             if val[1] and len(val[1][1]) > 1 or not val[3]:
                 nzcs.append(val[1])
     else:
-        nzcs = [val[1] for key, val in inv_name_map.items()\
+        nzcs = [val[1] for key, val in sorted(inv_name_map.items())\
                                         if val[1]]
 
     # TODO: Do we get arrays that are not unique?
@@ -712,14 +715,14 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
     # Construct name map.
     name_map = {}
     if inv_name_map:
-        for name in inv_name_map:
+        for name in sorted(inv_name_map):
             if inv_name_map[name][0] in name_map:
                 name_map[inv_name_map[name][0]].append(name)
             else:
                 name_map[inv_name_map[name][0]] = [name]
 
     # Loop items in table and tabulate.
-    for name in sorted(list(used_psi_tables)):
+    for name in sorted(used_psi_tables):
 
         # Only proceed if values are still used (if they're not remapped).
         vals = tables[name]
@@ -736,7 +739,7 @@ def _tabulate_psis(tables, used_psi_tables, inv_name_map, used_nzcs, optimise_pa
 
         # Tabulate non-zero indices.
         if optimise_parameters["eliminate zeros"]:
-            if name in name_map:
+            if name in sorted(name_map):
                 for n in name_map[name]:
                     if inv_name_map[n][1] and inv_name_map[n][1] in new_nzcs:
                         i, cols = inv_name_map[n][1]
@@ -776,7 +779,7 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
     code = []
 
     # Extract prefixes for tables
-    prefixes = sorted(list(set(table.split("_")[0] for table in psi_tables)))
+    prefixes = sorted(set(table.split("_")[0] for table in psi_tables))
 
     # Use lower case prefix for form name
     form_prefix = form_prefix.lower()
@@ -830,7 +833,9 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
         value_size     = element_data[counter]["value_size"]
 
         # Iterate over derivative orders
-        for n, components in used_derivatives_and_components[prefix].iteritems():
+        for n, components in sorted_by_key(used_derivatives_and_components[prefix]):
+            # components are a set and need to be sorted
+            components = sorted(components)
 
             # Code for evaluate_basis_all
             if n == 0:
@@ -914,11 +919,17 @@ def _evaluate_basis_at_quadrature_points(psi_tables,
                 # FIXME: components that are actually used.) This may be optimized
                 # FIXME: but the extra cost is likely small.
 
+                # FIXME: Think about adding compute_unique_derivative_tuples in UFL
+
                 # Get derivative tuples
                 deriv_tuples, _deriv_tuples = compute_derivative_tuples(n, gdim)
+                unique_tuples = []
+                for d in _deriv_tuples:
+                    if not d in unique_tuples:
+                        unique_tuples.append(d)
 
                 # Generate names for derivatives
-                derivs = ["".join(str(_d) for _d in d) for d in _deriv_tuples]
+                derivs = ["".join(str(_d) for _d in d) for d in unique_tuples]
 
                 # Compute variables for code generation
                 eval_stride = value_size*len(derivs)

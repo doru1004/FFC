@@ -25,11 +25,12 @@ from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from expr import Expr
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .expr import Expr
+from functools import reduce
 
 #class Product(object):
 class Product(Expr):
@@ -204,7 +205,7 @@ class Product(Expr):
         # Create new product adding all variables from other Product.
         return create_product(self.vrs + other.vrs)
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
@@ -266,6 +267,8 @@ class Product(Expr):
             return create_fraction(num, denom[0])
         # If we no longer have a denominater, just return the numerator.
         return num
+
+    __div__ = __truediv__
 
     # Public functions.
     def expand(self):
@@ -404,8 +407,8 @@ class Product(Expr):
         return [(found, remains)]
 
 # FFC quadrature modules.
-from floatvalue import FloatValue
-from symbol     import Symbol
-from sumobj    import Sum
-from fraction   import Fraction
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .sumobj    import Sum
+from .fraction   import Fraction
 

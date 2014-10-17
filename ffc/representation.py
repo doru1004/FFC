@@ -315,8 +315,7 @@ def _generate_physical_offsets(ufl_element, offset=0):
         element = create_element(ufl_element)
         offsets = [offset]*element.space_dimension()
     else:
-        raise NotImplementedError, \
-            "This element combination is not implemented"
+        raise NotImplementedError("This element combination is not implemented")
     return offsets
 
 def _evaluate_dof(ufl_element, element):
@@ -439,7 +438,7 @@ def _tabulate_coordinates(ufl_element, element):
 
     data = {}
     data["cell"] = domain.cell()
-    data["points"] = [L.pt_dict.keys()[0] for L in element.dual_basis()]
+    data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]
     return data
 
 def _tabulate_dofs(element, cell):
@@ -532,7 +531,7 @@ def _interpolate_vertex_values(ufl_element, element):
     vertices = fiat_cell.get_vertices()
 
     # Compute data for each constituent element
-    extract = lambda values: values[values.keys()[0]].transpose()
+    extract = lambda values: values[sorted(values.keys())[0]].transpose()
     all_fiat_elm = all_elements(element)
     ir["element_data"] = [{
                            # See note in _evaluate_dofs
@@ -640,7 +639,7 @@ def __compute_sub_simplices(D, d):
     if d == 0:
         return [[i] for i in range(num_vertices)]
     elif d == D:
-        return [range(num_vertices)]
+        return [list(range(num_vertices))]
 
     # Compute all permutations of num_vertices - (d + 1)
     permutations = compute_permutations(num_vertices - d - 1, num_vertices)

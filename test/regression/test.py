@@ -378,7 +378,7 @@ def main(args):
         info_blue("Skipping reference data download")
     else:
         failure, output = get_status_output("./scripts/download")
-        print output
+        print(output)
         if failure:
             info_red("Download reference data failed")
         else:

@@ -16,10 +16,9 @@
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # Modified by Marie E. Rognes, 2013
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2010-02-08
-# Last changed: 2014-04-23
+# Modified by Martin Alnaes, 2013-2014
+
+from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
 from ffc.log import info, error, warning
@@ -88,7 +87,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
         # but it might be inefficient for speed.
         # A solution could be to only compare the output of evaluating the
         # integral, not the header files.
-        for loop, (data, entry_vals) in sorted(terms.iteritems()):
+        for loop, (data, entry_vals) in sorted_by_key(terms):
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
             psi_tables = set()
@@ -108,7 +107,7 @@ def _simplify_expression(integral, geo_consts, psi_tables_map):
 
 def _precompute_expressions(integral, geo_consts, optimisation):
     for points, terms, functions, ip_consts, coordinate, conditionals in integral:
-        for loop, (data, entry_vals) in terms.iteritems():
+        for loop, (data, entry_vals) in sorted_by_key(terms):
             t_set, u_weights, u_psi_tables, u_nzcs, basis_consts = data
             new_entry_vals = []
             for entry, val, ops in entry_vals:

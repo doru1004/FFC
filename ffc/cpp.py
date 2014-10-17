@@ -29,6 +29,7 @@ import re, numpy, platform
 
 # FFC modules
 from ffc.log import debug, error
+from six.moves import zip
 
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}
@@ -274,7 +275,7 @@ format.update({
 })
 
 # Code snippets
-from codesnippets import *
+from .codesnippets import *
 
 format.update({
     "compute_jacobian":         lambda cell, r=None: \
@@ -502,7 +503,7 @@ def _generate_switch(variable, cases, default=None, numbers=None):
 
     # Create numbers for switch
     if numbers is None:
-        numbers = range(len(cases))
+        numbers = list(range(len(cases)))
 
     # Create switch
     code = "switch (%s)\n{\n" % variable
@@ -710,7 +711,7 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
         gdim = cell.geometric_dimension()
         direction = normal_direction[tdim][gdim]
 
-        assert (facet_normal[tdim].has_key(gdim)),\
+        assert (gdim in facet_normal[tdim]),\
             "Facet normal not yet implemented for this tdim/gdim combo"
         normal = facet_normal[tdim][gdim]
     else:
@@ -802,7 +803,7 @@ def count_ops(code):
     "Count the number of operations in code (multiply-add pairs)."
     num_add = code.count(" + ") + code.count(" - ")
     num_multiply = code.count("*") + code.count("/")
-    return (num_add + num_multiply) / 2
+    return (num_add + num_multiply) // 2
 
 def set_float_formatting(precision):
     "Set floating point formatting based on precision."

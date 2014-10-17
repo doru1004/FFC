@@ -23,6 +23,7 @@ from instant.output import get_status_output
 import numpy
 import os
 import sys
+from six.moves import xrange as range
 
 tol = 1e-14
 crit_tol = 1e-8
@@ -31,7 +32,7 @@ def xcomb(items, n):
     "Create n-tuples with combinations of items."
     if n==0: yield []
     else:
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for cc in xcomb(items[:i]+items[i+1:],n-1):
                 yield [items[i]]+cc
 
@@ -137,7 +138,7 @@ def compile_gcc_code(ufl_element, code, gcc_fail, log_file):
         log_error("element: %s,\n%s\n" % (str(ufl_element), output), log_file)
         gcc_fail.append(str(ufl_element))
         if error and ("-f" in sys.argv or "--failfast" in sys.argv):
-            print "FAIL"
+            print("FAIL")
             exit(1)
         return error
 

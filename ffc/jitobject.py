@@ -25,7 +25,7 @@ import ufl
 from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from constants import FFC_VERSION
+from .constants import FFC_VERSION
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
@@ -75,7 +75,7 @@ class JITObject:
         ufc_signature = sha1(''.join(getattr(ufc, header)
                                      for header in
                                      (k for k in sorted(vars(ufc).keys())
-                                      if k.endswith("_header")))
+                                      if k.endswith("_header"))).encode('utf-8')
                                       ).hexdigest()
 
         # Build common signature
@@ -85,7 +85,7 @@ class JITObject:
                       ufc_signature]
         string = ";".join(signatures)
 
-        self._signature = sha1(string).hexdigest()
+        self._signature = sha1(string.encode('utf-8')).hexdigest()
 
         # Uncomment for debugging
         #print "form_signature       =", form_signature

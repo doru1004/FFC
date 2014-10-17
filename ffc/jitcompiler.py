@@ -29,24 +29,24 @@ import os, sys
 import instant
 
 # UFL modules
-from ufl.classes import Form, FiniteElementBase, TestFunction
-from ufl.objects import dx
-from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 from ufl.common import istr, tstr
+from ufl import TestFunction, dx
+from ufl.classes import Form, FiniteElementBase
+from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 
 # FFC modules
-from log import log
-from log import info
-from log import warning
-from log import debug
-from log import error
-from log import set_level
-from log import set_prefix
-from log import INFO
-from parameters import default_parameters
-from mixedelement import MixedElement
-from compiler import compile_form
-from jitobject import JITObject
+from .log import log
+from .log import info
+from .log import warning
+from .log import debug
+from .log import error
+from .log import set_level
+from .log import set_prefix
+from .log import INFO
+from .parameters import default_parameters
+from .mixedelement import MixedElement
+from .compiler import compile_form
+from .jitobject import JITObject
 from ffc.quadratureelement import default_quadrature_degree
 
 # Special Options for JIT-compilation

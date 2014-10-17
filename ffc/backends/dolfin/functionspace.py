@@ -19,7 +19,7 @@
 #
 # Last changed: 2012-11-14
 
-from includes import snippets
+from .includes import snippets
 
 __all__ = ["apply_function_space_template", "extract_coefficient_spaces",
            "generate_typedefs"]
@@ -48,7 +48,7 @@ def extract_coefficient_spaces(forms):
 
     # Return coefficient spaces sorted alphabetically by coefficient
     # name
-    names = spaces.keys()
+    names = list(spaces.keys())
     names.sort()
     return [spaces[name] for name in names]
 #-------------------------------------------------------------------------------
@@ -113,33 +113,6 @@ public:
                           std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()), *mesh, constrained_domain)))
   {
     // Do nothing
-  }
-
-  //--- Constructors for restricted function space, 2 different versions ---
-
-  // Create restricted function space (reference version)
-  %(classname)s(const dolfin::Restriction& restriction):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(restriction.mesh()),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
-                                                                                     reference_to_no_delete_pointer(restriction))))
-  {
-    // Do nothing
-  }
-
-  // Create restricted function space (shared pointer version)
-  %(classname)s(std::shared_ptr<const dolfin::Restriction> restriction):
-    dolfin::FunctionSpace(dolfin::reference_to_no_delete_pointer(restriction->mesh()),
-                          std::shared_ptr<const dolfin::FiniteElement>(new dolfin::FiniteElement(std::shared_ptr<ufc::finite_element>(new %(ufc_finite_element_classname)s()))),
-                          std::shared_ptr<const dolfin::DofMap>(new dolfin::DofMap(std::shared_ptr<ufc::dofmap>(new %(ufc_dofmap_classname)s()),
-                                                                                     restriction)))
-  {
-    // Do nothing
-  }
-
-  // Copy constructor
-  ~%(classname)s()
-  {
   }
 
 };

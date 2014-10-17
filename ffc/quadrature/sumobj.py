@@ -16,20 +16,20 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
-#
-# First added:  2009-07-12
-# Last changed: 2011-11-25
+
+from ufl.utils.sorting import sorted_by_key
 
 # FFC modules.
 from ffc.log import error
 from ffc.cpp import format
 
 # FFC quadrature modules.
-from symbolics import create_float
-from symbolics import create_product
-from symbolics import create_sum
-from symbolics import create_fraction
-from expr import Expr
+from .symbolics import create_float
+from .symbolics import create_product
+from .symbolics import create_sum
+from .symbolics import create_fraction
+from .expr import Expr
+import six
 
 #global ind
 #ind = ""
@@ -156,7 +156,7 @@ class Sum(Expr):
         # TODO: Is it necessary to call expand?
         return new_prods[0].expand()
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         "Division by other objects."
         # If division is illegal (this should definitely not happen).
         if other.val == 0.0:
@@ -193,6 +193,8 @@ class Sum(Expr):
         elif len(new_fracs) > 1:
             return create_sum(new_fracs)
         return new_fracs[0]
+
+    __div__ = __truediv__
 
     # Public functions.
     def expand(self):
@@ -254,9 +256,9 @@ class Sum(Expr):
                 sym_groups[v] = v
 
         # Loop groups and add to new variable list.
-        for k,v in sym_groups.iteritems():
+        for k,v in sorted_by_key(sym_groups):
             new_variables.append(v)
-        for k,v in prod_groups.iteritems():
+        for k,v in sorted_by_key(prod_groups):
             new_variables.append(v)
 #        for k,v in frac_groups.iteritems():
 #            new_variables.append(v)
@@ -292,11 +294,11 @@ class Sum(Expr):
             # Get the occurrences.
             d = var.get_var_occurrences()
             # Delete those variables in d0 that are not in d.
-            for k, v in d0.items():
+            for k, v in list(d0.items()):
                 if not k in d:
                     del d0[k]
             # Set the number of occurrences equal to the smallest number.
-            for k, v in d.iteritems():
+            for k, v in sorted_by_key(d):
                 if k in d0:
                     d0[k] = min(d0[k], v)
         return d0
@@ -338,7 +340,7 @@ class Sum(Expr):
         for var in new_sum.vrs:
             # Get dictonary of occurrences and add the variable and the number
             # of occurrences to common dictionary.
-            for k, v in var.get_var_occurrences().iteritems():
+            for k, v in sorted_by_key(var.get_var_occurrences()):
 #                print
 #                print ind + "var: ", var
 #                print ind + "k: ", k
@@ -356,7 +358,7 @@ class Sum(Expr):
         # Determine the maximum reduction for each variable
         # sorted as: {(x*x*y, x*y*z, 2*y):[2, [y]]}.
         terms_reductions = {}
-        for k, v in sorted(common_vars.iteritems()):
+        for k, v in sorted_by_key(common_vars):
 #            print
 #            print ind + "k: ", k
 #            print ind + "v: ", v
@@ -408,25 +410,26 @@ class Sum(Expr):
 #        print "red: self: ", self
         if terms_reductions:
             # Invert dictionary of terms.
-            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in terms_reductions.iteritems()])
+            reductions_terms = dict([((v[0], tuple(v[1])), k) for k, v in six.iteritems(terms_reductions)])
 
             # Create a sorted list of those variables that give the highest
             # reduction.
-            sorted_reduc_var = [k for k, v in reductions_terms.iteritems()]
+            sorted_reduc_var = sorted(six.iterkeys(reductions_terms), reverse=True)
+#            sorted_reduc_var = [k for k, v in six.iteritems(reductions_terms)]
 #            print
 #            print ind + "raw"
 #            for k in sorted_reduc_var:
 #                print ind, k[0], k[1]
-            sorted_reduc_var.sort()
+#            sorted_reduc_var.sort()
 #            sorted_reduc_var.sort(lambda x, y: cmp(x[0], y[0]))
-            sorted_reduc_var.reverse()
+#            sorted_reduc_var.reverse()
 #            print ind + "sorted"
 #            for k in sorted_reduc_var:
 #                print ind, k[0], k[1]
 
             # Create a new dictionary of terms that should be reduced, if some
             # terms overlap, only pick the one which give the highest reduction to
-            # ensure that a*x*x + b*x*x + x*x*y + 2*y -> x*x*(a + b + y) + 2*y NOT 
+            # ensure that a*x*x + b*x*x + x*x*y + 2*y -> x*x*(a + b + y) + 2*y NOT
             # x*x*(a + b) + y*(2 + x*x).
             reduction_vars = {}
             rejections = {}
@@ -445,7 +448,7 @@ class Sum(Expr):
             # Reduce each set of terms with appropriate variables.
             all_reduced_terms = []
             reduced_expressions = []
-            for reduc_var, terms in sorted(reduction_vars.iteritems()):
+            for reduc_var, terms in sorted(six.iteritems(reduction_vars)):
 
                 # Add current terms to list of all variables that have been reduced.
                 all_reduced_terms += list(terms)
@@ -536,7 +539,7 @@ class Sum(Expr):
 
         # Create the return value.
         returns = []
-        for f, r in found.iteritems():
+        for f, r in sorted_by_key(found):
             if len(r) > 1:
                 # Use expand to group expressions.
 #                r = create_sum(r).expand()
@@ -544,12 +547,12 @@ class Sum(Expr):
             elif r:
                 r = r.pop()
             returns.append((f, r))
-        return returns
+        return sorted(returns)
 
 def _overlap(l, d):
     "Check if a member in list l is in the value (list) of dictionary d."
     for m in l:
-        for k, v in d.iteritems():
+        for k, v in sorted_by_key(d):
             if m in v:
                 return True
     return False
@@ -575,7 +578,7 @@ def _group_fractions(expr):
         return expr
 
     # Loop all fractions and create new ones using an appropriate numerator.
-    for k, v in sorted(fracs.iteritems()):
+    for k, v in sorted(six.iteritems(fracs)):
         if v[0] > 1:
             # TODO: Is it possible to avoid expanding the Sum?
             # I think we have to because x/a + 2*x/a -> 3*x/a.
@@ -588,8 +591,7 @@ def _group_fractions(expr):
         return create_sum(not_frac)
     return not_frac[0]
 
-from floatvalue import FloatValue
-from symbol     import Symbol
-from product    import Product
-from fraction   import Fraction
-
+from .floatvalue import FloatValue
+from .symbol     import Symbol
+from .product    import Product
+from .fraction   import Fraction
