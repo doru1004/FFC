@@ -35,6 +35,11 @@ from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
 from ufl.algorithms import Transformer
+from ufl.algorithms import replace
+from ufl.algorithms.change_to_reference import (change_to_reference_value,
+                                                change_to_reference_grad,
+                                                compute_integrand_scaling_factor,
+                                                change_to_reference_geometry)
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
@@ -768,6 +773,28 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     def generate_terms(self, integrand, integral_type):
         "Generate terms for code generation."
+
+        ### BENDY REPLACEMENT GOES HERE ###
+        # Replace coefficients so they all have proper element and domain for what's to come
+        integrand = replace(integrand, self._function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
+
+        # Change from physical gradients to reference gradients
+        integrand = change_to_reference_grad(integrand)  # TODO: Make this optional depending on backend
+
+        # Apply mappings (identity/Piola)
+        integrand = change_to_reference_value(integrand)
+
+        # Compute and apply integration scaling factor
+        scale = compute_integrand_scaling_factor(integrand.domain(), integral_type)
+        integrand = integrand * scale
+
+        # Change geometric representation to lower level quantities
+        if integral_type in ("custom", "point"):
+            physical_coordinates_known = True
+        else:
+            physical_coordinates_known = False
+        integrand = change_to_reference_geometry(integrand, physical_coordinates_known, self._function_replace_map)
+        ### END BENDY ###
 
         # Set domain type
         self.integral_type = integral_type
