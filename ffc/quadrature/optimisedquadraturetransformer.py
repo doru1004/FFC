@@ -449,8 +449,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def cell_orientation(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
-    def quadrature_weight(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def quadrature_weight(self, o):
+        # I don't think this should exist at all, but I left it in
+        # so as not to break upstream compatibility...
+        return {(): create_float(1.0)}
 
     # -------------------------------------------------------------------------
 
