@@ -683,14 +683,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             loop_index = [format["integration points"]]
         weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
-        if integral_type in ("vertex", "custom"):
-            trans_set = set()
-            value = create_product([val, weight])
-        else:
-            f_scale_factor = format["scale factor"]
-            trans_set = set([f_scale_factor])
-            value = create_product([val, weight,
-                                    create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
+        trans_set = set()
+        value = create_product([val, weight])
 
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).

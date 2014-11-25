@@ -154,8 +154,6 @@ def _tabulate_tensor(ir, parameters):
         if oriented and tdim != gdim:
             # NEED TO THINK ABOUT THIS FOR EXTRUSION
             jacobi_code += format["orientation"][p_format](tdim, gdim)
-        jacobi_code += "\n"
-        jacobi_code += format["scale factor snippet"][p_format]
 
         # Generate code for cell volume and circumradius -- note that the
         # former will be incorrect on extruded meshes by a constant factor.
@@ -605,7 +603,6 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     p_format        = parameters["format"]
     f_comment       = format["comment"]
     f_mul           = format["mul"]
-    f_scale_factor  = format["scale factor"]
     f_iadd          = format["iadd"]
     f_add           = format["add"]
     f_A             = format["element tensor"][p_format]
