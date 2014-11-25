@@ -44,7 +44,7 @@ from ufl.algorithms.printing import tree_format
 
 # FFC modules.
 from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import format
+from ffc.cpp import format, _flatten
 from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
 from ffc.quadrature.quadratureutils import create_permutations
 
@@ -322,8 +322,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def cell_facet_origin(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
-    def jacobian(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def jacobian(self, o, *args):
+        f_transform = format["transform"]
+        i, j = self._components[-1]
+        return{(): create_symbol(f_transform("J", i, j, self.gdim, self.tdim, self.restriction), IP, loop_index=(_flatten(i, j, self.gdim, self.tdim),), iden="J%s" % _choose_map(self.restriction))}
 
     def jacobian_determinant(self, o): # FIXME
         error("This object should be implemented by the child class.")
