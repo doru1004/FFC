@@ -448,9 +448,6 @@ class QuadratureTransformerBase(Transformer):
     def coefficient(self, o):
         #print("\nVisiting Coefficient: " + repr(o))
 
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
         # Splat restriction for Real coefficients (it has no meaning anyway)
         if self.restriction and o.element().family() == "Real":
             self.restriction = None
