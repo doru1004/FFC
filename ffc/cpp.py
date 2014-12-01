@@ -596,16 +596,16 @@ def _matrix_index(i, j, range_j):
 
 def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg):
     """Generate a name for the psi table of the form:
-    FE#_f#_v#_C#_D###_A#, where '#' will be an integer value.
+    FE#_f_v_C#_D###_A#, where '#' will be an integer value.
 
     FE  - is a simple counter to distinguish the various bases, it will be
           assigned in an arbitrary fashion.
 
-    f   - denotes facets if applicable, range(element.num_facets()).
+    f   - denotes facets if applicable.
 
     fh, fv - denotes horiz_facets and vert_facets
 
-    v   - denotes vertices if applicable, range(num_vertices).
+    v   - denotes vertices if applicable.
 
     C   - is the component number if any (flattened in the case of tensor valued functions)
 
@@ -618,16 +618,13 @@ def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg
     name = "FE%d" % counter
 
     if entity_type == "facet":
-        if entity is None:
-            name += "_f0"
-        else:
-            name += "_f%d" % entity
+        name += "_f"
     elif entity_type == "horiz_facet":
-        name += "_fh%d" % entity
+        name += "_fh"
     elif entity_type == "vert_facet":
-        name += "_fv%d" % entity
+        name += "_fv"
     elif entity_type == "vertex":
-        name += "_v%d" % entity
+        name += "_v"
 
     if component != () and component != []:
         name += "_C%d" % component

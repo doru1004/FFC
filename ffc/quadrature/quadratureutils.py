@@ -24,6 +24,7 @@
 # Modified by Anders Logg 2014
 
 # Python modules.
+import collections
 import numpy
 
 # FFC modules.
@@ -96,6 +97,8 @@ def flatten_psi_tables(tables, entity_type):
 
             # There's a set of tables for non-averaged and averaged (averaged only occurs with num_points == 1)
             for avg, entity_tables in sorted_items(avg_tables):
+                name_entity_tables = collections.defaultdict(dict)
+                is_mixed = entity_tables._is_mixed
 
                 # There's a set of tables for each entity number (only 1 for the cell, >1 for facets and vertices)
                 for entity, derivs_tables in sorted_items(entity_tables):
@@ -118,7 +121,7 @@ def flatten_psi_tables(tables, entity_type):
                         for component, psi_table in component_tables:
 
                             # Generate the table name.
-                            name = generate_psi_name(counter, entity_type, entity, component, derivs, avg)
+                            name = generate_psi_name(counter, entity_type, None, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
                             #if not (num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points)):
@@ -127,10 +130,31 @@ def flatten_psi_tables(tables, entity_type):
                             if name in flat_tables:
                                 error("Table name is not unique, something is wrong:\n  name = %s\n  table = %s\n" % (name, flat_tables))
 
-                            # Store table with unique name
-                            psi_table = psi_table.view(EnrichedNumpyArray)
-                            psi_table.track_zeros(entity_tables._is_mixed)
-                            flat_tables[name] = psi_table
+                            # Store table with name and entity
+                            name_entity_tables[name][entity] = psi_table
+
+                # Here we merge tables with the same name, but different entity values.
+                #
+                # Using the same identifier name again (entity_tables) :-/
+                for name, entity_tables in name_entity_tables.iteritems():
+                    entity_count = len(entity_tables)
+                    if entity_count == 0:
+                        continue
+                    elif entity_count == 1:
+                        psi_table = entity_tables.values()[0]
+                    else:
+                        assert sorted(entity_tables.keys()) == range(entity_count)
+                        shape = entity_tables[0].shape
+                        for i in xrange(1, entity_count):
+                            assert entity_tables[i].shape == shape
+
+                        psi_table = numpy.zeros((entity_count, shape[0], shape[1]), dtype=float)
+                        for i in xrange(entity_count):
+                            psi_table[i, :, :] = entity_tables[i]
+
+                    psi_table = psi_table.view(EnrichedNumpyArray)
+                    psi_table.track_zeros(is_mixed)
+                    flat_tables[name] = psi_table
 
             # Increase unique numpoints*element counter
             counter += 1
@@ -154,10 +178,7 @@ def unique_psi_tables(tables, eliminate_zeros):
     for name in tables:
         # Get values.
         vals = tables[name]
-        for r in range(numpy.shape(vals)[0]):
-            for c in range(numpy.shape(vals)[1]):
-                if abs(vals[r][c]) < format_epsilon:
-                    vals[r][c] = 0
+        vals[abs(vals) < format_epsilon] = 0
         tables[name] = vals
 
     # Extract the column numbers that are non-zero.
