@@ -486,13 +486,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         code[ma] = []
                     if basis is not None:
                         # Add transformation if needed.
-                        code[ma].append(self.__apply_transform(ba, derivatives, multi, tdim, gdim))
+                        code[ma].append(ba)
             else:
                 if not mapping in code:
                     code[mapping] = []
                 if basis is not None:
                     # Add transformation if needed.
-                    code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
+                    code[mapping].append(basis)
 
         # Handle non-affine mappings.
         else:
@@ -510,7 +510,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
             if basis is not None:
                 # Add transformation if needed.
-                code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
+                code[mapping].append(basis)
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -545,7 +545,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
             if function_name:
                 # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
+                code.append(function_name)
 
         # Handle non-affine mappings.
         else:
@@ -559,7 +559,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
             if function_name:
                 # Add transformation if needed.
-                code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
+                code.append(function_name)
 
         if not code:
             return create_float(0.0)
@@ -570,18 +570,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return code
 
-    # -------------------------------------------------------------------------
-    # Helper functions for Argument and Coefficient
-    # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, tdim, gdim):
-        "Apply transformation (from derivatives) to basis or function."
-        f_transform     = format["transform"]
-
-        # Add transformation if needed.
-        transforms = []
-
-        transforms.append(function)
-        return create_product(transforms)
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
