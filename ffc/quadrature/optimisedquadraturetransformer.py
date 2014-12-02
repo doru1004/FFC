@@ -512,20 +512,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         code[mapping] = []
 
                     if basis is not None:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
-                            basis = create_product([dxdX, basis])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), \
-                                        create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
-                            basis = create_product([detJ, dXdx, basis])
-                        else:
-                            error("Transformation is not supported: " + repr(transformation))
-
                         # Add transformation if needed.
                         code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
 
@@ -578,19 +564,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                 for c in range(tdim):
                     function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
                     if function_name:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
-                            function_name = create_product([dxdX, function_name])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
-                            function_name = create_product([detJ, dXdx, function_name])
-                        else:
-                            error("Transformation is not supported: ", repr(transformation))
-
                         # Add transformation if needed.
                         code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
 
