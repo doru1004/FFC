@@ -471,43 +471,28 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Reset code
         code = {}
 
-        # Affine mapping
-        if transformation == "affine":
-            # Loop derivatives.
-            deriv = [derivatives.count(i) for i in range(tdim)]
-            if not any(deriv):
-                deriv = []
-
-            # Create mapping and basis name.
-            mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-            if isinstance(mapping, list):
-                for ma, ba in zip(mapping, basis):
-                    if not ma in code:
-                        code[ma] = []
-                    if basis is not None:
-                        # Add transformation if needed.
-                        code[ma].append(ba)
-            else:
-                if not mapping in code:
-                    code[mapping] = []
-                if basis is not None:
-                    # Add transformation if needed.
-                    code[mapping].append(basis)
-
-        # Handle non-affine mappings.
-        else:
+        if transformation != "affine":
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives.
-            deriv = [derivatives.count(i) for i in range(tdim)]
-            if not any(deriv):
-                deriv = []
+        # Get derivatives.
+        deriv = [derivatives.count(i) for i in range(tdim)]
+        if not any(deriv):
+            deriv = []
 
-            # Create mapping and basis name.
-            mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+        # Create mapping and basis name.
+        mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+
+        # VFS-on-interior-facets case
+        if isinstance(mapping, list):
+            for ma, ba in zip(mapping, basis):
+                if not ma in code:
+                    code[ma] = []
+                if basis is not None:
+                    # Add transformation if needed.
+                    code[ma].append(ba)
+        else:
             if not mapping in code:
                 code[mapping] = []
-
             if basis is not None:
                 # Add transformation if needed.
                 code[mapping].append(basis)
@@ -534,32 +519,19 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Reset code
         code = []
 
-        # Handle affine mappings.
-        if transformation == "affine":
-            # Loop derivatives.
-            deriv = [derivatives.count(i) for i in range(tdim)]
-            if not any(deriv):
-                deriv = []
-
-            # Create function name.
-            function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
-            if function_name:
-                # Add transformation if needed.
-                code.append(function_name)
-
-        # Handle non-affine mappings.
-        else:
+        if transformation != "affine":
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives.
-            deriv = [derivatives.count(i) for i in range(tdim)]
-            if not any(deriv):
-                deriv = []
+        # Get derivatives.
+        deriv = [derivatives.count(i) for i in range(tdim)]
+        if not any(deriv):
+            deriv = []
 
-            function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
-            if function_name:
-                # Add transformation if needed.
-                code.append(function_name)
+        # Create function name.
+        function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
+
+        if function_name:
+            code.append(function_name)
 
         if not code:
             return create_float(0.0)
