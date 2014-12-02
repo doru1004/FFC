@@ -167,17 +167,11 @@ def _tabulate_tensor(ir, parameters):
         if p_format == 'pyop2':
             common += ["unsigned int facet = *facet_p;\n"]
 
-        # Update transformer with facets and generate code + set of used geometry terms.
+        # Generate tensor code for facets + set of used geometry terms.
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
-        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
-        tensor_code += "\n"
-        tensor_code += nest_ir.gencode()
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])
-
-        # Generate tensor code.
-        nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -244,17 +238,11 @@ def _tabulate_tensor(ir, parameters):
             # Note that the following line is unsafe for isoparametric elements.
             common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
-        # Update transformer with facets and generate code + set of used geometry terms.
+        # Generate tensor code for facets + set of used geometry terms.
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
-        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
-        tensor_code += "\n"
-        tensor_code += nest_ir.gencode()
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])
-
-        # Generate tensor code.
-        nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -327,9 +315,6 @@ def _tabulate_tensor(ir, parameters):
     elif integral_type == "point":
         # Update transformer with vertices and generate code + set of used geometry terms.
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
-        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
-        tensor_code += "\n"
-        tensor_code += c
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])
