@@ -255,7 +255,7 @@ format.update({
     "function value":       lambda i: "F%d" % i,
     "nonzero columns":      lambda i: "nzc%d" % i,
     "weight":               lambda i: "W" if i is None else "W%d" % (i),
-    "psi name":             lambda c, et, e, co, d, a: _generate_psi_name(c, et, e, co, d, a),
+    "psi name":             lambda c, et, co, d, a: _generate_psi_name(c, et, co, d, a),
     # both
     "free indices":         ["r","s","t","u"],
     "matrix index":         lambda i, j, range_j: _matrix_index(i, str(j), str(range_j)),
@@ -594,7 +594,7 @@ def _matrix_index(i, j, range_j):
         access = format["add"]([irj, j])
     return access
 
-def _generate_psi_name(counter, entity_type, entity, component, derivatives, avg):
+def _generate_psi_name(counter, entity_type, component, derivatives, avg):
     """Generate a name for the psi table of the form:
     FE#_f_v_C#_D###_A#, where '#' will be an integer value.
 

@@ -121,7 +121,7 @@ def flatten_psi_tables(tables, entity_type):
                         for component, psi_table in component_tables:
 
                             # Generate the table name.
-                            name = generate_psi_name(counter, entity_type, None, component, derivs, avg)
+                            name = generate_psi_name(counter, entity_type, component, derivs, avg)
 
                             # Verify shape of basis (can be omitted for speed if needed).
                             #if not (num_points is None or (len(numpy.shape(psi_table)) == 2 and numpy.shape(psi_table)[0] == num_points)):
