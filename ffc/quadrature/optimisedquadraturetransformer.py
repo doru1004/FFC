@@ -460,7 +460,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return self.visit(o.ufl_operands[0])
 
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
-                        local_offset, ffc_element, transformation, multiindices,
+                        local_offset, ffc_element, transformation,
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
 
@@ -473,47 +473,45 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Affine mapping
         if transformation == "affine":
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+            # Loop derivatives.
+            deriv = [derivatives.count(i) for i in range(tdim)]
+            if not any(deriv):
+                deriv = []
 
-                # Create mapping and basis name.
-                mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-                if isinstance(mapping, list):
-                    for ma, ba in zip(mapping, basis):
-                        if not ma in code:
-                            code[ma] = []
-                        if basis is not None:
-                            # Add transformation if needed.
-                            code[ma].append(self.__apply_transform(ba, derivatives, multi, tdim, gdim))
-                else:
-                    if not mapping in code:
-                        code[mapping] = []
+            # Create mapping and basis name.
+            mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+            if isinstance(mapping, list):
+                for ma, ba in zip(mapping, basis):
+                    if not ma in code:
+                        code[ma] = []
                     if basis is not None:
                         # Add transformation if needed.
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
+                        code[ma].append(self.__apply_transform(ba, derivatives, multi, tdim, gdim))
+            else:
+                if not mapping in code:
+                    code[mapping] = []
+                if basis is not None:
+                    # Add transformation if needed.
+                    code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
 
         # Handle non-affine mappings.
         else:
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+            # Loop derivatives.
+            deriv = [derivatives.count(i) for i in range(tdim)]
+            if not any(deriv):
+                deriv = []
 
-                for c in range(tdim):
-                    # Create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                    if not mapping in code:
-                        code[mapping] = []
+            for c in range(tdim):
+                # Create mapping and basis name.
+                mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
+                if not mapping in code:
+                    code[mapping] = []
 
-                    if basis is not None:
-                        # Add transformation if needed.
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
+                if basis is not None:
+                    # Add transformation if needed.
+                    code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -525,7 +523,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return code
 
     def create_function(self, ufl_function, derivatives, component, local_comp,
-                       local_offset, ffc_element, is_quad_element, transformation, multiindices,
+                       local_offset, ffc_element, is_quad_element, transformation,
                        tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
         ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
@@ -539,33 +537,31 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Handle affine mappings.
         if transformation == "affine":
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+            # Loop derivatives.
+            deriv = [derivatives.count(i) for i in range(tdim)]
+            if not any(deriv):
+                deriv = []
 
-                # Create function name.
-                function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                if function_name:
-                    # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+            # Create function name.
+            function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
+            if function_name:
+                # Add transformation if needed.
+                code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
 
         # Handle non-affine mappings.
         else:
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+            # Loop derivatives.
+            deriv = [derivatives.count(i) for i in range(tdim)]
+            if not any(deriv):
+                deriv = []
 
-                for c in range(tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                    if function_name:
-                        # Add transformation if needed.
-                        code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+            for c in range(tdim):
+                function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
+                if function_name:
+                    # Add transformation if needed.
+                    code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
 
         if not code:
             return create_float(0.0)
@@ -579,7 +575,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     # -------------------------------------------------------------------------
     # Helper functions for Argument and Coefficient
     # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi, tdim, gdim):
+    def __apply_transform(self, function, derivatives, tdim, gdim):
         "Apply transformation (from derivatives) to basis or function."
         f_transform     = format["transform"]
 
