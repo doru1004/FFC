@@ -459,9 +459,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def reference_value(self, o):
         return self.visit(o.ufl_operands[0])
 
-    def create_argument(self, ufl_argument, derivatives, component, local_comp,
-                        local_offset, ffc_element, transformation,
-                        tdim, gdim, avg):
+    def create_argument(self, ufl_argument, derivatives, component,
+                        ffc_element, transformation, tdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
 
         # Reset code
@@ -502,9 +501,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return code
 
-    def create_function(self, ufl_function, derivatives, component, local_comp,
-                       local_offset, ffc_element, is_quad_element, transformation,
-                       tdim, gdim, avg):
+    def create_function(self, ufl_function, derivatives, component,
+                       ffc_element, is_quad_element, transformation, tdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
         ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
 

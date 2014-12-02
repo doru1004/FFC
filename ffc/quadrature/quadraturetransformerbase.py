@@ -361,14 +361,13 @@ class QuadratureTransformerBase(Transformer):
         # hence we must take this route
         if basis is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate basis
-            (component, local_elem, local_comp, local_offset,
-             ffc_element, transformation) = self._get_auxiliary_variables(o, components, derivatives)
+            (component, local_elem,
+             ffc_element, transformation) = self._get_auxiliary_variables(o, components)
 
             # Create mapping and code for basis function and add to dict.
-            basis = self.create_argument(o, derivatives, component, local_comp,
-                                         local_offset, ffc_element,
-                                         transformation,
-                                         tdim, self.gdim, self.avg)
+            basis = self.create_argument(o, derivatives, component,
+                                         ffc_element, transformation,
+                                         tdim, self.avg)
             self.argument_cache[key] = basis
 
         return basis
@@ -464,8 +463,8 @@ class QuadratureTransformerBase(Transformer):
         # hence we must take this route
         if function_code is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate function
-            (component, local_elem, local_comp, local_offset,
-             ffc_element, transformation) = self._get_auxiliary_variables(o, components, derivatives)
+            (component, local_elem,
+             ffc_element, transformation) = self._get_auxiliary_variables(o, components)
 
             # Check that we don't take derivatives of QuadratureElements.
             is_quad_element = local_elem.family() == "Quadrature"
@@ -476,8 +475,8 @@ class QuadratureTransformerBase(Transformer):
 
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
-                                                      local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, tdim, self.gdim, self.avg)}
+                                                      ffc_element, is_quad_element,
+                                                      transformation, tdim, self.avg)}
 
             self.function_cache[key] = function_code
 
@@ -919,8 +918,7 @@ class QuadratureTransformerBase(Transformer):
 
     def _get_auxiliary_variables(self,
                                  ufl_function,
-                                 component,
-                                 derivatives):
+                                 component):
         "Helper function for both Coefficient and Argument."
 
         # Get UFL element.
@@ -941,12 +939,6 @@ class QuadratureTransformerBase(Transformer):
             # Map physical components into reference components
             component, dummy = transform_component(component, 0, ufl_element)
 
-            # Compute the local offset (needed for non-affine mappings).
-            local_offset = component - local_comp
-        else:
-            # Compute the local offset (needed for non-affine mappings).
-            local_offset = 0
-
         # Create FFC element.
         ffc_element = create_element(ufl_element)
 
@@ -955,7 +947,7 @@ class QuadratureTransformerBase(Transformer):
         transformation = ffc_sub_element.mapping()[0]
         ffc_assert(all(transformation == mapping for mapping in ffc_sub_element.mapping()),
                    "Assuming subelement mappings are equal but they differ.")
-        return (component, local_elem, local_comp, local_offset, ffc_element, transformation)
+        return (component, local_elem, ffc_element, transformation)
 
     def _get_current_entity(self):
         if self.entity_type == "cell":
