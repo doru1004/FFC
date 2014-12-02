@@ -202,19 +202,9 @@ def _tabulate_tensor(ir, parameters):
         else:
             raise RuntimeError("Invalid integral_type")
 
-    # If we have an extruded horizontal facet, we don't want a switch
-    # statement to be generated. Ideally, we would stop unnecessary
-    # bits of code from being generated much earlier on, but this
-    # is a start.
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
-        if integral_type == "exterior_facet_bottom":
-            nest_ir, ops = _generate_element_tensor(integrals[0], sets, opt_par, parameters)
-            operations.append([ops])
-        elif integral_type == "exterior_facet_top":
-            nest_ir, ops = _generate_element_tensor(integrals[1], sets, opt_par, parameters)
-            operations.append([ops])
-        else:
-            raise RuntimeError("Invalid integral_type")
+        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
+        operations.append([ops])
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
@@ -280,17 +270,12 @@ def _tabulate_tensor(ir, parameters):
         else:
             raise RuntimeError("Invalid integral_type")
 
-    # As before, all interior horizontal facets are identical, so
-    # don't write out a double-switch statement
     elif integral_type == "interior_facet_horiz":
         common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
         # Note that the following line is unsafe for isoparametric elements.
         common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
-        # Generate the code we need, corresponding to facet 1 [top] of
-        # the lower element, and facet 0 [bottom] of the top element
-        nest_ir, ops = _generate_element_tensor(integrals[1][0], sets, \
-                                                opt_par, parameters)
+        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])

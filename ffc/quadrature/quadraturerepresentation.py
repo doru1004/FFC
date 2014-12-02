@@ -172,13 +172,17 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
         transformer.update_facets(format["facet"](None), None)
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
+    elif integral_type == "exterior_facet_bottom":
         # Compute transformed integrals.
-        terms = [None]*num_facets
-        for i in range(num_facets):
-            info("Transforming exterior facet integral %d" % i)
-            transformer.update_facets(i, None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+        info("Transforming exterior bottom facet integral")
+        transformer.update_facets(0, None)  # 0 == bottom
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
+
+    elif integral_type == "exterior_facet_top":
+        # Compute transformed integrals.
+        info("Transforming exterior top facet integral")
+        transformer.update_facets(1, None)  # 1 == top
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type in ("interior_facet", "interior_facet_vert"):
         # Compute transformed integrals.
@@ -188,12 +192,11 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type == "interior_facet_horiz":
         # Compute transformed integrals.
-        terms = [[None]*num_facets for i in range(num_facets)]
-        for i in range(num_facets):
-            for j in range(num_facets):
-                info("Transforming interior facet integral (%d, %d)" % (i, j))
-                transformer.update_facets(i, j)
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
+        info("Transforming interior horizontal facet integral")
+        # Generate the code we need, corresponding to facet 1 [top] of
+        # the lower element, and facet 0 [bottom] of the top element
+        transformer.update_facets(1, 0)
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type == "point":
         # Compute transformed integrals.
