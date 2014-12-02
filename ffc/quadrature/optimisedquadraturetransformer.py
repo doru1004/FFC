@@ -503,15 +503,14 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             if not any(deriv):
                 deriv = []
 
-            for c in range(tdim):
-                # Create mapping and basis name.
-                mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                if not mapping in code:
-                    code[mapping] = []
+            # Create mapping and basis name.
+            mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
+            if not mapping in code:
+                code[mapping] = []
 
-                if basis is not None:
-                    # Add transformation if needed.
-                    code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
+            if basis is not None:
+                # Add transformation if needed.
+                code[mapping].append(self.__apply_transform(basis, derivatives, tdim, gdim))
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -557,11 +556,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             if not any(deriv):
                 deriv = []
 
-            for c in range(tdim):
-                function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                if function_name:
-                    # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
+            function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
+            if function_name:
+                # Add transformation if needed.
+                code.append(self.__apply_transform(function_name, derivatives, tdim, gdim))
 
         if not code:
             return create_float(0.0)
