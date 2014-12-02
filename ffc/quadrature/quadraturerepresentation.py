@@ -28,6 +28,7 @@ from ufl.classes import Form, Integral
 from ufl.sorting import sorted_expr_sum
 
 # FFC modules
+from ffc.cpp import format
 from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
 from ffc.fiatinterface import create_element
@@ -165,7 +166,15 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
         transformer.update_cell()
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type in ("exterior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert"):
+    elif integral_type in ("exterior_facet", "exterior_facet_vert"):
+        # Compute transformed integrals.
+        terms = [None]*num_facets
+        for i in range(num_facets):
+            info("Transforming exterior facet integral %d" % i)
+            transformer.update_facets(format["facet"](None), None)
+            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+
+    elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
         # Compute transformed integrals.
         terms = [None]*num_facets
         for i in range(num_facets):
@@ -173,7 +182,16 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
             transformer.update_facets(i, None)
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type in ("interior_facet", "interior_facet_horiz", "interior_facet_vert"):
+    elif integral_type in ("interior_facet", "interior_facet_vert"):
+        # Compute transformed integrals.
+        terms = [[None]*num_facets for i in range(num_facets)]
+        for i in range(num_facets):
+            for j in range(num_facets):
+                info("Transforming interior facet integral (%d, %d)" % (i, j))
+                transformer.update_facets(format["facet"]("+"), format["facet"]("-"))
+                terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
+
+    elif integral_type == "interior_facet_horiz":
         # Compute transformed integrals.
         terms = [[None]*num_facets for i in range(num_facets)]
         for i in range(num_facets):
@@ -187,7 +205,7 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
         terms = [None]*num_vertices
         for i in range(num_vertices):
             info("Transforming point integral (%d)" % i)
-            transformer.update_vertex(i)
+            transformer.update_vertex(format["vertex"])
             terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type == "custom":
