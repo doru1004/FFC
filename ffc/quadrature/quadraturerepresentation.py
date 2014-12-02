@@ -168,11 +168,9 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("exterior_facet", "exterior_facet_vert"):
         # Compute transformed integrals.
-        terms = [None]*num_facets
-        for i in range(num_facets):
-            info("Transforming exterior facet integral %d" % i)
-            transformer.update_facets(format["facet"](None), None)
-            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+        info("Transforming exterior facet integral")
+        transformer.update_facets(format["facet"](None), None)
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
         # Compute transformed integrals.
@@ -184,12 +182,9 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type in ("interior_facet", "interior_facet_vert"):
         # Compute transformed integrals.
-        terms = [[None]*num_facets for i in range(num_facets)]
-        for i in range(num_facets):
-            for j in range(num_facets):
-                info("Transforming interior facet integral (%d, %d)" % (i, j))
-                transformer.update_facets(format["facet"]("+"), format["facet"]("-"))
-                terms[i][j] = _transform_integrals(transformer, integrals_dict, integral_type)
+        info("Transforming interior facet integral")
+        transformer.update_facets(format["facet"]("+"), format["facet"]("-"))
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type == "interior_facet_horiz":
         # Compute transformed integrals.
@@ -202,11 +197,9 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
 
     elif integral_type == "point":
         # Compute transformed integrals.
-        terms = [None]*num_vertices
-        for i in range(num_vertices):
-            info("Transforming point integral (%d)" % i)
-            transformer.update_vertex(format["vertex"])
-            terms[i] = _transform_integrals(transformer, integrals_dict, integral_type)
+        info("Transforming point integral (%d)" % i)
+        transformer.update_vertex(format["vertex"])
+        terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
     elif integral_type == "custom":
 

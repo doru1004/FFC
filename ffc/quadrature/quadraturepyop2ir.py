@@ -95,7 +95,6 @@ def _tabulate_tensor(ir, parameters):
     f_comment       = format["comment"]
     f_G             = format["geometry constant"]
     f_const_double  = format["assign"]
-    f_switch        = format["switch"]
     f_float         = format["float"]
     f_assign        = format["assign"]
     f_A             = format["element tensor"][p_format]
@@ -104,7 +103,6 @@ def _tabulate_tensor(ir, parameters):
     f_k             = format["second free index"]
     f_loop          = format["generate loop"]
     f_int           = format["int"]
-    f_facet         = format["facet"]
     f_weight        = format["weight"]
 
     # Get data.
@@ -169,19 +167,16 @@ def _tabulate_tensor(ir, parameters):
         if p_format == 'pyop2':
             common += ["unsigned int facet = *facet_p;\n"]
 
-        cases = [None for i in range(num_facets)]
-        for i in range(num_facets):
-            # Update transformer with facets and generate case code + set of used geometry terms.
-            nest_ir, ops = _generate_element_tensor(integrals[i], sets, opt_par, parameters)
-            case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
-            case += [nest_ir.gencode()]
-            cases[i] = "\n".join(case)
+        # Update transformer with facets and generate code + set of used geometry terms.
+        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
+        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
+        tensor_code += "\n"
+        tensor_code += nest_ir.gencode()
 
-            # Save number of operations (for printing info on operations).
-            operations.append([i, ops])
+        # Save number of operations (for printing info on operations).
+        operations.append([ops])
 
-        # Generate tensor code for all cases using a switch.
-        tensor_code = f_switch(f_facet(None), cases)
+        # Generate tensor code.
         nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
@@ -249,21 +244,16 @@ def _tabulate_tensor(ir, parameters):
             # Note that the following line is unsafe for isoparametric elements.
             common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
-        cases = [[None for j in range(num_facets)] for i in range(num_facets)]
-        for i in range(num_facets):
-            for j in range(num_facets):
-                # Update transformer with facets and generate case code + set of used geometry terms.
-                nest_ir, ops = _generate_element_tensor(integrals[i][j], sets, \
-                                                        opt_par, parameters)
-                case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
-                case += [nest_ir.gencode()]
-                cases[i][j] = "\n".join(case)
+        # Update transformer with facets and generate code + set of used geometry terms.
+        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
+        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
+        tensor_code += "\n"
+        tensor_code += nest_ir.gencode()
 
-                # Save number of operations (for printing info on operations).
-                operations.append([i, j, ops])
+        # Save number of operations (for printing info on operations).
+        operations.append([ops])
 
-        # Generate tensor code for all cases using a switch.
-        tensor_code = f_switch(f_facet("+"), [f_switch(f_facet("-"), cases[i]) for i in range(len(cases))])
+        # Generate tensor code.
         nest_ir = pyop2.FlatBlock(tensor_code)
 
         # Generate code for basic geometric quantities
@@ -335,21 +325,14 @@ def _tabulate_tensor(ir, parameters):
         # THE REST IS NOT IMPLEMENTED YET
 
     elif integral_type == "point":
-        cases = [None for i in range(num_vertices)]
-        for i in range(num_vertices):
-            # Update transformer with vertices and generate case code +
-            # set of used geometry terms.
-            nest_ir, ops = _generate_element_tensor(integrals[i],
-                                                    sets, opt_par, parameters)
-            case = [f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)]
-            case += c
-            cases[i] = "\n".join(case)
+        # Update transformer with vertices and generate code + set of used geometry terms.
+        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
+        tensor_code = f_comment("Total number of operations to compute element tensor (from this point): %d" % ops)
+        tensor_code += "\n"
+        tensor_code += c
 
-            # Save number of operations (for printing info on operations).
-            operations.append([i, ops])
-
-        # Generate tensor code for all cases using a switch.
-        tensor_code = f_switch(format["vertex"], cases)
+        # Save number of operations (for printing info on operations).
+        operations.append([ops])
 
         # Generate code for basic geometric quantities
         # @@@: Jacobian snippet
