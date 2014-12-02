@@ -464,10 +464,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                         tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
 
-        # Prefetch formats to speed up code generation.
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
-
         # Reset code
         code = {}
 
@@ -485,13 +481,13 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # VFS-on-interior-facets case
         if isinstance(mapping, list):
             for ma, ba in zip(mapping, basis):
-                if not ma in code:
+                if ma not in code:
                     code[ma] = []
                 if basis is not None:
                     # Add transformation if needed.
                     code[ma].append(ba)
         else:
-            if not mapping in code:
+            if mapping not in code:
                 code[mapping] = []
             if basis is not None:
                 # Add transformation if needed.
@@ -511,10 +507,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
                        tdim, gdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
         ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
-
-        # Prefetch formats to speed up code generation.
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
 
         # Reset code
         code = []
