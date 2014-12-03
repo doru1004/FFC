@@ -1024,6 +1024,16 @@ class QuadratureTransformerBase(Transformer):
         if self.restriction in ("+", "-"):
             space_dim *= 2
 
+        # Get current cell entity, with current restriction considered
+        entity = self._get_current_entity()
+        name = generate_psi_name(element_counter, self.entity_type, component, deriv, avg)
+        name, non_zeros, zeros, ones = self.name_map[name]
+        # don't overwrite this if we set it already
+        if not self.mixed_elt_int_facet_mode:
+            loop_index_range = shape(self.unique_tables[name])[-1]
+
+        index_func = _make_index_function(shape(self.unique_tables[name]), entity, f_ip)
+
         # Create basis access, we never need to map the entry in the basis table
         # since we will either loop the entire space dimension or the non-zeros.
         # NOT TRUE FOR MIXED-ELT-INT-FACET MODE
@@ -1033,25 +1043,17 @@ class QuadratureTransformerBase(Transformer):
             for e in ffc_element._elements:
                 index_calc.append(format["add"]([loop_index, str(cur)]))
                 cur += e.space_dimension()
-            basis_access = [format["component"]("", [f_ip, bi]) for bi in index_calc]
+            basis_access = [format["component"]("", index_func(bi)) for bi in index_calc]
         else:
             if self.points == 1:
                 f_ip = "0"
             index_calc = loop_index
             if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
                 # Special case access for custom integrals (all basis functions stored in flattened array)
-                basis_access = format["component"]("", [f_ip, format["add"]([loop_index, offset])])
+                basis_access = format["component"]("", index_func(format["add"]([loop_index, offset])))
             else:
                 # Normal basis function access
-                basis_access = format["component"]("", [f_ip, loop_index])
-
-        # Get current cell entity, with current restriction considered
-        entity = self._get_current_entity()
-        name = generate_psi_name(element_counter, self.entity_type, entity, component, deriv, avg)
-        name, non_zeros, zeros, ones = self.name_map[name]
-        # don't overwrite this if we set it already
-        if not self.mixed_elt_int_facet_mode:
-            loop_index_range = shape(self.unique_tables[name])[1]
+                basis_access = format["component"]("", index_func(loop_index))
 
         # If domain type is custom, then special-case set loop index
         # range since table is empty
@@ -1070,11 +1072,11 @@ class QuadratureTransformerBase(Transformer):
         else:
             # Add basis name to the psi tables map for later use.
             if self.mixed_elt_int_facet_mode:
-                basis = [self._create_symbol(name + ba, BASIS, [f_ip, ic], _iden=name)[()] for ba, ic in zip(basis_access, index_calc)]
+                basis = [self._create_symbol(name + ba, BASIS, index_func(ic), _iden=name)[()] for ba, ic in zip(basis_access, index_calc)]
                 for ba in basis:
                     self.psi_tables_map[ba] = name
             else:
-                basis = self._create_symbol(name + basis_access, BASIS, [f_ip, index_calc], _iden=name)[()]
+                basis = self._create_symbol(name + basis_access, BASIS, index_func(index_calc), _iden=name)[()]
                 self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local element tensor.
@@ -1127,7 +1129,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Create basis name and map to correct basis and get info.
         generate_psi_name = format["psi name"]
-        psi_name = generate_psi_name(element_counter, self.entity_type, entity, component, deriv, avg)
+        psi_name = generate_psi_name(element_counter, self.entity_type, component, deriv, avg)
         psi_name, non_zeros, zeros, ones = self.name_map[psi_name]
 
         # If all basis are zero we just return None.
@@ -1135,7 +1137,9 @@ class QuadratureTransformerBase(Transformer):
             return self._format_scalar_value(None)[()]
 
         # Get the index range of the loop index.
-        loop_index_range = shape(self.unique_tables[psi_name])[1]
+        loop_index_range = shape(self.unique_tables[psi_name])[-1]
+
+        index_func = _make_index_function(shape(self.unique_tables[psi_name]), entity, f_ip)
 
         # If domain type is custom, then special-case set loop index
         # range since table is empty
@@ -1271,11 +1275,11 @@ class QuadratureTransformerBase(Transformer):
                 for e in ffc_element._elements:
                     basis_index.append(format["add"]([loop_index, str(cur)]))
                     cur += e.space_dimension()
-                basis_access = [format["component"]("", [f_ip, bi]) for bi in basis_index]
+                basis_access = [format["component"]("", index_func(bi)) for bi in basis_index]
                 basis_name = [psi_name + ba for ba in basis_access]
             else:
                 basis_index = "0" if loop_index_range == 1 else loop_index
-                basis_itvars = [f_ip, basis_index]
+                basis_itvars = index_func(basis_index)
                 basis_access = format["component"]("", basis_itvars)
                 basis_name = psi_name + basis_access
             # Try to set access to the outermost possible loop
@@ -1366,3 +1370,15 @@ class QuadratureTransformerBase(Transformer):
 
     def _create_entry_data(self, val):
         error("This function should be implemented by the child class.")
+
+
+def _make_index_function(shape, entity, ip):
+    if len(shape) == 2:
+        def f(dof):
+            return [ip, dof]
+    elif len(shape) == 3:
+        def f(dof):
+            return [entity, ip, dof]
+    else:
+        raise RuntimeError("Tensor of dimension 2 or 3 expected.")
+    return f
