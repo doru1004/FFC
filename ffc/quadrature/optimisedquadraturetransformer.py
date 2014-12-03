@@ -446,8 +446,16 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {():create_symbol(edgelen, GEO, iden=edgelen)}
 
-    def cell_orientation(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def cell_orientation(self, o):
+        if self.tdim == self.gdim:
+            # not an immersed manifold, so I claim we shouldn't reach here - ATTM
+            error("cell_orientation not needed for tdim == gdim")
+            # if there's a good reason to go down this path then uncomment the following line
+            # return {(): create_float(1.0)}
+        else:
+            var = format["evaluate conditional"]("cell_orientation%s == 1" % _choose_map(self.restriction), -1.0, 1.0)
+            name = create_symbol(var, IP, iden=var)
+            return {(): name}
 
     def quadrature_weight(self, o):
         # I don't think this should exist at all, but I left it in
