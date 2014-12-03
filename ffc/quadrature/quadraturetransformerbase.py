@@ -45,7 +45,6 @@ from ffc.utils import Bunch
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
-from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from ffc.quadrature.quadratureutils import create_psi_tables
@@ -935,9 +934,6 @@ class QuadratureTransformerBase(Transformer):
             # Map component using component map from UFL. (TODO: inefficient use of this function)
             comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
             component = comp_map[component]
-
-            # Map physical components into reference components
-            component, dummy = transform_component(component, 0, ufl_element)
 
         # Create FFC element.
         ffc_element = create_element(ufl_element)
