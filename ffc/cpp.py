@@ -260,7 +260,7 @@ format.update({
     "ip constant":          lambda i: "I[%d]" % i,
     "basis constant":       lambda i: "B[%d]" % i,
     "conditional":          lambda i: "C[%d]" % i,
-    "evaluate conditional": lambda i,j,k: "(%s) ? %s : %s" % (i,j,k),
+    "evaluate conditional": lambda i,j,k: "((%s) ? (%s) : (%s))" % (i,j,k),
 #    "geometry constant":   lambda i: "G%d" % i,
 #    "ip constant":         lambda i: "I%d" % i,
 #    "basis constant":      lambda i: "B%d" % i,
