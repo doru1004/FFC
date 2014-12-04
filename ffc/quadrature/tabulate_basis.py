@@ -40,6 +40,12 @@ def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
+        # Since quadrilaterals use OuterProductElements, the degree is usually
+        # a tuple, though not always. For example, in the constant times dx case
+        # the degree is always a single number.
+        if cell.cellname() == "quadrilateral" and isinstance(degree, tuple):
+            assert len(degree) == 2 and degree[0] == degree[1]
+            degree = degree[0]
         (points, weights) = create_quadrature(cell.facet_cellname(), degree, rule)
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
         (points, weights) = create_quadrature(cell.facet_horiz, degree[0], rule)
@@ -103,6 +109,18 @@ def _map_entity_points(cell, points, entity_dim, entity, integral_type):
             return map_facet_points(points, entity, "horiz_facet")
         elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
             return map_facet_points(points, entity, "vert_facet")
+        elif cell.cellname() == "quadrilateral":
+            assert points.shape[1] == 1
+            if entity == 0:
+                return numpy.hstack([numpy.zeros((len(points), 1)), points])
+            elif entity == 1:
+                return numpy.hstack([numpy.ones((len(points), 1)), points])
+            elif entity == 2:
+                return numpy.hstack([points, numpy.zeros((len(points), 1))])
+            elif entity == 3:
+                return numpy.hstack([points, numpy.ones((len(points), 1))])
+            else:
+                raise RuntimeError("Illegal quadrilateral facet number.")
         else:
             return map_facet_points(points, entity, "facet")
     elif entity_dim == 0:
