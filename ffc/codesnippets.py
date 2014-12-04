@@ -53,7 +53,8 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "ufc_cell_volume", "pyop2_cell_volume", "ufc_circumradius",
            "pyop2_circumradius", "pyop2_circumradius_interior",
            "facet_area", "min_facet_edge_length", "max_facet_edge_length",
-           "ufc_orientation_snippet", "pyop2_orientation_snippet"]
+           "ufc_orientation_snippet", "pyop2_orientation_snippet",
+           "reference_facet_to_cell_jacobian"]
 
 __all__ += __old__
 
@@ -343,6 +344,39 @@ OuterProductCell(Cell("triangle"), Cell("interval")): _compute_jacobian_inverse_
 OuterProductCell(Cell("triangle", 3), Cell("interval")): _compute_jacobian_inverse_prism_3d,
 OuterProductCell(Cell("quadrilateral"), Cell("interval")): _compute_jacobian_inverse_hex_3d,
 OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _compute_jacobian_inverse_hex_3d
+}
+
+# Code snippets storing reference facet -> reference cell Jacobians
+
+_facet_to_cell_jacobian_interval = """\
+// Jacobian of mapping from reference vertex to reference interval
+double ref_facet_jac[2][1] = {{1.0}, {1.0}};
+"""
+
+_facet_to_cell_jacobian_triangle = """\
+// Jacobian of mapping from reference interval to reference triangle
+double ref_facet_jac[3][2] = {{-1.0, 1.0}, {0.0, 1.0}, {1.0, 0.0}};
+"""
+
+_facet_to_cell_jacobian_quad = """\
+// Jacobian of mapping from reference interval to reference quad
+double ref_facet_jac[4][2] = {{0.0, 1.0}, {0.0, 1.0}, {1.0, 0.0}, {1.0, 0.0}};
+"""
+
+_facet_to_cell_jacobian_tetrahedron = """\
+// Jacobian of mapping from reference triangle to reference tetrahedron
+double ref_facet_jac[4][6] = {{-1.0, -1.0, 1.0, 0.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}};
+"""
+
+reference_facet_to_cell_jacobian = {
+Cell("interval"): _facet_to_cell_jacobian_interval,
+Cell("interval", 2): _facet_to_cell_jacobian_interval,
+Cell("interval", 3): _facet_to_cell_jacobian_interval,
+Cell("triangle"): _facet_to_cell_jacobian_triangle,
+Cell("triangle", 3): _facet_to_cell_jacobian_triangle,
+Cell("tetrahedron"): _facet_to_cell_jacobian_tetrahedron,
+Cell("quadrilateral"): _facet_to_cell_jacobian_quad,
+Cell("quadrilateral", 3): _facet_to_cell_jacobian_quad,
 }
 
 # Code snippet for scale factor
