@@ -296,6 +296,7 @@ format.update({
                                 compute_jacobian_interior[cell] % {"restriction": _choose_map(r)},
     "compute_jacobian_inverse": lambda cell, r=None: \
                                 compute_jacobian_inverse[cell] % {"restriction": _choose_map(r)},
+    "reference_facet_to_cell_jacobian": lambda tdim: reference_facet_to_cell_jacobian[tdim],
     "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
                                  "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else ""},
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
@@ -496,7 +497,7 @@ def _inner_product(v, w):
     return result
 
 def _transform(type, i, j, m, n, r):
-    map_name = {"J": "J", "JINV": "K"}[type] + _choose_map(r)
+    map_name = {"J": "J", "JINV": "K", "FJ": "FJ"}[type] + _choose_map(r)
     return (map_name + "[%d]") % _flatten(i, j, m, n)
 
 # FIXME: Input to _generate_switch should be a list of tuples (i, case)
@@ -907,7 +908,7 @@ def remove_unused(code, used_set=set()):
                 # y[2]) for variables with separators
                 seps_present = [sep for sep in special_characters if sep in variable_name]
                 if seps_present:
-                    variable_name = [variable_name.split(sep)[0] for sep in seps_present]
+                    variable_name = [variable_name.split(sep)[1] if sep == "*" else variable_name.split(sep)[0] for sep in seps_present]
                     variable_name.sort()
                     variable_name = variable_name[0]
 

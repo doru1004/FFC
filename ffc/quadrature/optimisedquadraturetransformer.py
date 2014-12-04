@@ -340,8 +340,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def facet_jacobian_inverse(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def cell_facet_jacobian(self, o):
+        f_transform = format["transform"]
+        i, j = self._components[-1]
+        return{(): create_symbol(f_transform("FJ", i, j, self.tdim, self.tdim-1, self.restriction), IP, loop_index=(_flatten(i, j, self.tdim, self.tdim-1),), iden="FJ%s" % _choose_map(self.restriction))}
 
     def cell_facet_jacobian_determinant(self, o): # FIXME
         error("This object should be implemented by the child class.")
