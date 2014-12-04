@@ -51,9 +51,8 @@ from ffc.quadrature.symbolics import create_float, create_symbol, create_product
                                      create_sum, create_fraction, BASIS, IP, GEO, CONST,\
                                      create_funcall, create_expression
                                      
-from ffc.cpp import _choose_map
+from ffc.cpp import _choose_map, _flatten
 from coffee import base as ast
-
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -364,8 +363,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def facet_jacobian_inverse(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
-    def cell_facet_jacobian(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def cell_facet_jacobian(self, o):
+        f_transform = format["transform"]
+        i, j = self._components[-1]
+        return{(): create_symbol(f_transform("FJ", i, j, self.tdim, self.tdim-1, self.restriction), IP, loop_index=(_flatten(i, j, self.tdim, self.tdim-1),), iden="FJ%s" % _choose_map(self.restriction))}
 
     def cell_facet_jacobian_determinant(self, o): # FIXME
         error("This object should be implemented by the child class.")
