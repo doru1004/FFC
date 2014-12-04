@@ -662,9 +662,9 @@ def _generate_facet_determinant(cell, p_format, integral_type, r):
         code = ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)}
     elif p_format == "pyop2":
         if integral_type == "exterior_facet":
-            code = pyop2_facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)}
+            code = pyop2_facet_determinant[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "interior_facet":
-            code = pyop2_facet_determinant_interior[tdim][gdim] % {"restriction": _choose_map(r)}
+            code = pyop2_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "exterior_facet_bottom":
             code = bottom_facet_determinant[cell] % {"restriction": _choose_map(r)}
         elif integral_type == "exterior_facet_top":
@@ -716,24 +716,14 @@ def _generate_normal(cell, p_format, integral_type, reference_normal=False):
     else:
         raise RuntimeError("Invalid p_format")
 
-    if integral_type in ("exterior_facet", "interior_facet"):
-        # Choose snippets
-        tdim = cell.topological_dimension()
-        gdim = cell.geometric_dimension()
-        direction = normal_direction[tdim][gdim]
+    # Choose snippets
+    direction = normal_direction[cell]
 
-        assert (gdim in facet_normal[tdim]),\
-            "Facet normal not yet implemented for this tdim/gdim combo"
-        normal = facet_normal[tdim][gdim]
-    else:
-        # Choose snippets
-        direction = normal_direction[cell]
-
-        assert (facet_normal.has_key(cell)),\
-            "Facet normal not yet implemented for this cell"
-        normal = facet_normal[cell]
-        if integral_type == "interior_facet_horiz":
-            normal_2 = facet_normal_2[cell]
+    assert (facet_normal.has_key(cell)),\
+        "Facet normal not yet implemented for this cell"
+    normal = facet_normal[cell]
+    if integral_type == "interior_facet_horiz":
+        normal_2 = facet_normal_2[cell]
     
     # Choose restrictions
     if integral_type in ("exterior_facet", "exterior_facet_vert"):

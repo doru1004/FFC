@@ -473,19 +473,23 @@ ufc_facet_determinant = {1: {1: _facet_determinant_1D,
                              3: _ufc_facet_determinant_3D_2D},
                          3: {3: _ufc_facet_determinant_3D}}
 
-pyop2_facet_determinant = {1: {1: _facet_determinant_1D,
-                               2: _facet_determinant_2D_1D,
-                               3: _facet_determinant_3D_1D},
-                           2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 3},
-                               3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 3, 'z': 6}},
-                           3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 4, 'z': 8}}}
+pyop2_facet_determinant = {
+Cell("interval"): _facet_determinant_1D,
+Cell("interval", 2): _facet_determinant_2D_1D,
+Cell("interval", 3): _facet_determinant_3D_1D,
+Cell("triangle"): _pyop2_facet_determinant_2D % {'x': 0, 'y': 3},
+Cell("triangle", 3): _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 3, 'z': 6},
+Cell("tetrahedron"):  _pyop2_facet_determinant_3D % {'x': 0, 'y': 4, 'z': 8}
+}
 
-pyop2_facet_determinant_interior = {1: {1: _facet_determinant_1D,
-                                        2: _facet_determinant_2D_1D,
-                                        3: _facet_determinant_3D_1D},
-                                    2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 6},
-                                        3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 6, 'z': 12}},
-                                    3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 8, 'z': 16}}}
+pyop2_facet_determinant_interior = {
+Cell("interval"): _facet_determinant_1D,
+Cell("interval", 2): _facet_determinant_2D_1D,
+Cell("interval", 3): _facet_determinant_3D_1D,
+Cell("triangle"): _pyop2_facet_determinant_2D % {'x': 0, 'y': 6},
+Cell("triangle", 3): _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 6, 'z': 12},
+Cell("tetrahedron"): _pyop2_facet_determinant_3D % {'x': 0, 'y': 8, 'z': 16}
+}
 
 # Horizontal facet determinants in extruded meshes
 
@@ -663,19 +667,23 @@ ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
                             3: _normal_direction_3D_2D},
                         3: {3: _ufc_normal_direction_3D}}
 
-pyop2_normal_direction = {1: {1: _pyop2_normal_direction_1D,
-                              2: _normal_direction_2D_1D,
-                              3: _normal_direction_3D_1D},
-                          2: {2: _pyop2_normal_direction_2D % {'y': 3, 'z': 6},
-                              3: _normal_direction_3D_2D},
-                          3: {3: _pyop2_normal_direction_3D % {'y': 4, 'z': 8}}}
+pyop2_normal_direction = {
+Cell("interval"): _pyop2_normal_direction_1D,
+Cell("interval", 2): _normal_direction_2D_1D,
+Cell("interval", 3): _normal_direction_3D_1D,
+Cell("triangle"): _pyop2_normal_direction_2D % {'y': 3, 'z': 6},
+Cell("triangle", 3): _normal_direction_3D_2D,
+Cell("tetrahedron"): _pyop2_normal_direction_3D % {'y': 4, 'z': 8}
+}
 
-pyop2_normal_direction_interior = {1: {1: _pyop2_normal_direction_1D,
-                              2: _normal_direction_2D_1D,
-                              3: _normal_direction_3D_1D},
-                          2: {2: _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
-                              3: _normal_direction_3D_2D},
-                          3: {3: _pyop2_normal_direction_3D % {'y': 8, 'z': 16}}}
+pyop2_normal_direction_interior = {
+Cell("interval"): _pyop2_normal_direction_1D,
+Cell("interval", 2): _normal_direction_2D_1D,
+Cell("interval", 3): _normal_direction_3D_1D,
+Cell("triangle"): _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
+Cell("triangle", 3): _normal_direction_3D_2D,
+Cell("tetrahedron"): _pyop2_normal_direction_3D % {'y': 8, 'z': 16}
+}
 
 # Extruded facet normals
 
@@ -965,19 +973,23 @@ ufc_facet_normal = {1: {1: _facet_normal_1D,
                         3: _ufc_facet_normal_3D_2D},
                     3: {3: _facet_normal_3D}}
 
-pyop2_facet_normal = {1: {1: _facet_normal_1D,
-                          2: _pyop2_facet_normal_2D_1D % {'y': 2},
-                          3: _pyop2_facet_normal_3D_1D % {'y': 2, 'z': 4}},
-                      2: {2: _facet_normal_2D,
-                          3: _pyop2_facet_normal_3D_2D % {'y': 3, 'z': 6}},
-                      3: {3: _facet_normal_3D}}
+pyop2_facet_normal = {
+Cell("interval"): _facet_normal_1D,
+Cell("interval", 2): _pyop2_facet_normal_2D_1D % {'y': 2},
+Cell("interval", 3): _pyop2_facet_normal_3D_1D % {'y': 2, 'z': 4},
+Cell("triangle"): _facet_normal_2D,
+Cell("triangle", 3): _pyop2_facet_normal_3D_2D % {'y': 3, 'z': 6},
+Cell("tetrahedron"): _facet_normal_3D
+}
 
-pyop2_facet_normal_interior = {1: {1: _facet_normal_1D,
-                          2: _pyop2_facet_normal_2D_1D % {'y': 4},
-                          3: _pyop2_facet_normal_3D_1D % {'y': 4, 'z': 8}},
-                      2: {2: _facet_normal_2D,
-                          3: _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12}},
-                      3: {3: _facet_normal_3D}}
+pyop2_facet_normal_interior = {
+Cell("interval"): _facet_normal_1D,
+Cell("interval", 2): _pyop2_facet_normal_2D_1D % {'y': 4},
+Cell("interval", 3): _pyop2_facet_normal_3D_1D % {'y': 4, 'z': 8},
+Cell("triangle"): _facet_normal_2D,
+Cell("triangle", 3): _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12},
+Cell("tetrahedron"): _facet_normal_3D
+}
 
 # This code snippet has been modified for the 'quad-in-3D' case
 _horiz_facet_normal_quad_head = """
