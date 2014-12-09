@@ -361,7 +361,7 @@ def _tabulate_tensor(ir, parameters):
 
     # Build the root of the PyOP2' ast
     pyop2_tables = pyop2_weights + [tab for tab in pyop2_basis]
-    root = pyop2.Root([jacobi_ir] + pyop2_tables + [nest_ir])
+    root = pyop2.Root([jacobi_ir] + pyop2_tables + nest_ir)
 
     return root
 
@@ -449,10 +449,10 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
             it_var = pyop2.Symbol(f_ip, ())
-            nest_ir = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
-                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")
+            nest_ir = [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
+                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
         else:
-            nest_ir = pyop2.Block(ip_ir, open_scope=False)
+            nest_ir = ip_ir
 
     return (nest_ir, tensor_ops_count)
 
