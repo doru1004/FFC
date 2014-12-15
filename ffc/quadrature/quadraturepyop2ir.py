@@ -185,6 +185,9 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](tdim)
             jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[facet];"
             trans_set.add("FJ")
+            jacobi_code += "\n\n" + format["facet_orientations"](tdim)
+            jacobi_code += "\n\n" + "double FO = facet_ori[facet];"
+            trans_set.add("FO")
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
             jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
             jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
@@ -257,6 +260,11 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[facet_1];"
             trans_set.add("FJ_0")
             trans_set.add("FJ_1")
+            jacobi_code += "\n\n" + format["facet_orientations"](tdim)
+            jacobi_code += "\n\n" + "double FO_0 = facet_ori[facet_0];"
+            jacobi_code += "\n" + "double FO_1 = facet_ori[facet_1];"
+            trans_set.add("FO_0")
+            trans_set.add("FO_1")
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
             jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
 

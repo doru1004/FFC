@@ -369,7 +369,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         return {(): create_symbol(normal_component, GEO, iden=normal_component)}
 
     def facet_orientation(self, o):
-        return {(): create_float(1.0)}
+        return {(): create_symbol("FO%s" % _choose_map(self.restriction), GEO, iden="FO%s" % _choose_map(self.restriction))}
 
     def cell_normal(self, o): # FIXME
         error("This object should be implemented by the child class.")

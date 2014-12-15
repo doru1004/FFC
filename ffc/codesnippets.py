@@ -54,7 +54,7 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "pyop2_circumradius", "pyop2_circumradius_interior",
            "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "ufc_orientation_snippet", "pyop2_orientation_snippet",
-           "reference_facet_to_cell_jacobian"]
+           "reference_facet_to_cell_jacobian", "facet_orientations"]
 
 __all__ += __old__
 
@@ -366,6 +366,29 @@ double ref_facet_jac[4][6] = {{-1.0, -1.0, 1.0, 0.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 
 reference_facet_to_cell_jacobian = {1: _facet_to_cell_jacobian_interval,
                                     2: _facet_to_cell_jacobian_triangle,
                                     3: _facet_to_cell_jacobian_tetrahedron}
+
+
+# Code snippets storing facet orientations on reference element
+
+_facet_orientations_interval = """\
+// Facet orientations on reference interval
+double facet_ori[2] = {1.0, 1.0};
+"""
+
+_facet_orientations_triangle = """\
+// Facet orientations on reference triangle
+double facet_ori[3] = {1.0, -1.0, 1.0};
+"""
+
+_facet_orientations_tetrahedron = """\
+// Facet orientations on reference tetrahedron
+double facet_ori[4] = {1.0, -1.0, 1.0, -1.0};
+"""
+
+facet_orientations = {1: _facet_orientations_interval,
+                      2: _facet_orientations_triangle,
+                      3: _facet_orientations_tetrahedron}
+
 
 # Code snippet for scale factor
 
