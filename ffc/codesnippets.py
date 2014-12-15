@@ -372,7 +372,7 @@ reference_facet_to_cell_jacobian = {1: _facet_to_cell_jacobian_interval,
 
 _facet_orientations_interval = """\
 // Facet orientations on reference interval
-double facet_ori[2] = {1.0, 1.0};
+double facet_ori[2] = {-1.0, 1.0};
 """
 
 _facet_orientations_triangle = """\
