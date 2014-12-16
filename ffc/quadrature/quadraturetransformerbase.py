@@ -401,7 +401,11 @@ class QuadratureTransformerBase(Transformer):
     # Grad (differentiation.py).
     # -------------------------------------------------------------------------
     def grad(self, o):
-        #print("\n\nVisiting Grad: " + repr(o))
+        # This should be turned into J^(-T)[i, j]*ReferenceGrad[j]
+        error("This object should be implemented by the child class.")
+
+    def reference_grad(self, o):
+        #print("\n\nVisiting ReferenceGrad: " + repr(o))
 
         # Get expression
         derivative_expr, = o.ufl_operands
