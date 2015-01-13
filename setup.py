@@ -15,7 +15,7 @@ if sys.version_info < (2, 7):
     print("Python 2.7 or higher required, please upgrade.")
     sys.exit(1)
 
-VERSION   = "1.4.0+"
+VERSION   = "1.5.0+"
 SCRIPTS   = [os.path.join("scripts", "ffc")]
 
 AUTHORS = """\
@@ -63,7 +63,7 @@ def get_swig_executable():
         swig_minimum_version = [2, 0, 0]
     else:
         swig_minimum_version = [3, 0, 3]
-    swig_minimum_version_str = string.join([str(x) for x in swig_minimum_version], ".")
+    swig_minimum_version_str = ".".join([str(x) for x in swig_minimum_version])
 
     # Find SWIG executable
     swig_executable = None

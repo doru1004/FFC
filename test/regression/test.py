@@ -339,7 +339,7 @@ def validate_programs(reference_dir):
 def main(args):
     "Run all regression tests."
 
-    # Check command-line arguments TODO: Use getargs or something
+    # Check command-line arguments TODO: Use argparse
     generate_only  = "--generate-only" in args
     fast           = "--fast" in args
     bench          = "--bench" in args
@@ -351,6 +351,7 @@ def main(args):
     tolerant       = "--tolerant" in args
     print_timing   = "--print-timing" in args
     skip_download  = "--skip-download" in args
+    ignore_code_diff = "--ignore-code-diff" in args
     pyop2          = "--pyop2" in args
 
     flags = (
@@ -365,6 +366,7 @@ def main(args):
         "--tolerant",
         "--print-timing",
         "--skip-download",
+        "--ignore-code-diff",
         "--pyop2",
         )
     args = [arg for arg in args if not arg in flags]
@@ -435,7 +437,7 @@ def main(args):
 
         # Validate code by comparing to code generated with this set
         # of compiler parameters
-        if not bench and argument not in ext_quad:
+        if not bench and (argument not in ext_quad) and not ignore_code_diff:
             validate_code(code_reference_dir)
 
         # Build and run programs and validate output to common
