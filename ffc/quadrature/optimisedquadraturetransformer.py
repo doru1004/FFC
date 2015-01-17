@@ -201,8 +201,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        var = format["absolute value"][self.parameters["format"]](str(val))
-        new_val = create_symbol(var, val.t, val, 1, iden=var)
+        var = format["absolute value"][self.parameters["format"]]()
+        new_val = create_funcall(var, [val])
         return {():new_val}
 
     def min_value(self, o, *operands):
