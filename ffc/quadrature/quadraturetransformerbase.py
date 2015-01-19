@@ -775,14 +775,15 @@ class QuadratureTransformerBase(Transformer):
         integrand = replace(integrand, self._function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
 
         # Change from physical gradients to reference gradients
-        integrand = change_to_reference_grad(integrand)  # TODO: Make this optional depending on backend
+        integrand = change_to_reference_grad(integrand, space)  # TODO: Make this optional depending on backend
 
         # Apply mappings (identity/Piola)
-        integrand = change_to_reference_value(integrand)
+        integrand = change_to_reference_value(integrand, space)
 
         # Compute and apply integration scaling factor
-        scale = compute_integrand_scaling_factor(integrand.domain(), integral_type)
-        integrand = integrand * scale
+        if space == "physical":
+            scale = compute_integrand_scaling_factor(integrand.domain(), integral_type)
+            integrand = integrand * scale
 
         # Change geometric representation to lower level quantities
         if integral_type in ("custom", "point"):
