@@ -763,7 +763,7 @@ class QuadratureTransformerBase(Transformer):
     # -------------------------------------------------------------------------
     # Generate terms for representation.
     # -------------------------------------------------------------------------
-    def generate_terms(self, integrand, integral_type):
+    def generate_terms(self, integrand, integral_type, space):
         "Generate terms for code generation."
 
         # Set domain type

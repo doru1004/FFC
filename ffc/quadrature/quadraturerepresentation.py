@@ -223,7 +223,8 @@ def _transform_integrals(transformer, integrals, integral_type):
     transformed_integrals = []
     for point, integral in sorted(integrals.items()):
         transformer.update_points(point)
-        terms = transformer.generate_terms(integral.integrand(), integral_type)
+        space = integral.space()
+        terms = transformer.generate_terms(integral.integrand(), integral_type, space)
         transformed_integrals.append((point, terms, transformer.function_data,
                                       {}, transformer.coordinate, transformer.conditionals))
     return transformed_integrals
