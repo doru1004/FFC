@@ -486,6 +486,9 @@ def visit_rhs(node):
     if node._prec in [2, 3] and len(node.vrs) == 1:
         # "Fake" Product, "Fake" Sum
         return pyop2.Par(visit_rhs(node.vrs[0]))
+    if node._prec == 5:
+        # Function call
+        return pyop2.FunCall(node.funname, *[visit_rhs(n) for n in node.vrs])
     children = []
     if node._prec == 4:
         # Fraction

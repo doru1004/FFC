@@ -72,6 +72,22 @@ def create_product(variables):
     _product_cache[key] = product
     return product
 
+_funcall_cache = {}
+def create_funcall(funname, arguments):
+    # NOTE: If I switch on the sorted line, it might be possible to find more
+    # variables in the cache, but it adds some overhead so I don't think it
+    # pays off. The member variables are also sorted in the classes
+    # (Product and Sum) so the list 'variables' is probably already sorted.
+#    key = tuple(sorted(variables))
+    key = tuple(funname) + tuple(arguments)
+    if key in _funcall_cache:
+#        print "found %s in cache" %str(key)
+#        print "found funcall in cache"
+        return _funcall_cache[key]
+    funcall = FunCall(funname, arguments)
+    _funcall_cache[key] = funcall
+    return funcall
+
 _sum_cache = {}
 def create_sum(variables):
     # NOTE: If I switch on the sorted line, it might be possible to find more
@@ -321,3 +337,4 @@ from .symbol     import Symbol
 from .product    import Product
 from .sumobj     import Sum
 from .fraction   import Fraction
+from .funcall    import FunCall

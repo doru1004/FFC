@@ -51,7 +51,8 @@ from ffc.quadrature.quadratureutils import create_permutations
 # Symbolics functions
 #from symbolics import set_format
 from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
-                                     create_sum, create_fraction, BASIS, IP, GEO, CONST
+                                     create_sum, create_fraction, BASIS, IP, GEO, CONST,\
+                                     create_funcall
                                      
 from ffc.cpp import _choose_map
 
@@ -200,8 +201,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         # Take absolute value of operand.
         val = operands[0][()]
-        var = format["absolute value"][self.parameters["format"]](str(val))
-        new_val = create_symbol(var, val.t, val, 1, iden=var)
+        var = format["absolute value"][self.parameters["format"]]()
+        new_val = create_funcall(var, [val])
         return {():new_val}
 
     def min_value(self, o, *operands):
@@ -608,8 +609,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Use format function on value of operand.
         operand = operands[0]
         for key, val in list(operand.items()):
-            sym_name = format_function(str(val))
-            new_val = create_symbol(sym_name, val.t, val, 1, iden=sym_name)
+            fun_name = format_function()
+            new_val = create_funcall(format_function(), [val])
             operand[key] = new_val
         return operand
 
