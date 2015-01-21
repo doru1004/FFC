@@ -264,7 +264,11 @@ def tabulate_basis(sorted_integrals, form_data, itg_data):
         num_derivatives = _find_element_derivatives(integral.integrand(), ufl_elements,
                                                     form_data.element_replace_map)
         # Need at least 1 for the Jacobian
-        num_derivatives[x_element] = max(num_derivatives.get(x_element,0), 1)
+        # ATTM: Might need 2 (derivatives of Piola-mapped elements, say)
+        # Note that this is happening before the code is expanded, so we
+        # can't (easily) find out whether we need only 1 derivative :(
+        # I propose letting the compiler optimise it out if so...
+        num_derivatives[x_element] = max(num_derivatives.get(x_element,0), 2)
 
 
         # --------- Evaluate FIAT elements in quadrature points and store in tables
