@@ -454,6 +454,9 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
     # -------------------------------------------------------------------------
 
+    def reference_value(self, o):
+        return self.visit(o.ufl_operands[0])
+
     def create_argument(self, ufl_argument, derivatives, component, local_comp,
                         local_offset, ffc_element, transformation, multiindices,
                         tdim, gdim, avg):
