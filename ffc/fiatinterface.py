@@ -122,7 +122,11 @@ def _create_fiat_element(ufl_element):
     if family == "Real":
         domain, = ufl_element.domains() # Assuming single domain
 
-        if not isinstance(ufl_element.cell(), ufl.OuterProductCell):
+        if ufl_element.cell().cellname() == "quadrilateral":
+            dg0_element_A = ufl.FiniteElement("DG", ufl.Cell("interval"), 0)
+            dg0_element_B = ufl.FiniteElement("DG", ufl.Cell("interval"), 0)
+            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
+        elif not isinstance(ufl_element.cell(), ufl.OuterProductCell):
             dg0_element = ufl.FiniteElement("DG", domain, 0)
         else:
             dg0_element_A = ufl.FiniteElement("DG", ufl_element.cell()._A, 0)

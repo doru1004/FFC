@@ -227,6 +227,8 @@ Cell("interval", 3): _compute_jacobian_interval_interior_3d,
 Cell("triangle"): _compute_jacobian_triangle_interior_2d,
 Cell("triangle", 3): _compute_jacobian_triangle_interior_3d,
 Cell("tetrahedron"): _compute_jacobian_tetrahedron_interior_3d,
+Cell("quadrilateral"): _compute_jacobian_quad_interior_2d,
+Cell("quadrilateral", 3): _compute_jacobian_quad_interior_3d,
 OuterProductCell(Cell("interval"), Cell("interval")): _compute_jacobian_quad_interior_2d,
 OuterProductCell(Cell("interval", 2), Cell("interval")): _compute_jacobian_quad_interior_2d,
 OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _compute_jacobian_quad_interior_3d,
@@ -387,6 +389,18 @@ const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_co
 const double det = sqrt(dx0*dx0 + dx1*dx1);
 """
 
+_pyop2_facet_determinant_quad = """\
+// Get vertices on edge
+unsigned int edge_vertices[4][2] = {{0, 1}, {2, 3}, {0, 2}, {1, 3}};
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1);
+"""
+
 _ufc_facet_determinant_3D_2D = """\
 // Facet determinant 2D in 3D (edge)
 // Get vertices on edge
@@ -405,6 +419,20 @@ _pyop2_facet_determinant_3D_2D = """\
 // Facet determinant 2D in 3D (edge)
 // Get vertices on edge
 unsigned int edge_vertices[3][2] = {{1, 2}, {0, 2}, {0, 1}};
+const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
+
+// Compute scale factor (length of edge scaled by length of reference interval)
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+"""
+
+_pyop2_facet_determinant_3D_quad = """\
+// Facet determinant of quadrilateral in 3D (edge)
+// Get vertices on edge
+unsigned int edge_vertices[4][2] = {{0, 1}, {2, 3}, {0, 2}, {1, 3}};
 const unsigned int v0 = edge_vertices[facet%%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%%(restriction)s][1];
 
@@ -473,19 +501,27 @@ ufc_facet_determinant = {1: {1: _facet_determinant_1D,
                              3: _ufc_facet_determinant_3D_2D},
                          3: {3: _ufc_facet_determinant_3D}}
 
-pyop2_facet_determinant = {1: {1: _facet_determinant_1D,
-                               2: _facet_determinant_2D_1D,
-                               3: _facet_determinant_3D_1D},
-                           2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 3},
-                               3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 3, 'z': 6}},
-                           3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 4, 'z': 8}}}
+pyop2_facet_determinant = {
+Cell("interval"): _facet_determinant_1D,
+Cell("interval", 2): _facet_determinant_2D_1D,
+Cell("interval", 3): _facet_determinant_3D_1D,
+Cell("triangle"): _pyop2_facet_determinant_2D % {'x': 0, 'y': 3},
+Cell("triangle", 3): _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 3, 'z': 6},
+Cell("quadrilateral"): _pyop2_facet_determinant_quad % {'x': 0, 'y': 4},
+Cell("quadrilateral", 3): _pyop2_facet_determinant_3D_quad % {'x': 0, 'y': 4, 'z': 8},
+Cell("tetrahedron"):  _pyop2_facet_determinant_3D % {'x': 0, 'y': 4, 'z': 8}
+}
 
-pyop2_facet_determinant_interior = {1: {1: _facet_determinant_1D,
-                                        2: _facet_determinant_2D_1D,
-                                        3: _facet_determinant_3D_1D},
-                                    2: {2: _pyop2_facet_determinant_2D % {'x': 0, 'y': 6},
-                                        3: _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 6, 'z': 12}},
-                                    3: {3: _pyop2_facet_determinant_3D % {'x': 0, 'y': 8, 'z': 16}}}
+pyop2_facet_determinant_interior = {
+Cell("interval"): _facet_determinant_1D,
+Cell("interval", 2): _facet_determinant_2D_1D,
+Cell("interval", 3): _facet_determinant_3D_1D,
+Cell("triangle"): _pyop2_facet_determinant_2D % {'x': 0, 'y': 6},
+Cell("triangle", 3): _pyop2_facet_determinant_3D_2D % {'x': 0, 'y': 6, 'z': 12},
+Cell("quadrilateral"): _pyop2_facet_determinant_quad % {'x': 0, 'y': 8},
+Cell("quadrilateral", 3): _pyop2_facet_determinant_3D_quad % {'x': 0, 'y': 8, 'z': 16},
+Cell("tetrahedron"): _pyop2_facet_determinant_3D % {'x': 0, 'y': 8, 'z': 16}
+}
 
 # Horizontal facet determinants in extruded meshes
 
@@ -642,6 +678,14 @@ _pyop2_normal_direction_2D = """\
 const bool direction = dx1*(vertex_coordinates%%(restriction)s[%%(facet)s][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[%%(facet)s + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
 """
 
+# Simplex code snippets assume that a vertex opposite to a facet has the same
+# number as the facet. This is not the case for quadrilaterals, however,
+# 'facet' XOR 1 always gives the opposite facet (edge), so that we can look up
+# one of the non-incident vertices via 'edge_vertices'.
+_pyop2_normal_direction_quad = """\
+const bool direction = dx1*(vertex_coordinates%%(restriction)s[edge_vertices[%%(facet)s ^ 1][0]][0] - vertex_coordinates%%(restriction)s[v0][0]) - dx0*(vertex_coordinates%%(restriction)s[edge_vertices[%%(facet)s ^ 1][0] + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0]) < 0;
+"""
+
 _ufc_normal_direction_3D = """\
 const bool direction = a0*(vertex_coordinates%(restriction)s[3*%(facet)s] - vertex_coordinates%(restriction)s[3*v0]) + a1*(vertex_coordinates%(restriction)s[3*%(facet)s + 1] - vertex_coordinates%(restriction)s[3*v0 + 1])  + a2*(vertex_coordinates%(restriction)s[3*%(facet)s + 2] - vertex_coordinates%(restriction)s[3*v0 + 2]) < 0;
 """
@@ -655,6 +699,7 @@ const bool direction = a0*(vertex_coordinates%%(restriction)s[%%(facet)s][0] - v
 _normal_direction_2D_1D = ""
 _normal_direction_3D_2D = ""
 _normal_direction_3D_1D = ""
+_normal_direction_3D_quad = ""
 
 ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
                             2: _normal_direction_2D_1D,
@@ -663,19 +708,27 @@ ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
                             3: _normal_direction_3D_2D},
                         3: {3: _ufc_normal_direction_3D}}
 
-pyop2_normal_direction = {1: {1: _pyop2_normal_direction_1D,
-                              2: _normal_direction_2D_1D,
-                              3: _normal_direction_3D_1D},
-                          2: {2: _pyop2_normal_direction_2D % {'y': 3, 'z': 6},
-                              3: _normal_direction_3D_2D},
-                          3: {3: _pyop2_normal_direction_3D % {'y': 4, 'z': 8}}}
+pyop2_normal_direction = {
+Cell("interval"): _pyop2_normal_direction_1D,
+Cell("interval", 2): _normal_direction_2D_1D,
+Cell("interval", 3): _normal_direction_3D_1D,
+Cell("triangle"): _pyop2_normal_direction_2D % {'y': 3, 'z': 6},
+Cell("triangle", 3): _normal_direction_3D_2D,
+Cell("quadrilateral"): _pyop2_normal_direction_quad % {'y': 4, 'z': 8},
+Cell("quadrilateral", 3): _normal_direction_3D_quad,
+Cell("tetrahedron"): _pyop2_normal_direction_3D % {'y': 4, 'z': 8}
+}
 
-pyop2_normal_direction_interior = {1: {1: _pyop2_normal_direction_1D,
-                              2: _normal_direction_2D_1D,
-                              3: _normal_direction_3D_1D},
-                          2: {2: _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
-                              3: _normal_direction_3D_2D},
-                          3: {3: _pyop2_normal_direction_3D % {'y': 8, 'z': 16}}}
+pyop2_normal_direction_interior = {
+Cell("interval"): _pyop2_normal_direction_1D,
+Cell("interval", 2): _normal_direction_2D_1D,
+Cell("interval", 3): _normal_direction_3D_1D,
+Cell("triangle"): _pyop2_normal_direction_2D % {'y': 6, 'z': 12},
+Cell("triangle", 3): _normal_direction_3D_2D,
+Cell("quadrilateral"): _pyop2_normal_direction_quad % {'y': 8, 'z': 16},
+Cell("quadrilateral", 3): _normal_direction_3D_quad,
+Cell("tetrahedron"): _pyop2_normal_direction_3D % {'y': 8, 'z': 16}
+}
 
 # Extruded facet normals
 
@@ -838,6 +891,22 @@ const unsigned int vertex%%(restriction)s2 = edge_vertices[facet%%(restriction)s
 // Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
 """
 
+# Simplex code snippets assume that a vertex opposite to a facet has the same
+# number as the facet. This is not the case for quadrilaterals, however,
+# 'facet' XOR 1 always gives the opposite facet (edge), so that we can look up
+# one of the non-incident vertices via 'edge_vertices'.
+_pyop2_facet_normal_3D_quad_head = """
+// Compute facet normal for quadrilaterals in 3D
+const unsigned int vertex%%(restriction)s0 = edge_vertices[facet%%(restriction)s ^ 1][0];
+
+// Get coordinates corresponding the vertex opposite this
+// static unsigned int edge_vertices[4][2] = {{0, 1}, {2, 3}, {0, 2}, {1, 3}};
+const unsigned int vertex%%(restriction)s1 = edge_vertices[facet%%(restriction)s][0];
+const unsigned int vertex%%(restriction)s2 = edge_vertices[facet%%(restriction)s][1];
+
+// Define vectors n = (p2 - p0) and t = normalized (p2 - p1)
+"""
+
 _ufc_facet_normal_3D_2D_middle = """
 double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
 double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
@@ -899,6 +968,8 @@ n%%(restriction)s2 /= n%%(restriction)s_length;
 _ufc_facet_normal_3D_2D = _ufc_facet_normal_3D_2D_head + _ufc_facet_normal_3D_2D_middle + _ufc_facet_normal_3D_2D_tail.format(sqrt='std::sqrt')
 
 _pyop2_facet_normal_3D_2D = _pyop2_facet_normal_3D_2D_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
+
+_pyop2_facet_normal_3D_quad = _pyop2_facet_normal_3D_quad_head + _pyop2_facet_normal_3D_2D_middle + _pyop2_facet_normal_3D_2D_tail.format(sqrt='sqrt')
 
 _ufc_facet_normal_3D_1D_head = """
 // Compute facet normal
@@ -965,19 +1036,27 @@ ufc_facet_normal = {1: {1: _facet_normal_1D,
                         3: _ufc_facet_normal_3D_2D},
                     3: {3: _facet_normal_3D}}
 
-pyop2_facet_normal = {1: {1: _facet_normal_1D,
-                          2: _pyop2_facet_normal_2D_1D % {'y': 2},
-                          3: _pyop2_facet_normal_3D_1D % {'y': 2, 'z': 4}},
-                      2: {2: _facet_normal_2D,
-                          3: _pyop2_facet_normal_3D_2D % {'y': 3, 'z': 6}},
-                      3: {3: _facet_normal_3D}}
+pyop2_facet_normal = {
+Cell("interval"): _facet_normal_1D,
+Cell("interval", 2): _pyop2_facet_normal_2D_1D % {'y': 2},
+Cell("interval", 3): _pyop2_facet_normal_3D_1D % {'y': 2, 'z': 4},
+Cell("triangle"): _facet_normal_2D,
+Cell("triangle", 3): _pyop2_facet_normal_3D_2D % {'y': 3, 'z': 6},
+Cell("quadrilateral"): _facet_normal_2D,
+Cell("quadrilateral", 3): _pyop2_facet_normal_3D_quad % {'y': 4, 'z': 8},
+Cell("tetrahedron"): _facet_normal_3D
+}
 
-pyop2_facet_normal_interior = {1: {1: _facet_normal_1D,
-                          2: _pyop2_facet_normal_2D_1D % {'y': 4},
-                          3: _pyop2_facet_normal_3D_1D % {'y': 4, 'z': 8}},
-                      2: {2: _facet_normal_2D,
-                          3: _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12}},
-                      3: {3: _facet_normal_3D}}
+pyop2_facet_normal_interior = {
+Cell("interval"): _facet_normal_1D,
+Cell("interval", 2): _pyop2_facet_normal_2D_1D % {'y': 4},
+Cell("interval", 3): _pyop2_facet_normal_3D_1D % {'y': 4, 'z': 8},
+Cell("triangle"): _facet_normal_2D,
+Cell("triangle", 3): _pyop2_facet_normal_3D_2D % {'y': 6, 'z': 12},
+Cell("quadrilateral"): _facet_normal_2D,
+Cell("quadrilateral", 3): _pyop2_facet_normal_3D_quad % {'y': 8, 'z': 16},
+Cell("tetrahedron"): _facet_normal_3D
+}
 
 # This code snippet has been modified for the 'quad-in-3D' case
 _horiz_facet_normal_quad_head = """
