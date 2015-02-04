@@ -301,12 +301,12 @@ format.update({
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
     "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
-    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume, r),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume, r)},
-    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, ufc_circumradius, r),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius, r)},
-    "generate circumradius interior": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius_interior, r),
-    "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
+    "generate cell volume":     {"ufc": lambda cell, i, r=None: _generate_cell_volume(cell, i, ufc_cell_volume, r),
+                                 "pyop2": lambda cell, i, r=None: _generate_cell_volume(cell, i, pyop2_cell_volume, r)},
+    "generate circumradius":    {"ufc": lambda cell, i, r=None: _generate_circumradius(cell, i, ufc_circumradius, r),
+                                 "pyop2": lambda cell, i, r=None: _generate_circumradius(cell, i, pyop2_circumradius, r)},
+    "generate circumradius interior": lambda cell, i, r=None: _generate_circumradius(cell, i, pyop2_circumradius_interior, r),
+    "generate facet area":      lambda cell: facet_area[cell],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
@@ -750,11 +750,11 @@ def _generate_facet_normal_custom(gdim):
         code += "const double n_1%d = - facet_normals[%d*ip + %d];\n" % (i, gdim, i)
     return code
 
-def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
+def _generate_cell_volume(cell, integral_type, cell_volume, r=None):
     "Generate code for computing cell volume."
 
     # Choose snippets
-    volume = cell_volume[tdim][gdim]
+    volume = cell_volume[cell]
 
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
@@ -770,11 +770,11 @@ def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
         error("Unsupported integral_type: %s" % str(integral_type))
     return code
 
-def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
+def _generate_circumradius(cell, integral_type, circumradius, r=None):
     "Generate code for computing a cell's circumradius."
 
     # Choose snippets
-    radius = circumradius[tdim][gdim]
+    radius = circumradius[cell]
 
     # Choose restrictions
     if integral_type in ("cell", "exterior_facet", "vertex"):

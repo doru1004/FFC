@@ -117,8 +117,8 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += format["scale factor snippet"]["ufc"]
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](cell, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](cell, integral_type)
 
     elif integral_type == "exterior_facet":
 
@@ -147,14 +147,14 @@ def _tabulate_tensor(ir, prefix, parameters):
         jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"]["ufc"](tdim, gdim)
         jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
+        jacobi_code += "\n\n" + format["generate facet area"](cell)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](cell, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](cell, integral_type)
 
     elif integral_type == "interior_facet":
 
@@ -191,14 +191,14 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
         jacobi_code += "\n\n" + format["facet determinant"]["ufc"](gdim, tdim, r="+")
         jacobi_code += "\n\n" + format["generate normal"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
+        jacobi_code += "\n\n" + format["generate facet area"](cell)
         if tdim == 3:
             jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
             jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
 
         # Generate code for cell volume and circumradius
-        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](tdim, gdim, integral_type)
+        jacobi_code += "\n\n" + format["generate cell volume"]["ufc"](cell, integral_type)
+        jacobi_code += "\n\n" + format["generate circumradius"]["ufc"](cell, integral_type)
 
     elif integral_type == "vertex":
 
@@ -276,9 +276,9 @@ def _tabulate_tensor(ir, prefix, parameters):
             jacobi_code += "\n"
             jacobi_code += format["compute_jacobian_inverse"](tdim, gdim, r=r)
             jacobi_code += "\n"
-            jacobi_code += format["generate cell volume"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
+            jacobi_code += format["generate cell volume"]["ufc"](cell, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
-            jacobi_code += format["generate circumradius"]["ufc"](tdim, gdim, integral_type, r=r if num_cells > 1 else None)
+            jacobi_code += format["generate circumradius"]["ufc"](cell, integral_type, r=r if num_cells > 1 else None)
             jacobi_code += "\n"
 
     else:

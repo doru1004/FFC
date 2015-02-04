@@ -519,12 +519,14 @@ const double det = sqrt(a0*a0 + a1*a1 + a2*a2);
 
 # Index by tdim, then gdim
 
-ufc_facet_determinant = {1: {1: _facet_determinant_1D,
-                             2: _facet_determinant_2D_1D,
-                             3: _facet_determinant_3D_1D},
-                         2: {2: _ufc_facet_determinant_2D,
-                             3: _ufc_facet_determinant_3D_2D},
-                         3: {3: _ufc_facet_determinant_3D}}
+ufc_facet_determinant = {
+Cell("interval"): _facet_determinant_1D,
+Cell("interval", 2): _facet_determinant_2D_1D,
+Cell("interval", 3): _facet_determinant_3D_1D,
+Cell("triangle"): _ufc_facet_determinant_2D,
+Cell("triangle", 3): _ufc_facet_determinant_3D_2D,
+Cell("tetrahedron"):  _ufc_facet_determinant_3D
+}
 
 pyop2_facet_determinant = {
 Cell("interval"): _facet_determinant_1D,
@@ -771,12 +773,14 @@ _normal_direction_3D_2D = ""
 _normal_direction_3D_1D = ""
 _normal_direction_3D_quad = ""
 
-ufc_normal_direction = {1: {1: _ufc_normal_direction_1D,
-                            2: _normal_direction_2D_1D,
-                            3: _normal_direction_3D_1D},
-                        2: {2: _ufc_normal_direction_2D,
-                            3: _normal_direction_3D_2D},
-                        3: {3: _ufc_normal_direction_3D}}
+ufc_normal_direction = {
+Cell("interval"): _ufc_normal_direction_1D,
+Cell("interval", 2): _normal_direction_2D_1D,
+Cell("interval", 3): _normal_direction_3D_1D,
+Cell("triangle"): _ufc_normal_direction_2D,
+Cell("triangle", 3): _normal_direction_3D_2D,
+Cell("tetrahedron"): _ufc_normal_direction_3D
+}
 
 pyop2_normal_direction = {
 Cell("interval"): _pyop2_normal_direction_1D,
@@ -1113,12 +1117,14 @@ else
 const double n%%(restriction)s_length = sqrt(n%%(restriction)s0*n%%(restriction)s0 + n%%(restriction)s1*n%%(restriction)s1 + n%%(restriction)s2*n%%(restriction)s2);
 """ + _pyop2_facet_normal_3D_1D_tail
 
-ufc_facet_normal = {1: {1: _facet_normal_1D,
-                        2: _ufc_facet_normal_2D_1D,
-                        3: _ufc_facet_normal_3D_1D},
-                    2: {2: _facet_normal_2D,
-                        3: _ufc_facet_normal_3D_2D},
-                    3: {3: _facet_normal_3D}}
+ufc_facet_normal = {
+Cell("interval"): _facet_normal_1D,
+Cell("interval", 2): _ufc_facet_normal_2D_1D,
+Cell("interval", 3): _ufc_facet_normal_3D_1D,
+Cell("triangle"): _facet_normal_2D,
+Cell("triangle", 3): _ufc_facet_normal_3D_2D,
+Cell("tetrahedron"): _facet_normal_3D
+}
 
 pyop2_facet_normal = {
 Cell("interval"): _facet_normal_1D,
@@ -1632,74 +1638,115 @@ double Z = (d_02*(2.0*x[0] - C0) + d_12*(2.0*x[1] - C1) + d_22*(2.0*x[2] - C2)) 
 # dimension
 
 # Geometry related snippets
-map_onto_physical = {1: {1: _map_onto_physical_1D,
-                         2: _map_onto_physical_2D_1D,
-                         3: _map_onto_physical_3D_1D},
-                     2: {2: _map_onto_physical_2D,
-                         3: _map_onto_physical_3D_2D},
-                     3: {3: _map_onto_physical_3D}}
+map_onto_physical = {
+Cell("interval"): _map_onto_physical_1D,
+Cell("interval", 2): _map_onto_physical_2D_1D,
+Cell("interval", 3): _map_onto_physical_3D_1D,
+Cell("triangle"): _map_onto_physical_2D,
+Cell("triangle", 3): _map_onto_physical_3D_2D,
+Cell("tetrahedron"): _map_onto_physical_3D
+}
 
-fiat_coordinate_map = {"interval": {1:_map_coordinates_FIAT_interval,
-                                    2:_map_coordinates_FIAT_interval_in_2D,
-                                    3:_map_coordinates_FIAT_interval_in_3D},
-                       "triangle": {2:_map_coordinates_FIAT_triangle,
-                                    3: _map_coordinates_FIAT_triangle_in_3D},
-                       "tetrahedron": {3:_map_coordinates_FIAT_tetrahedron}}
+fiat_coordinate_map = {
+Cell("interval"): _map_coordinates_FIAT_interval,
+Cell("interval", 2): _map_coordinates_FIAT_interval_in_2D,
+Cell("interval", 3): _map_coordinates_FIAT_interval_in_3D,
+Cell("triangle"): _map_coordinates_FIAT_triangle,
+Cell("triangle", 3): _map_coordinates_FIAT_triangle_in_3D,
+Cell("tetrahedron"): _map_coordinates_FIAT_tetrahedron
+}
 
-transform_snippet = {"interval": {1: _transform_snippet(1, 1),
-                                  2: _transform_snippet(1, 2),
-                                  3: _transform_snippet(1, 3)},
-                     "triangle": {2: _transform_snippet(2, 2),
-                                  3: _transform_snippet(2, 3)},
-                     "tetrahedron": {3: _transform_snippet(3, 3)}}
+transform_snippet = {
+Cell("interval"): _transform_snippet(1, 1),
+Cell("interval", 2): _transform_snippet(1, 2),
+Cell("interval", 3): _transform_snippet(1, 3),
+Cell("triangle"): _transform_snippet(2, 2),
+Cell("triangle", 3): _transform_snippet(2, 3),
+Cell("tetrahedron"): _transform_snippet(3, 3)
+}
 
-ip_coordinates = {1: (3, _ip_coordinates_1D),
-                  2: (10, _ip_coordinates_2D),
-                  3: (21, _ip_coordinates_3D)}
+ip_coordinates = {"interval": (3, _ip_coordinates_1D),
+                  "triangle": (10, _ip_coordinates_2D),
+                  "tetrahedron": (21, _ip_coordinates_3D)}
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
-ufc_cell_volume = {1: {1: _ufc_cell_volume_1D,
-                       2: _ufc_cell_volume_2D_1D,
-                       3: _ufc_cell_volume_3D_1D},
-                   2: {2: _ufc_cell_volume_2D,
-                       3: _ufc_cell_volume_3D_2D},
-                   3: {3: _ufc_cell_volume_3D}}
+ufc_cell_volume = {
+Cell("interval"): _ufc_cell_volume_1D,
+Cell("interval", 2): _ufc_cell_volume_2D_1D,
+Cell("interval", 3): _ufc_cell_volume_3D_1D,
+Cell("triangle"): _ufc_cell_volume_2D,
+Cell("triangle", 3): _ufc_cell_volume_3D_2D,
+Cell("tetrahedron"): _ufc_cell_volume_3D,
+}
 
-pyop2_cell_volume = {1: {1: _pyop2_cell_volume_1D,
-                         2: _pyop2_cell_volume_2D_1D,
-                         3: _pyop2_cell_volume_3D_1D},
-                     2: {2: _pyop2_cell_volume_2D,
-                         3: _pyop2_cell_volume_3D_2D},
-                     3: {3: _pyop2_cell_volume_3D}}
+pyop2_cell_volume = {
+Cell("interval"): _pyop2_cell_volume_1D,
+Cell("interval", 2): _pyop2_cell_volume_2D_1D,
+Cell("interval", 3): _pyop2_cell_volume_3D_1D,
+Cell("triangle"): _pyop2_cell_volume_2D,
+Cell("triangle", 3): _pyop2_cell_volume_3D_2D,
+Cell("quadrilateral"): "",
+Cell("quadrilateral", 3): "",
+Cell("tetrahedron"): _pyop2_cell_volume_3D,
+OuterProductCell(Cell("interval"), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): "",
+OuterProductCell(Cell("triangle"), Cell("interval")): "",
+OuterProductCell(Cell("triangle", 3), Cell("interval")): ""
+}
 
-ufc_circumradius = {1: {1: _ufc_circumradius_1D,
-                        2: _ufc_circumradius_2D_1D,
-                        3: _ufc_circumradius_3D_1D},
-                    2: {2: _ufc_circumradius_2D,
-                        3: _ufc_circumradius_3D_2D},
-                    3: {3: _ufc_circumradius_3D}}
+ufc_circumradius = {
+Cell("interval"): _ufc_circumradius_1D,
+Cell("interval", 2): _ufc_circumradius_2D_1D,
+Cell("interval", 3): _ufc_circumradius_3D_1D,
+Cell("triangle"): _ufc_circumradius_2D,
+Cell("triangle", 3): _ufc_circumradius_3D_2D,
+Cell("tetrahedron"): _ufc_circumradius_3D,
+}
 
-pyop2_circumradius = {1: {1: _pyop2_circumradius_1D,
-                          2: _pyop2_circumradius_2D_1D,
-                          3: _pyop2_circumradius_3D_1D},
-                      2: {2: _pyop2_circumradius_2D % {'y': 3} ,
-                          3: _pyop2_circumradius_3D_2D % {'y': 3, 'z': 6}},
-                      3: {3: _pyop2_circumradius_3D % {'y': 4, 'z': 8}}}
+pyop2_circumradius = {
+Cell("interval"): _pyop2_circumradius_1D,
+Cell("interval", 2): _pyop2_circumradius_2D_1D,
+Cell("interval", 3): _pyop2_circumradius_3D_1D,
+Cell("triangle"): _pyop2_circumradius_2D % {'y': 3},
+Cell("triangle", 3): _pyop2_circumradius_3D_2D % {'y': 3, 'z': 6},
+Cell("quadrilateral"): "",
+Cell("quadrilateral", 3): "",
+Cell("tetrahedron"): _pyop2_circumradius_3D % {'y': 4, 'z': 8},
+OuterProductCell(Cell("interval"), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): "",
+OuterProductCell(Cell("triangle"), Cell("interval")): "",
+OuterProductCell(Cell("triangle", 3), Cell("interval")): ""
+}
 
-pyop2_circumradius_interior = {1: {1: _pyop2_circumradius_1D,
-                                   2: _pyop2_circumradius_2D_1D,
-                                   3: _pyop2_circumradius_3D_1D},
-                               2: {2: _pyop2_circumradius_2D % {'y': 6},
-                                   3: _pyop2_circumradius_3D_2D % {'y': 6, 'z': 12}},
-                               3: {3: _pyop2_circumradius_3D % {'y': 8, 'z': 16}}}
+pyop2_circumradius_interior = {
+Cell("interval"): _pyop2_circumradius_1D,
+Cell("interval", 2): _pyop2_circumradius_2D_1D,
+Cell("interval", 3): _pyop2_circumradius_3D_1D,
+Cell("triangle"): _pyop2_circumradius_2D % {'y': 6},
+Cell("triangle", 3): _pyop2_circumradius_3D_2D % {'y': 6, 'z': 12},
+Cell("quadrilateral"): "",
+Cell("quadrilateral", 3): "",
+Cell("tetrahedron"): _pyop2_circumradius_3D % {'y': 8, 'z': 16},
+OuterProductCell(Cell("interval"), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval")): "",
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): "",
+OuterProductCell(Cell("triangle"), Cell("interval")): "",
+OuterProductCell(Cell("triangle", 3), Cell("interval")): ""
+}
 
-facet_area = {1: {1: _facet_area_1D,
-                  2: _facet_area_2D_1D,
-                  3: _facet_area_3D_1D},
-              2: {2: _facet_area_2D,
-                  3: _facet_area_3D_2D},
-              3: {3: _facet_area_3D}}
+facet_area = {
+Cell("interval"): _facet_area_1D,
+Cell("interval", 2): _facet_area_2D_1D,
+Cell("interval", 3): _facet_area_3D_1D,
+Cell("triangle"): _facet_area_2D,
+Cell("triangle", 3): _facet_area_3D_2D,
+Cell("quadrilateral"): "",
+Cell("quadrilateral", 3): "",
+Cell("tetrahedron"): _facet_area_3D
+}
 
 min_facet_edge_length = {3: {3: _min_facet_edge_length_3D}}
 
