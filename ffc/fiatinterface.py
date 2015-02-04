@@ -53,6 +53,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Radau",
                       "Raviart-Thomas",
                       "Real",
+                      "RTCE",
+                      "RTCF",
                       "Bubble",
                       "Quadrature",
                       "OuterProductElement",
@@ -64,6 +66,9 @@ supported_families = ("Brezzi-Douglas-Marini",
 
 # Cache for computed elements
 _cache = {}
+
+# Quadrilateral OuterProductCell
+_quad_opc = ufl.OuterProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
 
 def reference_cell(cell):
     # really want to be using cells only, but sometimes only cellname is passed
@@ -159,6 +164,8 @@ def create_actual_fiat_element(ufl_element):
     # Check if finite element family is supported by FIAT
     family = ufl_element.family()
     if not family in FIAT.supported_elements:
+        if ufl_element.cell().cellname() == "quadrilateral":
+            return create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
     # HDiv and HCurl elements have family "OuterProductElement",
@@ -182,6 +189,8 @@ def create_actual_fiat_element(ufl_element):
             return ElementClass(A, B)
         elif isinstance(ufl_element, (ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
             return ElementClass(create_element(ufl_element._element))
+        elif ufl_element.cell().cellname() == "quadrilateral":
+            return create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
             # "Normal element" case
             domain, = ufl_element.domains() # Assuming single domain
