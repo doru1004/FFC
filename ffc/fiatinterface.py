@@ -21,7 +21,7 @@
 # Modified by Andrew T. T. McRae, 2013
 
 # Python modules
-from numpy import array, polymul, zeros, ones
+from numpy import array, polymul, zeros, ones, hstack
 import six
 
 # UFL and FIAT modules
@@ -249,7 +249,7 @@ def create_quadrature(cell, num_points):
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
-def map_facet_points(points, facet, facet_type):
+def map_facet_points(cell, points, facet, facet_type):
     """
     Map points from the e (UFC) reference simplex of dimension d - 1
     to a given facet on the (UFC) reference simplex of dimension d.
@@ -257,6 +257,19 @@ def map_facet_points(points, facet, facet_type):
     2D reference triangle to points on a given facet of the reference
     tetrahedron.
     """
+
+    if cell.cellname() == "quadrilateral":
+        assert points.shape[1] == 1
+        if facet == 0:
+            return hstack([zeros((len(points), 1)), points])
+        elif facet == 1:
+            return hstack([ones((len(points), 1)), points])
+        elif facet == 2:
+            return hstack([points, zeros((len(points), 1))])
+        elif facet == 3:
+            return hstack([points, ones((len(points), 1))])
+        else:
+            raise RuntimeError("Illegal quadrilateral facet number.")
 
     # Extract the geometric dimension of the points we want to map
     dim = len(points[0]) + 1
@@ -316,7 +329,7 @@ def map_facet_points(points, facet, facet_type):
         # of each point. We send the remaining coordinates back through
         # this function as a normal facet of one degree less,
         # then append the last coordinate back on.
-        temp_points = map_facet_points(points[:,:-1], facet, "facet")
+        temp_points = map_facet_points(cell._A, points[:,:-1], facet, "facet")
         new_points = zeros((points.shape[0], points.shape[1]+1))
         new_points[:,:-1] = temp_points
         new_points[:,-1] = points[:,-1]
