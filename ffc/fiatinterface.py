@@ -161,19 +161,27 @@ def _create_fiat_element(ufl_element):
     raise Exception("Something strange happened: reached end of function without returning an element")
 
 def create_actual_fiat_element(ufl_element):
+    fiat_element = None
+
     # Check if finite element family is supported by FIAT
     family = ufl_element.family()
     if not family in FIAT.supported_elements:
+        # We support RTCE and RTCF elements on quadrilaterals,
+        # even though they are not supported by FIAT.
         if ufl_element.cell().cellname() == "quadrilateral":
-            return create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
-        error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
+        else:
+            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
+    # Skip all cases if FIAT element is ready already
+    if fiat_element is not None:
+        pass
     # HDiv and HCurl elements have family "OuterProductElement",
     # so get matching FIAT element directly rather than via lookup
-    if isinstance(ufl_element, ufl.HDiv):
-        return FIAT.Hdiv(create_element(ufl_element._element))
+    elif isinstance(ufl_element, ufl.HDiv):
+        fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
     elif isinstance(ufl_element, ufl.HCurl):
-        return FIAT.Hcurl(create_element(ufl_element._element))
+        fiat_element = FIAT.Hcurl(create_element(ufl_element._element))
     else:
         # Look up FIAT element
         ElementClass = FIAT.supported_elements[family]
@@ -181,24 +189,49 @@ def create_actual_fiat_element(ufl_element):
         if isinstance(ufl_element, ufl.EnrichedElement):
             A = create_element(ufl_element._elements[0])
             B = create_element(ufl_element._elements[1])
-            return ElementClass(A, B)
+            fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
         elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement)):
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
-            return ElementClass(A, B)
+            fiat_element = ElementClass(A, B)
         elif isinstance(ufl_element, (ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
-            return ElementClass(create_element(ufl_element._element))
+            fiat_element = ElementClass(create_element(ufl_element._element))
         elif ufl_element.cell().cellname() == "quadrilateral":
-            return create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
+            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
             # "Normal element" case
             domain, = ufl_element.domains() # Assuming single domain
             cell = domain.cell()            # Assuming single cell in domain
             degree = ufl_element.degree()
             fiat_cell = reference_cell(cell)
-            return ElementClass(fiat_cell, degree)
-    raise Exception("Something strange happened: reached end of function without returning an element")
+            fiat_element = ElementClass(fiat_cell, degree)
+
+    if fiat_element is None:
+        raise Exception("Something strange happened: reached end of function without returning an element")
+
+    if ufl_element.cell().cellname() == "quadrilateral" and \
+            isinstance(fiat_element.get_reference_element(),
+                       FIAT.reference_element.two_product_cell):
+        # Flatten tensor product element
+
+        from FIAT.reference_element import FiredrakeQuadrilateral
+        from FIAT.dual_set import DualSet
+
+        nodes = fiat_element.dual.nodes
+        ref_el = FiredrakeQuadrilateral()
+
+        entity_ids = fiat_element.dual.entity_ids
+        flat_entity_ids = {}
+        flat_entity_ids[0] = entity_ids[(0, 0)]
+        flat_entity_ids[1] = dict(enumerate(entity_ids[(0, 1)].values() + entity_ids[(1, 0)].values()))
+        flat_entity_ids[2] = entity_ids[(1, 1)]
+
+        fiat_element.dual = DualSet(nodes, ref_el, flat_entity_ids)
+        fiat_element.ref_el = ref_el
+
+    return fiat_element
+
 
 def create_quadrature(cell, num_points):
     """
