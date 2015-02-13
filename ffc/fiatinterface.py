@@ -21,7 +21,7 @@
 # Modified by Andrew T. T. McRae, 2013
 
 # Python modules
-from numpy import array, polymul, zeros, ones, hstack
+from numpy import array, asarray, polymul, zeros, ones
 import six
 
 # UFL and FIAT modules
@@ -260,57 +260,16 @@ def map_facet_points(cell, points, facet, facet_type):
     tetrahedron.
     """
 
-    if cell.cellname() == "quadrilateral":
-        assert points.shape[1] == 1
-        if facet == 0:
-            return hstack([zeros((len(points), 1)), points])
-        elif facet == 1:
-            return hstack([ones((len(points), 1)), points])
-        elif facet == 2:
-            return hstack([points, zeros((len(points), 1))])
-        elif facet == 3:
-            return hstack([points, ones((len(points), 1))])
-        else:
-            raise RuntimeError("Illegal quadrilateral facet number.")
-
-    # Extract the geometric dimension of the points we want to map
-    dim = len(points[0]) + 1
-
     # Special case, don't need to map coordinates on vertices
-    if dim == 1:
+    if len(points[0]) == 0:
         return [[(0.0,), (1.0,)][facet]]
 
     if facet_type == "facet":
-        # Get the FIAT reference cell for this dimension
-        # This was a temporary hack that doesn't work with
-        # facets on OuterProduct cells!
-        # However, facets on OP cells we have facet_type "horiz_facet"
-        # or "vert_facet", so don't reach here
-        fiat_cell = reference_cell({2: "triangle", 3: "tetrahedron"}[dim])
+        # Get mapping from facet to cell coordinates
+        t = reference_cell(cell).get_facet_transform(facet)
 
-        # Extract vertex coordinates from cell and map of facet index to
-        # indicent vertex indices
-        vertex_coordinates = fiat_cell.get_vertices()
-        facet_vertices = fiat_cell.get_topology()[dim-1]
-
-        #vertex_coordinates = \
-        #    {1: ((0.,), (1.,)),
-        #     2: ((0., 0.), (1., 0.), (0., 1.)),
-        #     3: ((0., 0., 0.), (1., 0., 0.),(0., 1., 0.), (0., 0., 1))}
-
-        # Facet vertices
-        #facet_vertices = \
-        #    {2: ((1, 2), (0, 2), (0, 1)),
-        #     3: ((1, 2, 3), (0, 2, 3), (0, 1, 3), (0, 1, 2))}
-
-        # Compute coordinates and map the points
-        coordinates = [vertex_coordinates[v] for v in facet_vertices[facet]]
-        new_points = []
-        for point in points:
-            w = (1.0 - sum(point),) + tuple(point)
-            x = tuple(sum([w[i]*array(coordinates[i]) for i in range(len(w))]))
-            new_points += [x]
-
+        # Apply mapping for all points
+        return asarray([t(point) for point in points])
     elif facet_type == "horiz_facet":
         # A horiz_facet must be on the bottom (0) or top (1) of an
         # extruded cell. Simply take the point and append a final
