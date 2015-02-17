@@ -106,23 +106,11 @@ def _map_entity_points(cell, points, entity_dim, entity, integral_type):
         return points
     elif entity_dim == tdim-1:
         if integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
-            return map_facet_points(points, entity, "horiz_facet")
+            return map_facet_points(cell, points, entity, "horiz_facet")
         elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
-            return map_facet_points(points, entity, "vert_facet")
-        elif cell.cellname() == "quadrilateral":
-            assert points.shape[1] == 1
-            if entity == 0:
-                return numpy.hstack([numpy.zeros((len(points), 1)), points])
-            elif entity == 1:
-                return numpy.hstack([numpy.ones((len(points), 1)), points])
-            elif entity == 2:
-                return numpy.hstack([points, numpy.zeros((len(points), 1))])
-            elif entity == 3:
-                return numpy.hstack([points, numpy.ones((len(points), 1))])
-            else:
-                raise RuntimeError("Illegal quadrilateral facet number.")
+            return map_facet_points(cell, points, entity, "vert_facet")
         else:
-            return map_facet_points(points, entity, "facet")
+            return map_facet_points(cell, points, entity, "facet")
     elif entity_dim == 0:
         return (reference_cell_vertices(cell.cellname())[entity],)
 

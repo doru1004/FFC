@@ -21,7 +21,7 @@
 # Modified by Andrew T. T. McRae, 2013
 
 # Python modules
-from numpy import array, polymul, zeros, ones
+from numpy import array, polymul, zeros, ones, hstack
 import six
 
 # UFL and FIAT modules
@@ -50,9 +50,13 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "Lobatto",
                       "Nedelec 1st kind H(curl)",
                       "Nedelec 2nd kind H(curl)",
+                      "Q",
+                      "DQ",
                       "Radau",
                       "Raviart-Thomas",
                       "Real",
+                      "RTCE",
+                      "RTCF",
                       "Bubble",
                       "Quadrature",
                       "OuterProductElement",
@@ -64,6 +68,9 @@ supported_families = ("Brezzi-Douglas-Marini",
 
 # Cache for computed elements
 _cache = {}
+
+# Quadrilateral OuterProductCell
+_quad_opc = ufl.OuterProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
 
 def reference_cell(cell):
     # really want to be using cells only, but sometimes only cellname is passed
@@ -122,11 +129,7 @@ def _create_fiat_element(ufl_element):
     if family == "Real":
         domain, = ufl_element.domains() # Assuming single domain
 
-        if ufl_element.cell().cellname() == "quadrilateral":
-            dg0_element_A = ufl.FiniteElement("DG", ufl.Cell("interval"), 0)
-            dg0_element_B = ufl.FiniteElement("DG", ufl.Cell("interval"), 0)
-            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
-        elif not isinstance(ufl_element.cell(), ufl.OuterProductCell):
+        if not isinstance(ufl_element.cell(), ufl.OuterProductCell):
             dg0_element = ufl.FiniteElement("DG", domain, 0)
         else:
             dg0_element_A = ufl.FiniteElement("DG", ufl_element.cell()._A, 0)
@@ -156,17 +159,27 @@ def _create_fiat_element(ufl_element):
     raise Exception("Something strange happened: reached end of function without returning an element")
 
 def create_actual_fiat_element(ufl_element):
+    fiat_element = None
+
     # Check if finite element family is supported by FIAT
     family = ufl_element.family()
     if not family in FIAT.supported_elements:
-        error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+        # We support RTCE and RTCF elements on quadrilaterals,
+        # even though they are not supported by FIAT.
+        if ufl_element.cell().cellname() == "quadrilateral":
+            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
+        else:
+            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
+    # Skip all cases if FIAT element is ready already
+    if fiat_element is not None:
+        pass
     # HDiv and HCurl elements have family "OuterProductElement",
     # so get matching FIAT element directly rather than via lookup
-    if isinstance(ufl_element, ufl.HDiv):
-        return FIAT.Hdiv(create_element(ufl_element._element))
+    elif isinstance(ufl_element, ufl.HDiv):
+        fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
     elif isinstance(ufl_element, ufl.HCurl):
-        return FIAT.Hcurl(create_element(ufl_element._element))
+        fiat_element = FIAT.Hcurl(create_element(ufl_element._element))
     else:
         # Look up FIAT element
         ElementClass = FIAT.supported_elements[family]
@@ -174,22 +187,54 @@ def create_actual_fiat_element(ufl_element):
         if isinstance(ufl_element, ufl.EnrichedElement):
             A = create_element(ufl_element._elements[0])
             B = create_element(ufl_element._elements[1])
-            return ElementClass(A, B)
+            fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
         elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement)):
+            domain, = ufl_element.domains() # Assuming single domain
+            cell = domain.cell()            # Assuming single cell in domain
+            if not isinstance(cell, ufl.OuterProductCell):
+                error("An OuterProductElement must have an OuterProductCell as domain, sorry.")
+
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
-            return ElementClass(A, B)
+            fiat_element = ElementClass(A, B)
         elif isinstance(ufl_element, (ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
-            return ElementClass(create_element(ufl_element._element))
+            fiat_element = ElementClass(create_element(ufl_element._element))
+        elif ufl_element.cell().cellname() == "quadrilateral":
+            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
             # "Normal element" case
             domain, = ufl_element.domains() # Assuming single domain
             cell = domain.cell()            # Assuming single cell in domain
             degree = ufl_element.degree()
             fiat_cell = reference_cell(cell)
-            return ElementClass(fiat_cell, degree)
-    raise Exception("Something strange happened: reached end of function without returning an element")
+            fiat_element = ElementClass(fiat_cell, degree)
+
+    if fiat_element is None:
+        raise Exception("Something strange happened: reached end of function without returning an element")
+
+    if ufl_element.cell().cellname() == "quadrilateral" and \
+            isinstance(fiat_element.get_reference_element(),
+                       FIAT.reference_element.two_product_cell):
+        # Flatten tensor product element
+
+        from FIAT.reference_element import FiredrakeQuadrilateral
+        from FIAT.dual_set import DualSet
+
+        nodes = fiat_element.dual.nodes
+        ref_el = FiredrakeQuadrilateral()
+
+        entity_ids = fiat_element.dual.entity_ids
+        flat_entity_ids = {}
+        flat_entity_ids[0] = entity_ids[(0, 0)]
+        flat_entity_ids[1] = dict(enumerate(entity_ids[(0, 1)].values() + entity_ids[(1, 0)].values()))
+        flat_entity_ids[2] = entity_ids[(1, 1)]
+
+        fiat_element.dual = DualSet(nodes, ref_el, flat_entity_ids)
+        fiat_element.ref_el = ref_el
+
+    return fiat_element
+
 
 def create_quadrature(cell, num_points):
     """
@@ -206,7 +251,7 @@ def create_quadrature(cell, num_points):
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
-def map_facet_points(points, facet, facet_type):
+def map_facet_points(cell, points, facet, facet_type):
     """
     Map points from the e (UFC) reference simplex of dimension d - 1
     to a given facet on the (UFC) reference simplex of dimension d.
@@ -214,6 +259,19 @@ def map_facet_points(points, facet, facet_type):
     2D reference triangle to points on a given facet of the reference
     tetrahedron.
     """
+
+    if cell.cellname() == "quadrilateral":
+        assert points.shape[1] == 1
+        if facet == 0:
+            return hstack([zeros((len(points), 1)), points])
+        elif facet == 1:
+            return hstack([ones((len(points), 1)), points])
+        elif facet == 2:
+            return hstack([points, zeros((len(points), 1))])
+        elif facet == 3:
+            return hstack([points, ones((len(points), 1))])
+        else:
+            raise RuntimeError("Illegal quadrilateral facet number.")
 
     # Extract the geometric dimension of the points we want to map
     dim = len(points[0]) + 1
@@ -273,7 +331,7 @@ def map_facet_points(points, facet, facet_type):
         # of each point. We send the remaining coordinates back through
         # this function as a normal facet of one degree less,
         # then append the last coordinate back on.
-        temp_points = map_facet_points(points[:,:-1], facet, "facet")
+        temp_points = map_facet_points(cell._A, points[:,:-1], facet, "facet")
         new_points = zeros((points.shape[0], points.shape[1]+1))
         new_points[:,:-1] = temp_points
         new_points[:,-1] = points[:,-1]
