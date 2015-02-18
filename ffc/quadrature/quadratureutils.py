@@ -174,11 +174,16 @@ def unique_psi_tables(tables, eliminate_zeros):
     name_map, inverse_name_map = unique_tables(tables)
 
     # Set values to zero if they are lower than threshold.
+    # Also snap nearby values to +/- 1, +/- 0.5.
     format_epsilon = format["epsilon"]
     for name in tables:
         # Get values.
         vals = tables[name]
         vals[abs(vals) < format_epsilon] = 0
+        vals[abs(vals - 1.0) < format_epsilon] = 1.0
+        vals[abs(vals + 1.0) < format_epsilon] = -1.0
+        vals[abs(vals - 0.5) < format_epsilon] = 0.5
+        vals[abs(vals + 0.5) < format_epsilon] = -0.5
         tables[name] = vals
 
     # Extract the column numbers that are non-zero.
