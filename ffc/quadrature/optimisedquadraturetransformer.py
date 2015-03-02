@@ -180,14 +180,20 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         elif isinstance(expo, FloatValue):
             exp = format["floating point"](expo.value())
             var = format["std power"][self.parameters["format"]](str(val), exp)
-            sym = create_symbol(var, val.t, val, 1, iden=var)
+            if self.parameters["format"] == "pyop2":
+                sym = create_funcall(var, [val, exp])
+            else:
+                sym = create_symbol(var, val.t, val, 1, iden=var)
             return {(): sym}
         elif isinstance(expo, (Coefficient, Operator)):
             exp = self.visit(expo)[()]
 #            print "pow exp: ", exp
 #            print "pow val: ", val
             var = format["std power"][self.parameters["format"]](str(val), exp)
-            sym = create_symbol(var, val.t, val, 1, iden=var)
+            if self.parameters["format"] == "pyop2":
+                sym = create_funcall(var, [val, exp])
+            else:
+                sym = create_symbol(var, val.t, val, 1, iden=var)
             return {(): sym}
         else:
             error("power does not support this exponent: " + repr(expo))

@@ -101,7 +101,7 @@ format.update({
     "imul":           lambda v, w: "%s *= %s;" % (str(v), str(w)),
     "div":            lambda v, w: "%s/%s" % (str(v), str(w)),
     "inverse":        lambda v: "(1.0/%s)" % v,
-    "std power":      {'ufc': lambda base, exp: "std::pow(%s, %s)" % (base, exp), 'pyop2': lambda base, exp: "pow(%s, %s)" % (base, exp)},
+    "std power":      {'ufc': lambda base, exp: "std::pow(%s, %s)" % (base, exp), 'pyop2': lambda *args: "pow"},
     "exp":            {'ufc': lambda v: "std::exp(%s)" % str(v),
                        'pyop2': lambda: "exp"},
     "ln":             {'ufc': lambda v: "std::log(%s)" % str(v),
