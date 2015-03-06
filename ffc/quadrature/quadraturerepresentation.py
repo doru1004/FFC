@@ -198,9 +198,9 @@ def _transform_integrals_by_type(ir, transformer, integrals_dict, integral_type)
         transformer.update_facets(1, 0)
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
-    elif integral_type == "point":
+    elif integral_type == "vertex":
         # Compute transformed integrals.
-        info("Transforming point integral (%d)" % i)
+        info("Transforming vertex integral (%d)" % i)
         transformer.update_vertex(format["vertex"])
         terms = _transform_integrals(transformer, integrals_dict, integral_type)
 
@@ -250,7 +250,7 @@ def _extract_element_data(element_map, element_numbers):
 
             # Store data
             element_data[counter] = {"value_size":      value_size,
-                                     "local_dimension": fiat_element.space_dimension(),
+                                     "num_element_dofs": fiat_element.space_dimension(),
                                      "element_number":  element_number}
 
     return element_data

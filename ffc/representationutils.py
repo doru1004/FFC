@@ -110,7 +110,7 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "exterior_facet_vert":   "vert_facet",
                    "interior_facet_horiz":  "horiz_facet",
                    "interior_facet_vert":   "vert_facet",
-                   "point":                 "vertex",
+                   "vertex":                 "vertex",
                    "custom":                "cell"}[itg_data.integral_type]
 
     # Extract data

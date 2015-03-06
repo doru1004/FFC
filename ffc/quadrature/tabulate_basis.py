@@ -55,7 +55,7 @@ def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
             (points, weights) = create_quadrature(cell.facet_vert, degree[1], rule)
         else:
             (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
-    elif integral_type == "point":
+    elif integral_type == "vertex":
         (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
     elif integral_type == "custom":
         (points, weights) = (None, None)
@@ -91,7 +91,7 @@ def domain_to_entity_dim(integral_type, cell):
         entity_dim = tdim
     elif (integral_type in ("exterior_facet", "interior_facet", "exterior_facet_top", "exterior_facet_bottom", "exterior_facet_vert", "interior_facet_horiz", "interior_facet_vert")):
         entity_dim = tdim - 1
-    elif integral_type == "point":
+    elif integral_type == "vertex":
         entity_dim = 0
     elif integral_type == "custom":
         entity_dim = tdim

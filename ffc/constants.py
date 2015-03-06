@@ -21,7 +21,7 @@
 # First added:  2005-05-20
 # Last changed: 2015-01-12
 
-FFC_VERSION = "1.5.0+"
-UFC_VERSION = "1.5.0+"
+FFC_VERSION = "1.6.0dev"
+UFC_VERSION = "1.6.0dev"
 FIREDRAKE_VERSION_INFO = (0, 12, 0)
 FIREDRAKE_VERSION = ".".join(map(str, FIREDRAKE_VERSION_INFO))

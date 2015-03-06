@@ -25,7 +25,7 @@ import ufl
 from ufl.utils.sorting import canonicalize_metadata
 
 # FFC modules.
-from .constants import FFC_VERSION
+from ffc import __version__ as FFC_VERSION
 
 class JITObject:
     """This class is a wrapper for a compiled object in the context of
