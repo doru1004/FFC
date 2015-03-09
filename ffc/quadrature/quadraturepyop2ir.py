@@ -63,22 +63,23 @@ def _arglist(ir):
         prim_idims = [d*2 for d in prim_idims]
     localtensor = pyop2.Decl(float, pyop2.Symbol("A", tuple(prim_idims) or (1,)))
 
-    coordinates = pyop2.Decl(float, pyop2.Symbol("**vertex_coordinates", ()))
+    coordinates = pyop2.Decl("%s**" % float, pyop2.Symbol("vertex_coordinates", ()))
 
     coeffs = []
     for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
-        coeffs.append(pyop2.Decl(float, pyop2.Symbol("*%s%s" % \
-            ("c" if e.family() == 'Real' else "*", n[1:] if e.family() == 'Real' else n), ())))
+        typ = "%s*" % float if e.family() == 'Real' else "%s**" % float
+        coeffs.append(pyop2.Decl(typ, pyop2.Symbol("%s%s" % \
+            ("c" if e.family() == 'Real' else "", n[1:] if e.family() == 'Real' else n), ())))
 
     arglist = [localtensor, coordinates]
     # embedded manifold, passing in cell_orientation
     if ir['needs_oriented'] and \
         ir['cell'].topological_dimension() != ir['cell'].geometric_dimension():
-        cell_orientation = pyop2.Decl(int, pyop2.Symbol("**cell_orientation_", ()))
+        cell_orientation = pyop2.Decl("%s**" % int, pyop2.Symbol("cell_orientation_", ()))
         arglist.append(cell_orientation)
     arglist += coeffs
     if integral_type in ("exterior_facet", "exterior_facet_vert"):
-        arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
+        arglist.append(pyop2.Decl("%s*" % int, pyop2.Symbol("facet_p", ()), qualifiers=["unsigned"]))
     if integral_type in ("interior_facet", "interior_facet_vert"):
         arglist.append(pyop2.Decl(int, pyop2.Symbol("facet_p", (2,)), qualifiers=["unsigned"]))
 
