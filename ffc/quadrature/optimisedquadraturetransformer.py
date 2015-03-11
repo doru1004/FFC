@@ -425,80 +425,48 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def cell_orientation(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
-    def quadrature_weight(self, o): # FIXME
-        error("This object should be implemented by the child class.")
+    def quadrature_weight(self, o):
+        # I don't think this should exist at all, but I left it in
+        # so as not to break upstream compatibility...
+        return {(): create_float(1.0)}
 
     # -------------------------------------------------------------------------
 
-    def create_argument(self, ufl_argument, derivatives, component, local_comp,
-                        local_offset, ffc_element, transformation, multiindices,
-                        tdim, gdim, avg):
-        "Create code for basis functions, and update relevant tables of used basis."
+    def reference_value(self, o):
+        return self.visit(o.ufl_operands[0])
 
-        # Prefetch formats to speed up code generation.
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
+    def create_argument(self, ufl_argument, derivatives, component,
+                        ffc_element, transformation, tdim, avg):
+        "Create code for basis functions, and update relevant tables of used basis."
 
         # Reset code
         code = {}
 
-        # Affine mapping
-        if transformation == "affine":
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
-
-                # Create mapping and basis name.
-                mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
-                if isinstance(mapping, list):
-                    for ma, ba in zip(mapping, basis):
-                        if not ma in code:
-                            code[ma] = []
-                        if basis is not None:
-                            # Add transformation if needed.
-                            code[ma].append(self.__apply_transform(ba, derivatives, multi, tdim, gdim))
-                else:
-                    if not mapping in code:
-                        code[mapping] = []
-                    if basis is not None:
-                        # Add transformation if needed.
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
-
-        # Handle non-affine mappings.
-        else:
+        if transformation != "affine":
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+        # Get derivatives.
+        deriv = [derivatives.count(i) for i in range(tdim)]
+        if not any(deriv):
+            deriv = []
 
-                for c in range(tdim):
-                    # Create mapping and basis name.
-                    mapping, basis = self._create_mapping_basis(c + local_offset, deriv, avg, ufl_argument, ffc_element)
-                    if not mapping in code:
-                        code[mapping] = []
+        # Create mapping and basis name.
+        mapping, basis = self._create_mapping_basis(component, deriv, avg, ufl_argument, ffc_element)
 
-                    if basis is not None:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
-                            basis = create_product([dxdX, basis])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), \
-                                        create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
-                            basis = create_product([detJ, dXdx, basis])
-                        else:
-                            error("Transformation is not supported: " + repr(transformation))
-
-                        # Add transformation if needed.
-                        code[mapping].append(self.__apply_transform(basis, derivatives, multi, tdim, gdim))
+        # VFS-on-interior-facets case
+        if isinstance(mapping, list):
+            for ma, ba in zip(mapping, basis):
+                if ma not in code:
+                    code[ma] = []
+                if basis is not None:
+                    # Add transformation if needed.
+                    code[ma].append(ba)
+        else:
+            if mapping not in code:
+                code[mapping] = []
+            if basis is not None:
+                # Add transformation if needed.
+                code[mapping].append(basis)
 
         # Add sums and group if necessary.
         for key, val in list(code.items()):
@@ -509,61 +477,27 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return code
 
-    def create_function(self, ufl_function, derivatives, component, local_comp,
-                       local_offset, ffc_element, is_quad_element, transformation, multiindices,
-                       tdim, gdim, avg):
+    def create_function(self, ufl_function, derivatives, component,
+                       ffc_element, is_quad_element, transformation, tdim, avg):
         "Create code for basis functions, and update relevant tables of used basis."
         ffc_assert(ufl_function in self._function_replace_values, "Expecting ufl_function to have been mapped prior to this call.")
-
-        # Prefetch formats to speed up code generation.
-        f_transform     = format["transform"]
-        f_detJ          = format["det(J)"]
 
         # Reset code
         code = []
 
-        # Handle affine mappings.
-        if transformation == "affine":
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
-
-                # Create function name.
-                function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                if function_name:
-                    # Add transformation if needed.
-                    code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
-
-        # Handle non-affine mappings.
-        else:
+        if transformation != "affine":
             ffc_assert(avg is None, "Taking average is not supported for non-affine mappings.")
 
-            # Loop derivatives and get multi indices.
-            for multi in multiindices:
-                deriv = [multi.count(i) for i in range(tdim)]
-                if not any(deriv):
-                    deriv = []
+        # Get derivatives.
+        deriv = [derivatives.count(i) for i in range(tdim)]
+        if not any(deriv):
+            deriv = []
 
-                for c in range(tdim):
-                    function_name = self._create_function_name(c + local_offset, deriv, avg, is_quad_element, ufl_function, ffc_element)
-                    if function_name:
-                        # Multiply basis by appropriate transform.
-                        if transformation == "covariant piola":
-                            dxdX = create_symbol(f_transform("JINV", c, local_comp, tdim, gdim, self.restriction), GEO,
-                                                 loop_index=[c*gdim + local_comp], iden="K%s" % _choose_map(self.restriction))
-                            function_name = create_product([dxdX, function_name])
-                        elif transformation == "contravariant piola":
-                            detJ = create_fraction(create_float(1), create_symbol(f_detJ(self.restriction), GEO, iden=f_detJ(self.restriction)))
-                            dXdx = create_symbol(f_transform("J", local_comp, c, gdim, tdim, self.restriction), GEO, \
-                                        loop_index=[local_comp*tdim + c], iden="J%s" % _choose_map(self.restriction))
-                            function_name = create_product([detJ, dXdx, function_name])
-                        else:
-                            error("Transformation is not supported: ", repr(transformation))
+        # Create function name.
+        function_name = self._create_function_name(component, deriv, avg, is_quad_element, ufl_function, ffc_element)
 
-                        # Add transformation if needed.
-                        code.append(self.__apply_transform(function_name, derivatives, multi, tdim, gdim))
+        if function_name:
+            code.append(function_name)
 
         if not code:
             return create_float(0.0)
@@ -574,23 +508,6 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return code
 
-    # -------------------------------------------------------------------------
-    # Helper functions for Argument and Coefficient
-    # -------------------------------------------------------------------------
-    def __apply_transform(self, function, derivatives, multi, tdim, gdim):
-        "Apply transformation (from derivatives) to basis or function."
-        f_transform     = format["transform"]
-
-        # Add transformation if needed.
-        transforms = []
-        if not self.integral_type == "custom":
-            for i, direction in enumerate(derivatives):
-                ref = multi[i]
-                t = f_transform("JINV", ref, direction, tdim, gdim, self.restriction)
-                transforms.append(create_symbol(t, GEO, iden=t))
-
-        transforms.append(function)
-        return create_product(transforms)
 
     # -------------------------------------------------------------------------
     # Helper functions for transformation of UFL objects in base class
@@ -659,14 +576,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             loop_index = [format["integration points"]]
         weight = self._create_symbol(weight, ACCESS, _loop_index=loop_index, _iden=iden)[()]
         # Create value.
-        if integral_type in ("vertex", "custom"):
-            trans_set = set()
-            value = create_product([val, weight])
-        else:
-            f_scale_factor = format["scale factor"]
-            trans_set = set([f_scale_factor])
-            value = create_product([val, weight,
-                                    create_symbol(f_scale_factor, GEO, iden=f_scale_factor)])
+        trans_set = set()
+        value = create_product([val, weight])
 
         # Update sets of used variables (if they will not be used because of
         # optimisations later, they will be reset).

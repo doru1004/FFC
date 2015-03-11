@@ -35,6 +35,11 @@ from ufl.permutation import build_component_numbering
 
 # UFL Algorithms.
 from ufl.algorithms import Transformer
+from ufl.algorithms import replace
+from ufl.algorithms.change_to_reference import (change_to_reference_value,
+                                                change_to_reference_grad,
+                                                compute_integrand_scaling_factor,
+                                                change_to_reference_geometry)
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
@@ -44,7 +49,6 @@ from ffc.cpp import format
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
-from ffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
 from ffc.quadrature.quadratureutils import create_psi_tables
@@ -360,14 +364,13 @@ class QuadratureTransformerBase(Transformer):
         # hence we must take this route
         if basis is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate basis
-            (component, local_elem, local_comp, local_offset,
-             ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
+            (component, local_elem,
+             ffc_element, transformation) = self._get_auxiliary_variables(o, components)
 
             # Create mapping and code for basis function and add to dict.
-            basis = self.create_argument(o, derivatives, component, local_comp,
-                                         local_offset, ffc_element,
-                                         transformation, multiindices,
-                                         tdim, self.gdim, self.avg)
+            basis = self.create_argument(o, derivatives, component,
+                                         ffc_element, transformation,
+                                         tdim, self.avg)
             self.argument_cache[key] = basis
 
         return basis
@@ -400,7 +403,11 @@ class QuadratureTransformerBase(Transformer):
     # Grad (differentiation.py).
     # -------------------------------------------------------------------------
     def grad(self, o):
-        #print("\n\nVisiting Grad: " + repr(o))
+        # This should be turned into J^(-T)[i, j]*ReferenceGrad[j]
+        error("This object should be implemented by the child class.")
+
+    def reference_grad(self, o):
+        #print("\n\nVisiting ReferenceGrad: " + repr(o))
 
         # Get expression
         derivative_expr, = o.ufl_operands
@@ -440,9 +447,6 @@ class QuadratureTransformerBase(Transformer):
     def coefficient(self, o):
         #print("\nVisiting Coefficient: " + repr(o))
 
-        # Map o to object with proper element and count
-        o = self._function_replace_map[o]
-
         # Splat restriction for Real coefficients (it has no meaning anyway)
         if self.restriction and o.element().family() == "Real":
             self.restriction = None
@@ -459,8 +463,8 @@ class QuadratureTransformerBase(Transformer):
         # hence we must take this route
         if function_code is None or self.parameters["format"] == "pyop2" or self.optimise_parameters["optimisation"]:
             # Get auxiliary variables to generate function
-            (component, local_elem, local_comp, local_offset,
-             ffc_element, transformation, multiindices) = self._get_auxiliary_variables(o, components, derivatives)
+            (component, local_elem,
+             ffc_element, transformation) = self._get_auxiliary_variables(o, components)
 
             # Check that we don't take derivatives of QuadratureElements.
             is_quad_element = local_elem.family() == "Quadrature"
@@ -471,8 +475,8 @@ class QuadratureTransformerBase(Transformer):
 
             # Create code for function and add empty tuple to cache dict.
             function_code = {(): self.create_function(o, derivatives, component,
-                                                      local_comp, local_offset, ffc_element, is_quad_element,
-                                                      transformation, multiindices, tdim, self.gdim, self.avg)}
+                                                      ffc_element, is_quad_element,
+                                                      transformation, tdim, self.avg)}
 
             self.function_cache[key] = function_code
 
@@ -766,6 +770,28 @@ class QuadratureTransformerBase(Transformer):
     def generate_terms(self, integrand, integral_type, space):
         "Generate terms for code generation."
 
+        ### BENDY REPLACEMENT GOES HERE ###
+        # Replace coefficients so they all have proper element and domain for what's to come
+        integrand = replace(integrand, self._function_replace_map)  # FIXME: Doesn't replace domain coefficient!!! Merge replace functionality into change_to_reference_grad to fix?
+
+        # Change from physical gradients to reference gradients
+        integrand = change_to_reference_grad(integrand, space)  # TODO: Make this optional depending on backend
+
+        # Apply mappings (identity/Piola)
+        integrand = change_to_reference_value(integrand, space)
+
+        # Compute and apply integration scaling factor
+        scale = compute_integrand_scaling_factor(integrand.domain(), integral_type, space)
+        integrand = integrand * scale
+
+        # Change geometric representation to lower level quantities
+        if integral_type in ("custom", "point"):
+            physical_coordinates_known = True
+        else:
+            physical_coordinates_known = False
+        integrand = change_to_reference_geometry(integrand, physical_coordinates_known, self._function_replace_map)
+        ### END BENDY ###
+
         # Set domain type
         self.integral_type = integral_type
 
@@ -914,8 +940,7 @@ class QuadratureTransformerBase(Transformer):
 
     def _get_auxiliary_variables(self,
                                  ufl_function,
-                                 component,
-                                 derivatives):
+                                 component):
         "Helper function for both Coefficient and Argument."
 
         # Get UFL element.
@@ -933,15 +958,6 @@ class QuadratureTransformerBase(Transformer):
             comp_map, comp_num = build_component_numbering(ufl_element.value_shape(), ufl_element.symmetry())
             component = comp_map[component]
 
-            # Map physical components into reference components
-            component, dummy = transform_component(component, 0, ufl_element)
-
-            # Compute the local offset (needed for non-affine mappings).
-            local_offset = component - local_comp
-        else:
-            # Compute the local offset (needed for non-affine mappings).
-            local_offset = 0
-
         # Create FFC element.
         ffc_element = create_element(ufl_element)
 
@@ -950,12 +966,7 @@ class QuadratureTransformerBase(Transformer):
         transformation = ffc_sub_element.mapping()[0]
         ffc_assert(all(transformation == mapping for mapping in ffc_sub_element.mapping()),
                    "Assuming subelement mappings are equal but they differ.")
-
-        # Generate FFC multi index for derivatives.
-        tdim = self.tdim # FIXME: ufl_element.domain().topological_dimension() ???
-        multiindices = FFCMultiIndex([list(range(tdim))]*len(derivatives)).indices
-
-        return (component, local_elem, local_comp, local_offset, ffc_element, transformation, multiindices)
+        return (component, local_elem, ffc_element, transformation)
 
     def _get_current_entity(self):
         if self.entity_type == "cell":
