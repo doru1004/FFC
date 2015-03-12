@@ -40,6 +40,7 @@ from ufl.algorithms.change_to_reference import (change_to_reference_value,
                                                 change_to_reference_grad,
                                                 compute_integrand_scaling_factor,
                                                 change_to_reference_geometry)
+from ufl.algorithms.apply_derivatives import apply_ref_derivatives
 
 # FFC modules.
 from ffc.log import ffc_assert, error, info
@@ -791,6 +792,9 @@ class QuadratureTransformerBase(Transformer):
         else:
             physical_coordinates_known = False
         integrand = change_to_reference_geometry(integrand, physical_coordinates_known, self._function_replace_map)
+
+        # Expand out reference grads
+        integrand = apply_ref_derivatives(integrand)
         ### END BENDY ###
 
         # Set domain type
