@@ -15,10 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
-# Modified by Martin Alnaes, 2013
-#
-# First added:  2010-01-24
-# Last changed: 2013-02-14
+# Modified by Martin Alnaes, 2013-2015
 
 import os
 import sys, sysconfig
@@ -28,21 +25,22 @@ from testutils import run_command
 
 _test_code = """\
 #include "../../ufctest.h"
-#include "%s.h"
+#include "{prefix}.h"
 #include <fstream>
 
 int main(int argc, char * argv[])
-{
-  const char jsonfilename[] = "%s.json";
+{{
+  const char jsonfilename[] = "{prefix}.json";
   std::ofstream jsonfile(jsonfilename);
-  Printer printer(std::cout, jsonfile);
+  Printer printer(jsonfile);
   printer.begin();
 
-%s%s
+{benchline}
+{tests}
 
   printer.end();
   return 0;
-}
+}}
 """
 
 def _generate_test_code(header_file):
@@ -57,99 +55,14 @@ def _generate_test_code(header_file):
     # Generate tests, either based on forms or elements
     if num_forms > 0:
         benchline = "  bool bench = (argc > 1) && argv[1][0] == 'b';\n"
-        tests = ['  %s_form_%d f%d; test_form(f%d, bench, %d, printer);' % (prefix.lower(), i, i, i, i)
+        tests = ['  {prefix}_form_{i} f{i}; test_form(f{i}, bench, {i}, printer);'.format(prefix=prefix.lower(), i=i)
                  for i in range(num_forms)]
     else:
         benchline = ""
-        tests = ['  %s_finite_element_%d e%d; test_finite_element(e%d, %d, printer);' % (prefix.lower(), i, i, i, i)
+        tests = ['  {prefix}_finite_element_{i} e{i}; test_finite_element(e{i}, {i}, printer);'.format(prefix=prefix.lower(), i=i)
                  for i in range(num_elements)]
 
     # Write file
     test_file = open(prefix + ".cpp", "w")
-    test_file.write(_test_code % (prefix, prefix, benchline, "\n".join(tests)))
+    test_file.write(_test_code.format(prefix=prefix, benchline=benchline, tests="\n".join(tests)))
     test_file.close()
-
-def build_ufc_programs(bench, permissive, debug=False):
-    "Build test programs for all test cases."
-
-    # Get a list of all files
-    header_files = [f for f in os.listdir(".") if f.endswith(".h")]
-    header_files.sort()
-
-    begin("Building test programs (%d header files found)" % len(header_files))
-
-    # Get UFC flags
-    ufc_cflags = get_status_output("pkg-config --cflags ufc-1")[1].strip()
-
-    # Get Boost dir (code copied from ufc/src/utils/python/ufc_utils/build.py)
-    # Set a default directory for the boost installation
-    if sys.platform == "darwin":
-        # Use Brew as default
-        default = os.path.join(os.path.sep, "usr", "local")
-    else:
-        default = os.path.join(os.path.sep, "usr")
-
-    # If BOOST_DIR is not set use default directory
-    boost_inc_dir = ""
-    boost_lib_dir = ""
-    boost_math_tr1_lib = "boost_math_tr1"
-    boost_dir = os.getenv("BOOST_DIR", default)
-    boost_is_found = False
-    for inc_dir in ["", "include"]:
-        if os.path.isfile(os.path.join(boost_dir, inc_dir, "boost", "version.hpp")):
-            boost_inc_dir = os.path.join(boost_dir, inc_dir)
-            break
-    libdir_multiarch = "lib/" + sysconfig.get_config_vars().get("MULTIARCH", "")
-    for lib_dir in ["", "lib", libdir_multiarch, "lib64"]:
-        for ext in [".so", "-mt.so", ".dylib", "-mt.dylib"]:
-            _lib = os.path.join(boost_dir, lib_dir, "lib" + boost_math_tr1_lib + ext)
-            if os.path.isfile(_lib):
-                if "-mt" in _lib:
-                    boost_math_tr1_lib += "-mt"
-                boost_lib_dir = os.path.join(boost_dir, lib_dir)
-                break
-    if boost_inc_dir != "" and boost_lib_dir != "":
-        boost_is_found = True
-
-    if not boost_is_found:
-        raise OSError, """The Boost library was not found.
-If Boost is installed in a nonstandard location,
-set the environment variable BOOST_DIR.
-"""
-
-    ufc_cflags += " -I%s -L%s" % (boost_inc_dir, boost_lib_dir)
-
-    # Set compiler options
-    compiler_options = "%s -Wall" % ufc_cflags
-    if not permissive:
-        compiler_options += " -Werror -pedantic"
-    if bench:
-        info("Benchmarking activated")
-        # Takes too long to build with -O2
-        #compiler_options += " -O2"
-        compiler_options += " -O3"
-        #compiler_options += " -O3 -fno-math-errno -march=native"
-    if debug:
-        info("Debugging activated")
-        compiler_options += " -g -O0"
-    info("Compiler options: %s" % compiler_options)
-
-    # Iterate over all files
-    for f in header_files:
-
-        # Generate test code
-        filename = _generate_test_code(f)
-
-        # Compile test code
-        prefix = f.split(".h")[0]
-        command = "g++ %s -o %s.bin %s.cpp -l%s" % \
-                  (compiler_options, prefix, prefix, boost_math_tr1_lib)
-        ok = run_command(command)
-
-        # Check status
-        if ok:
-            info_green("%s OK" % prefix)
-        else:
-            info_red("%s failed" % prefix)
-
-    end()
