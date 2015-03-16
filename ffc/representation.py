@@ -38,8 +38,6 @@ from itertools import chain
 
 # Import UFL
 import ufl
-from ufl.classes import Measure
-from ufl.cell import cell2dim
 
 # FFC modules
 from ffc.utils import compute_permutations, product

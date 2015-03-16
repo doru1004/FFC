@@ -110,8 +110,13 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    "exterior_facet_vert":   "vert_facet",
                    "interior_facet_horiz":  "horiz_facet",
                    "interior_facet_vert":   "vert_facet",
-                   "vertex":                 "vertex",
-                   "custom":                "cell"}[itg_data.integral_type]
+                   "vertex":                "vertex",
+                   #"point":                 "vertex", # TODO: Not sure, clarify here what 'entity_type' refers to?
+                   "custom":                "cell",
+                   #"overlap":               "cell",
+                   #"interface":             "cell", # FIXME: set this to the same as "custom" but not sure here...
+                   #"cutcell":               "cell",
+                   }[itg_data.integral_type]
 
     # Extract data
     cell = itg_data.domain.cell()
