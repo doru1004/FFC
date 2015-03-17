@@ -907,7 +907,7 @@ def remove_unused(code, used_set=set()):
                 # y[2]) for variables with separators
                 seps_present = [sep for sep in special_characters if sep in variable_name]
                 if seps_present:
-                    variable_name = [variable_name.split(sep)[0] for sep in seps_present]
+                    variable_name = [variable_name.split(sep)[1] if sep == "*" else variable_name.split(sep)[0] for sep in seps_present]
                     variable_name.sort()
                     variable_name = variable_name[0]
 
