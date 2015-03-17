@@ -178,7 +178,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         if isinstance(expo, IntValue):
             return {(): create_product([val]*expo.value())}
         elif isinstance(expo, FloatValue):
-            exp = format["floating point"](expo.value())
+            if self.parameters["format"] == "pyop2":
+                exp = create_float(expo.value())
+            else:
+                exp = format["floating point"](expo.value())
             var = format["std power"][self.parameters["format"]](str(val), exp)
             if self.parameters["format"] == "pyop2":
                 sym = create_funcall(var, [val, exp])
