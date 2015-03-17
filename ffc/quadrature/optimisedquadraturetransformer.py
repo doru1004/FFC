@@ -391,6 +391,17 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
 
         return {(): create_symbol(normal_component, GEO, iden=normal_component)}
 
+    def reference_normal(self, o):
+        components = self.component()
+
+        # Safety check.
+        ffc_assert(len(components) == 1,
+                   "ReferenceNormal expects 1 component index: " + repr(components))
+
+        rncpt = "RN%s" % _choose_map(self.restriction)
+
+        return {(): create_symbol(rncpt + "[%s]" % components[0], GEO, loop_index=(components[0],), iden=rncpt)}
+
     def cell_normal(self, o): # FIXME
         error("This object should be implemented by the child class.")
 
