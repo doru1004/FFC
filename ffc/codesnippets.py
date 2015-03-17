@@ -54,7 +54,7 @@ __old__ = ["evaluate_f", "ufc_facet_determinant", "pyop2_facet_determinant",
            "pyop2_circumradius", "pyop2_circumradius_interior",
            "facet_area", "min_facet_edge_length", "max_facet_edge_length",
            "ufc_orientation_snippet", "pyop2_orientation_snippet",
-           "reference_facet_to_cell_jacobian"]
+           "reference_facet_to_cell_jacobian", "reference_normals"]
 
 __all__ += __old__
 
@@ -377,6 +377,39 @@ Cell("triangle", 3): _facet_to_cell_jacobian_triangle,
 Cell("tetrahedron"): _facet_to_cell_jacobian_tetrahedron,
 Cell("quadrilateral"): _facet_to_cell_jacobian_quad,
 Cell("quadrilateral", 3): _facet_to_cell_jacobian_quad,
+}
+
+# Code snippets storing facet orientations on reference element
+
+_reference_normals_interval = """\
+// Reference normals on reference interval
+double ref_norms[2][1] = {{-1.0}, {1.0}};
+"""
+
+_reference_normals_triangle = """\
+// Reference normals on reference triangle
+double ref_norms[3][2] = {{1.0, 1.0}, {-1.0, 0.0}, {0.0, -1.0}};
+"""
+
+_reference_normals_quad = """\
+// Reference normals on reference quad
+double ref_norms[4][2] = {{-1.0, 0.0}, {1.0, 0.0}, {0.0, -1.0}, {0.0, 1.0}};
+"""
+
+_reference_normals_tetrahedron = """\
+// Reference normals on reference tetrahedron
+double ref_norms[4][3] = {{1.0, 1.0, 1.0}, {-1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {0.0, 0.0, -1.0}};
+"""
+
+reference_normals = {
+Cell("interval"): _reference_normals_interval,
+Cell("interval", 2): _reference_normals_interval,
+Cell("interval", 3): _reference_normals_interval,
+Cell("triangle"): _reference_normals_triangle,
+Cell("triangle", 3): _reference_normals_triangle,
+Cell("tetrahedron"): _reference_normals_tetrahedron,
+Cell("quadrilateral"): _reference_normals_quad,
+Cell("quadrilateral", 3): _reference_normals_quad,
 }
 
 # Code snippet for scale factor

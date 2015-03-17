@@ -297,6 +297,7 @@ format.update({
     "compute_jacobian_inverse": lambda cell, r=None: \
                                 compute_jacobian_inverse[cell] % {"restriction": _choose_map(r)},
     "reference_facet_to_cell_jacobian": lambda cell: reference_facet_to_cell_jacobian[cell],
+    "reference_normals": lambda cell: reference_normals[cell],
     "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
                                  "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else ""},
     "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
