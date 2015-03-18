@@ -146,19 +146,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([num_ops])
 
         # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](cell)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented and tdim != gdim:
-            # NEED TO THINK ABOUT THIS FOR EXTRUSION
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
-
-        # Generate code for cell volume and circumradius -- note that the
-        # former will be incorrect on extruded meshes by a constant factor.
-        jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
-        jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
+        jacobi_code = ""
 
     elif integral_type in ("exterior_facet", "exterior_facet_vert"):
         if p_format == 'pyop2':
@@ -171,15 +159,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([ops])
 
         # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](cell)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented and tdim != gdim:
-            # NEED TO THINK ABOUT THIS FOR EXTRUSION
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
-        jacobi_code += "\n"
+        jacobi_code = ""
         if integral_type == "exterior_facet":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[facet];"
@@ -187,17 +167,6 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["reference_normals"](cell)
             jacobi_code += "\n\n" + "double *RN = ref_norms[facet];"
             trans_set.add("RN")
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-            jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
-            if tdim == 3:
-                jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim)
-                jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim)
-
-            # Generate code for cell volume and circumradius
-            jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
-            jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
-
         elif integral_type == "exterior_facet_vert":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[facet+2];"
@@ -205,26 +174,13 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["reference_normals"](cell)
             jacobi_code += "\n\n" + "double *RN = ref_norms[facet+2];"
             trans_set.add("RN")
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-            # OTHER THINGS NOT IMPLEMENTED YET
-        else:
-            raise RuntimeError("Invalid integral_type")
 
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom"):
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
         operations.append([ops])
 
         # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](cell)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented:
-            # NEED TO THINK ABOUT THIS FOR EXTRUSION
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
-        jacobi_code += "\n"
+        jacobi_code = ""
         if integral_type == "exterior_facet_bottom":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[0];"
@@ -239,17 +195,11 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["reference_normals"](cell)
             jacobi_code += "\n\n" + "double *RN = ref_norms[1];"
             trans_set.add("RN")
-        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
-        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-        # THE REST IS NOT IMPLEMENTED YET
 
     elif integral_type in ("interior_facet", "interior_facet_vert"):
         if p_format == 'pyop2':
             common += ["unsigned int facet_0 = facet_p[0];"]
             common += ["unsigned int facet_1 = facet_p[1];"]
-            common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
-            # Note that the following line is unsafe for isoparametric elements.
-            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
 
         # Generate tensor code for facets + set of used geometry terms.
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
@@ -258,21 +208,7 @@ def _tabulate_tensor(ir, parameters):
         operations.append([ops])
 
         # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        for _r in ["+", "-"]:
-            if p_format == "pyop2":
-                jacobi_code += format["compute_jacobian_interior"](cell, r=_r)
-            else:
-                jacobi_code += format["compute_jacobian"](cell, r=_r)
-
-            jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
-            if oriented and tdim != gdim:
-                # NEED TO THINK ABOUT THIS FOR EXTRUSION
-                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
-            jacobi_code += "\n"
-
+        jacobi_code = ""
         if integral_type == "interior_facet":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[facet_0];"
@@ -284,18 +220,6 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + "double *RN_1 = ref_norms[facet_1];"
             trans_set.add("RN_0")
             trans_set.add("RN_1")
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-
-            jacobi_code += "\n\n" + format["generate facet area"](tdim, gdim)
-            if tdim == 3:
-                jacobi_code += "\n\n" + format["generate min facet edge length"](tdim, gdim, r="+")
-                jacobi_code += "\n\n" + format["generate max facet edge length"](tdim, gdim, r="+")
-
-            # Generate code for cell volume and circumradius
-            jacobi_code += "\n\n" + format["generate cell volume"][p_format](tdim, gdim, integral_type)
-            jacobi_code += "\n\n" + format["generate circumradius interior"](tdim, gdim, integral_type)
-
         elif integral_type == "interior_facet_vert":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[facet_0 + 2];"
@@ -307,34 +231,15 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + "double *RN_1 = ref_norms[facet_1 + 2];"
             trans_set.add("RN_0")
             trans_set.add("RN_1")
-            # THE REST IS NOT IMPLEMENTED YET
-            jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
-            jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-        else:
-            raise RuntimeError("Invalid integral_type")
 
     elif integral_type == "interior_facet_horiz":
-        common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
-        # Note that the following line is unsafe for isoparametric elements.
-        common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
-
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
 
         # Save number of operations (for printing info on operations).
         operations.append([ops])
 
         # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        for _r in ["+", "-"]:
-            jacobi_code += format["compute_jacobian_interior"](cell, r=_r)
-            jacobi_code += "\n"
-            jacobi_code += format["compute_jacobian_inverse"](cell, r=_r)
-            if oriented:
-                # NEED TO THINK ABOUT THIS FOR EXTRUSION
-                jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
-            jacobi_code += "\n"
-
+        jacobi_code = ""
         jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
         jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[1];"
         jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[0];"
@@ -345,28 +250,6 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code += "\n\n" + "double *RN_1 = ref_norms[0];"
         trans_set.add("RN_0")
         trans_set.add("RN_1")
-
-        # TODO: verify that this is correct (we think it is)
-        jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
-        jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
-        # THE REST IS NOT IMPLEMENTED YET
-
-    elif integral_type == "point":
-        # Update transformer with vertices and generate code + set of used geometry terms.
-        nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
-
-        # Save number of operations (for printing info on operations).
-        operations.append([ops])
-
-        # Generate code for basic geometric quantities
-        # @@@: Jacobian snippet
-        jacobi_code  = ""
-        jacobi_code += format["compute_jacobian"](cell)
-        jacobi_code += "\n"
-        jacobi_code += format["compute_jacobian_inverse"](cell)
-        if oriented and tdim != gdim:
-            jacobi_code += format["orientation"][p_format](tdim, gdim)
-        jacobi_code += "\n"
 
     else:
         error("Unhandled integral type: " + str(integral_type))
