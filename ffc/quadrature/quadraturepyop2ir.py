@@ -199,6 +199,12 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["generate circumradius"][p_format](tdim, gdim, integral_type)
 
         elif integral_type == "exterior_facet_vert":
+            jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
+            jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[facet+2];"
+            trans_set.add("FJ")
+            jacobi_code += "\n\n" + format["reference_normals"](cell)
+            jacobi_code += "\n\n" + "double *RN = ref_norms[facet+2];"
+            trans_set.add("RN")
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
             jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
             # OTHER THINGS NOT IMPLEMENTED YET
@@ -219,6 +225,20 @@ def _tabulate_tensor(ir, parameters):
             # NEED TO THINK ABOUT THIS FOR EXTRUSION
             jacobi_code += format["orientation"][p_format](tdim, gdim)
         jacobi_code += "\n"
+        if integral_type == "exterior_facet_bottom":
+            jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
+            jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[0];"
+            trans_set.add("FJ")
+            jacobi_code += "\n\n" + format["reference_normals"](cell)
+            jacobi_code += "\n\n" + "double *RN = ref_norms[0];"
+            trans_set.add("RN")
+        elif integral_type == "exterior_facet_top":
+            jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
+            jacobi_code += "\n\n" + "double *FJ = ref_facet_jac[1];"
+            trans_set.add("FJ")
+            jacobi_code += "\n\n" + format["reference_normals"](cell)
+            jacobi_code += "\n\n" + "double *RN = ref_norms[1];"
+            trans_set.add("RN")
         jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type)
         jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
         # THE REST IS NOT IMPLEMENTED YET
@@ -277,6 +297,16 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n\n" + format["generate circumradius interior"](tdim, gdim, integral_type)
 
         elif integral_type == "interior_facet_vert":
+            jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
+            jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[facet_0 + 2];"
+            jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[facet_1 + 2];"
+            trans_set.add("FJ_0")
+            trans_set.add("FJ_1")
+            jacobi_code += "\n\n" + format["reference_normals"](cell)
+            jacobi_code += "\n\n" + "double *RN_0 = ref_norms[facet_0 + 2];"
+            jacobi_code += "\n\n" + "double *RN_1 = ref_norms[facet_1 + 2];"
+            trans_set.add("RN_0")
+            trans_set.add("RN_1")
             # THE REST IS NOT IMPLEMENTED YET
             jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
             jacobi_code += "\n\n" + format["generate normal"](cell, p_format, integral_type)
@@ -304,6 +334,17 @@ def _tabulate_tensor(ir, parameters):
                 # NEED TO THINK ABOUT THIS FOR EXTRUSION
                 jacobi_code += format["orientation"][p_format](tdim, gdim, r=_r)
             jacobi_code += "\n"
+
+        jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
+        jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[0];"
+        jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[1];"
+        trans_set.add("FJ_0")
+        trans_set.add("FJ_1")
+        jacobi_code += "\n\n" + format["reference_normals"](cell)
+        jacobi_code += "\n\n" + "double *RN_0 = ref_norms[0];"
+        jacobi_code += "\n\n" + "double *RN_1 = ref_norms[1];"
+        trans_set.add("RN_0")
+        trans_set.add("RN_1")
 
         # TODO: verify that this is correct (we think it is)
         jacobi_code += "\n\n" + format["facet determinant"](cell, p_format, integral_type, r="+")
