@@ -336,13 +336,13 @@ def _tabulate_tensor(ir, parameters):
             jacobi_code += "\n"
 
         jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
-        jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[0];"
-        jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[1];"
+        jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[1];"
+        jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[0];"
         trans_set.add("FJ_0")
         trans_set.add("FJ_1")
         jacobi_code += "\n\n" + format["reference_normals"](cell)
-        jacobi_code += "\n\n" + "double *RN_0 = ref_norms[0];"
-        jacobi_code += "\n\n" + "double *RN_1 = ref_norms[1];"
+        jacobi_code += "\n\n" + "double *RN_0 = ref_norms[1];"
+        jacobi_code += "\n\n" + "double *RN_1 = ref_norms[0];"
         trans_set.add("RN_0")
         trans_set.add("RN_1")
 
