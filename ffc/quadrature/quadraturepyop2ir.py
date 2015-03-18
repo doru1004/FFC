@@ -212,23 +212,23 @@ def _tabulate_tensor(ir, parameters):
         if integral_type == "interior_facet":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[facet_0];"
-            jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[facet_1];"
+            jacobi_code += "\n"   + "double *FJ_1 = ref_facet_jac[facet_1];"
             trans_set.add("FJ_0")
             trans_set.add("FJ_1")
             jacobi_code += "\n\n" + format["reference_normals"](cell)
             jacobi_code += "\n\n" + "double *RN_0 = ref_norms[facet_0];"
-            jacobi_code += "\n\n" + "double *RN_1 = ref_norms[facet_1];"
+            jacobi_code += "\n"   + "double *RN_1 = ref_norms[facet_1];"
             trans_set.add("RN_0")
             trans_set.add("RN_1")
         elif integral_type == "interior_facet_vert":
             jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
             jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[facet_0 + 2];"
-            jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[facet_1 + 2];"
+            jacobi_code += "\n"   + "double *FJ_1 = ref_facet_jac[facet_1 + 2];"
             trans_set.add("FJ_0")
             trans_set.add("FJ_1")
             jacobi_code += "\n\n" + format["reference_normals"](cell)
             jacobi_code += "\n\n" + "double *RN_0 = ref_norms[facet_0 + 2];"
-            jacobi_code += "\n\n" + "double *RN_1 = ref_norms[facet_1 + 2];"
+            jacobi_code += "\n"   + "double *RN_1 = ref_norms[facet_1 + 2];"
             trans_set.add("RN_0")
             trans_set.add("RN_1")
 
@@ -242,12 +242,12 @@ def _tabulate_tensor(ir, parameters):
         jacobi_code = ""
         jacobi_code += "\n\n" + format["reference_facet_to_cell_jacobian"](cell)
         jacobi_code += "\n\n" + "double *FJ_0 = ref_facet_jac[1];"
-        jacobi_code += "\n" + "double *FJ_1 = ref_facet_jac[0];"
+        jacobi_code += "\n"   + "double *FJ_1 = ref_facet_jac[0];"
         trans_set.add("FJ_0")
         trans_set.add("FJ_1")
         jacobi_code += "\n\n" + format["reference_normals"](cell)
         jacobi_code += "\n\n" + "double *RN_0 = ref_norms[1];"
-        jacobi_code += "\n\n" + "double *RN_1 = ref_norms[0];"
+        jacobi_code += "\n"   + "double *RN_1 = ref_norms[0];"
         trans_set.add("RN_0")
         trans_set.add("RN_1")
 
@@ -257,8 +257,8 @@ def _tabulate_tensor(ir, parameters):
     # Embedded manifold, need to pass in cell orientations
     if oriented and tdim != gdim and p_format == 'pyop2':
         if integral_type in ("interior_facet", "interior_facet_vert", "interior_facet_horiz"):
-            common += ["const int cell_orientation%s = cell_orientation_[0][0];" % _choose_map('+'),
-                       "const int cell_orientation%s = cell_orientation_[1][0];" % _choose_map('-')]
+            common += ["const int cell_orientation_0 = cell_orientation_[0][0];",
+                       "const int cell_orientation_1 = cell_orientation_[1][0];"]
         else:
             common += ["const int cell_orientation = cell_orientation_[0][0];"]
     # After we have generated the element code for all facets we can remove
