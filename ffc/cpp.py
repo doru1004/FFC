@@ -290,31 +290,11 @@ format.update({
 from ffc.codesnippets import *
 
 format.update({
-    "compute_jacobian":         lambda cell, r=None: \
-                                compute_jacobian[cell] % {"restriction": _choose_map(r)},
-    "compute_jacobian_interior":     lambda cell, r=None: \
-                                compute_jacobian_interior[cell] % {"restriction": _choose_map(r)},
-    "compute_jacobian_inverse": lambda cell, r=None: \
-                                compute_jacobian_inverse[cell] % {"restriction": _choose_map(r)},
     "reference_facet_to_cell_jacobian": lambda cell: reference_facet_to_cell_jacobian[cell],
     "reference_normals": lambda cell: reference_normals[cell],
-    "orientation":              {"ufc": lambda tdim, gdim, r=None: ufc_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else "",
-                                 "pyop2": lambda tdim, gdim, r=None: pyop2_orientation_snippet % {"restriction": _choose_map(r)} if tdim != gdim else ""},
-    "facet determinant":        lambda cell, p_format, integral_type, r=None: _generate_facet_determinant(cell, p_format, integral_type, r),
     "fiat coordinate map":      lambda cell, gdim: fiat_coordinate_map[cell][gdim],
-    "generate normal":          lambda cell, p_format, integral_type: _generate_normal(cell, p_format, integral_type),
-    "generate cell volume":     {"ufc": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, ufc_cell_volume, r),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_cell_volume(tdim, gdim, i, pyop2_cell_volume, r)},
-    "generate circumradius":    {"ufc": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, ufc_circumradius, r),
-                                 "pyop2": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius, r)},
-    "generate circumradius interior": lambda tdim, gdim, i, r=None: _generate_circumradius(tdim, gdim, i, pyop2_circumradius_interior, r),
-    "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
-    "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
-    "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
                                 {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
-    "scale factor snippet":     {"ufc": ufc_scale_factor,
-                                 "pyop2": pyop2_scale_factor},
     "map onto physical":        map_onto_physical,
     "evaluate basis snippet":   eval_basis,
     "combinations":             combinations_snippet,
@@ -652,143 +632,6 @@ def _generate_psi_name(counter, entity_type, component, derivatives, avg):
         name += "_AF"
 
     return name
-
-def _generate_facet_determinant(cell, p_format, integral_type, r):
-    "Generate code for computing facet determinant"
-
-    tdim = cell.topological_dimension()
-    gdim = cell.geometric_dimension()
-    if p_format == "ufc":
-        code = ufc_facet_determinant[tdim][gdim] % {"restriction": _choose_map(r)}
-    elif p_format == "pyop2":
-        if integral_type == "exterior_facet":
-            code = pyop2_facet_determinant[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "interior_facet":
-            code = pyop2_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "exterior_facet_bottom":
-            code = bottom_facet_determinant[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "exterior_facet_top":
-            code = top_facet_determinant[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "interior_facet_horiz":
-            code = top_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "exterior_facet_vert":
-            code = vert_facet_determinant[cell] % {"restriction": _choose_map(r)}
-        elif integral_type == "interior_facet_vert":
-            code = vert_facet_determinant_interior[cell] % {"restriction": _choose_map(r)}
-        else:
-            raise RuntimeError("Invalid integral_type")
-    else:
-        raise RuntimeError("Invalid p_format")
-
-    return code
-
-def _generate_normal(cell, p_format, integral_type, reference_normal=False):
-    "Generate code for computing normal"
-
-    if p_format == "ufc":
-        normal_direction = ufc_normal_direction
-        facet_normal = ufc_facet_normal
-    elif p_format == "pyop2":
-        if integral_type == "exterior_facet":
-            normal_direction = pyop2_normal_direction
-            facet_normal = pyop2_facet_normal
-        elif integral_type == "interior_facet":
-            normal_direction = pyop2_normal_direction_interior
-            facet_normal = pyop2_facet_normal_interior
-        elif integral_type == "exterior_facet_bottom":
-            normal_direction = bottom_normal_direction
-            facet_normal = bottom_facet_normal
-        elif integral_type == "exterior_facet_top":
-            normal_direction = top_normal_direction
-            facet_normal = top_facet_normal
-        elif integral_type == "interior_facet_horiz":
-            normal_direction = top_normal_direction_interior
-            facet_normal = top_facet_normal_interior
-            facet_normal_2 = bottom_facet_normal_interior
-        elif integral_type == "exterior_facet_vert":
-            normal_direction = vert_normal_direction
-            facet_normal = vert_facet_normal
-        elif integral_type == "interior_facet_vert":
-            normal_direction = vert_normal_direction_interior
-            facet_normal = vert_facet_normal_interior
-        else:
-            raise RuntimeError("Invalid integral_type")
-    else:
-        raise RuntimeError("Invalid p_format")
-
-    # Choose snippets
-    direction = normal_direction[cell]
-
-    assert (facet_normal.has_key(cell)),\
-        "Facet normal not yet implemented for this cell"
-    normal = facet_normal[cell]
-    if integral_type == "interior_facet_horiz":
-        normal_2 = facet_normal_2[cell]
-    
-    # Choose restrictions
-    if integral_type in ("exterior_facet", "exterior_facet_vert"):
-        code = direction % {"restriction": "", "facet" : "facet"}
-        code += normal % {"direction" : "", "restriction": ""}
-    elif integral_type in ("exterior_facet_bottom", "exterior_facet_top"):
-        code = direction % {"restriction": ""}
-        code += normal % {"direction" : "", "restriction": ""}
-    elif integral_type in ("interior_facet", "interior_facet_vert"):
-        code = direction % {"restriction": _choose_map("+"), "facet": "facet_0"}
-        code += normal % {"direction" : "", "restriction": _choose_map("+")}
-        code += normal % {"direction" : "!", "restriction": _choose_map("-")}
-    elif integral_type == "interior_facet_horiz":
-        code = direction % {"restriction": _choose_map("+")}
-        code += normal % {"direction" : "", "restriction": _choose_map("+")}
-        code += normal_2 % {"direction" : "!", "restriction": _choose_map("-")}
-    else:
-        error("Unsupported integral_type: %s" % str(integral_type))
-    return code
-
-def _generate_facet_normal_custom(gdim):
-    "Generate code for setting facet normal in custom integrals"
-    code = format["comment"]("Set facet normal components for current quadrature point\n")
-    for i in range(gdim):
-        code += "const double n_0%d =   facet_normals[%d*ip + %d];\n" % (i, gdim, i)
-        code += "const double n_1%d = - facet_normals[%d*ip + %d];\n" % (i, gdim, i)
-    return code
-
-def _generate_cell_volume(tdim, gdim, integral_type, cell_volume, r=None):
-    "Generate code for computing cell volume."
-
-    # Choose snippets
-    volume = cell_volume[tdim][gdim]
-
-    # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "exterior_facet_bottom",
-                         "exterior_facet_top", "exterior_facet_vert"):
-        code = volume % {"restriction": ""}
-    elif integral_type in ("interior_facet", "interior_facet_horiz",
-                           "interior_facet_vert"):
-        code = volume % {"restriction": _choose_map("+")}
-        code += volume % {"restriction": _choose_map("-")}
-    elif integral_type == "custom":
-        code = volume % {"restriction": _choose_map(r)}
-    else:
-        error("Unsupported integral_type: %s" % str(integral_type))
-    return code
-
-def _generate_circumradius(tdim, gdim, integral_type, circumradius, r=None):
-    "Generate code for computing a cell's circumradius."
-
-    # Choose snippets
-    radius = circumradius[tdim][gdim]
-
-    # Choose restrictions
-    if integral_type in ("cell", "exterior_facet", "vertex"):
-        code = radius % {"restriction": ""}
-    elif integral_type == "interior_facet":
-        code = radius % {"restriction": _choose_map("+")}
-        code += radius % {"restriction": _choose_map("-")}
-    elif integral_type == "custom":
-        code = radius % {"restriction": _choose_map(r)}
-    else:
-        error("Unsupported integral_type: %s" % str(integral_type))
-    return code
 
 def _flatten(i, j, m, n):
     return i*n + j
