@@ -368,6 +368,21 @@ _facet_to_cell_jacobian_tetrahedron = """\
 double ref_facet_jac[4][6] = {{-1.0, -1.0, 1.0, 0.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}};
 """
 
+_facet_to_cell_jacobian_interval_x_interval = """\
+// Jacobian of mapping from facet reference cell to reference facet of interval x interval
+double ref_facet_jac[4][2] = {{1.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {0.0, 1.0}};
+"""
+
+_facet_to_cell_jacobian_triangle_x_interval = """\
+// Jacobian of mapping from facet reference cell to reference facet of triangle x interval
+double ref_facet_jac[5][6] = {{1.0, 0.0, 0.0, 1.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}, {-1.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0}};
+"""
+
+_facet_to_cell_jacobian_quad_x_interval = """\
+// Jacobian of mapping from facet reference cell to reference facet of quad x interval
+double ref_facet_jac[6][6] = {{1.0, 0.0, 0.0, 1.0, 0.0, 0.0}, {1.0, 0.0, 0.0, 1.0, 0.0, 0.0}, {0.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {0.0, 0.0, 1.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0}, {1.0, 0.0, 0.0, 0.0, 0.0, 1.0}};
+"""
+
 reference_facet_to_cell_jacobian = {
 Cell("interval"): _facet_to_cell_jacobian_interval,
 Cell("interval", 2): _facet_to_cell_jacobian_interval,
@@ -377,6 +392,14 @@ Cell("triangle", 3): _facet_to_cell_jacobian_triangle,
 Cell("tetrahedron"): _facet_to_cell_jacobian_tetrahedron,
 Cell("quadrilateral"): _facet_to_cell_jacobian_quad,
 Cell("quadrilateral", 3): _facet_to_cell_jacobian_quad,
+OuterProductCell(Cell("interval"), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _facet_to_cell_jacobian_interval_x_interval,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
+OuterProductCell(Cell("triangle"), Cell("interval")): _facet_to_cell_jacobian_triangle_x_interval,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_to_cell_jacobian_triangle_x_interval,
+OuterProductCell(Cell("quadrilateral"), Cell("interval")): _facet_to_cell_jacobian_quad_x_interval,
+OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _facet_to_cell_jacobian_quad_x_interval
 }
 
 # Code snippets storing facet orientations on reference element
@@ -401,6 +424,21 @@ _reference_normals_tetrahedron = """\
 double ref_norms[4][3] = {{1.0, 1.0, 1.0}, {-1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {0.0, 0.0, -1.0}};
 """
 
+_reference_normals_interval_x_interval = """\
+// Reference normals on reference interval x interval
+double ref_norms[4][2] = {{0.0, -1.0}, {0.0, 1.0}, {-1.0, 0.0}, {1.0, 0.0}};
+"""
+
+_reference_normals_triangle_x_interval = """\
+// Reference normals on reference tetrahedron
+double ref_norms[5][3] = {{0.0, 0.0, -1.0}, {0.0, 0.0, 1.0}, {1.0, 1.0, 0.0}, {-1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}};
+"""
+
+_reference_normals_quad_x_interval = """\
+// Reference normals on reference tetrahedron
+double ref_norms[6][3] = {{0.0, 0.0, -1.0}, {0.0, 0.0, 1.0}, {-1.0, 0.0, 0.0}, {1.0, 0.0, 0.0}, {0.0, -1.0, 0.0}, {0.0, 1.0, 0.0}};
+"""
+
 reference_normals = {
 Cell("interval"): _reference_normals_interval,
 Cell("interval", 2): _reference_normals_interval,
@@ -410,6 +448,14 @@ Cell("triangle", 3): _reference_normals_triangle,
 Cell("tetrahedron"): _reference_normals_tetrahedron,
 Cell("quadrilateral"): _reference_normals_quad,
 Cell("quadrilateral", 3): _reference_normals_quad,
+OuterProductCell(Cell("interval"), Cell("interval")): _reference_normals_interval_x_interval,
+OuterProductCell(Cell("interval", 2), Cell("interval")): _reference_normals_interval_x_interval,
+OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _reference_normals_interval_x_interval,
+OuterProductCell(Cell("interval", 3), Cell("interval")): _reference_normals_interval_x_interval,
+OuterProductCell(Cell("triangle"), Cell("interval")): _reference_normals_triangle_x_interval,
+OuterProductCell(Cell("triangle", 3), Cell("interval")): _reference_normals_triangle_x_interval,
+OuterProductCell(Cell("quadrilateral"), Cell("interval")): _reference_normals_quad_x_interval,
+OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _reference_normals_quad_x_interval
 }
 
 # Code snippet for scale factor
