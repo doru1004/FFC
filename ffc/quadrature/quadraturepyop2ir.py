@@ -456,6 +456,23 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     return (nest_ir, tensor_ops_count)
 
 
+def split_ofs(loop_index):
+    rank, ofs = [], []
+    for i in loop_index:
+        if type(i) == int:
+            _rank, _ofs = [i], 0
+        else:
+            _loop_index = ''.join(c for c in i if c not in ' ()')
+            _rank, _ofs = _loop_index.split('+') if '+' in _loop_index else (_loop_index, 0)
+        rank += _rank
+        try:
+            _ofs = int(_ofs)
+        except:
+            pass
+        ofs += [(1, _ofs)]
+    return tuple(rank), tuple(ofs)
+
+
 def visit_rhs(node):
     """Create a PyOP2 AST-conformed object starting from a FFC node. """
 
@@ -632,7 +649,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         for entry, value, ops in entry_vals:
             # Left hand side
             it_vars = entry if len(loop) > 0 else (0,)
-            local_tensor = pyop2.Symbol(f_A(''), it_vars)
+            local_tensor = pyop2.Symbol(f_A(''), *split_ofs(it_vars))
             # Right hand side
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 assembly(j,k)" if len(loop) == 2 else ""
