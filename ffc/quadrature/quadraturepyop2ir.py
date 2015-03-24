@@ -645,7 +645,12 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             local_tensor = pyop2.Symbol(f_A(''), rank, offset)
             # Right hand side
             pyop2_rhs = visit_rhs(value)
-            pragma = "#pragma pyop2 assembly(j,k)" if len(loop) == 2 else ""
+            if len(loop) == 2:
+                pragma = "#pragma pyop2 assembly(j,k)"
+            elif len(loop) == 1:
+                pragma = "#pragma pyop2 assembly(j)"
+            else:
+                pragma = ""
             entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
 
         if len(loop) == 0:
