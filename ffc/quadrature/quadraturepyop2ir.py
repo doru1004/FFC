@@ -509,9 +509,12 @@ def _generate_functions(functions, sets):
     ast_items = []
 
     # Create the function declarations -- only the (unique) variables we need
-    vardecls = set([functions[function][0] for function in functions])
-    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
-                    for n in vardecls]
+    const_vardecls = set([data[0] for data in functions.values() if data[1]])
+    vardecls = set([data[0] for data in functions.values() if not data[1]])
+    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                  for n in const_vardecls]
+    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                  for n in vardecls]
 
     # Get sets.
     used_psi_tables = sets[1]
