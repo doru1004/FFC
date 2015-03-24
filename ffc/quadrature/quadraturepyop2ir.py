@@ -383,10 +383,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     # Initialise return values.
     tensor_ops_count = 0
 
+    ffc_assert(1 == len(integrals), "This function is not capable of handling multiple integrals.")
+
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
 
+        nest_ir = []
         ip_ir = []
         num_ops = 0
 
@@ -407,7 +410,8 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
         # Generate code to compute function values.
         if functions:
-            func_code, ops = _generate_functions(functions, sets)
+            const_func_code, func_code, ops = _generate_functions(functions, sets)
+            nest_ir += const_func_code
             ip_ir += func_code
             num_ops += ops
 
@@ -434,19 +438,21 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         num_ops += ip_const_ops
 
         # Generate code to evaluate the element tensor.
-        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
+        code, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
-        ip_ir += nest_ir
+        ip_ir += code
 
         # Loop code over all IPs.
         # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
             it_var = pyop2.Symbol(f_ip, ())
-            nest_ir = [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
-                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
+            nest_ir += [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)),
+                                  pyop2.Less(it_var, c_sym(points)),
+                                  pyop2.Incr(it_var, c_sym(1)),
+                                  pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
         else:
-            nest_ir = ip_ir
+            nest_ir += ip_ir
 
     return (nest_ir, tensor_ops_count)
 
@@ -506,15 +512,14 @@ def _generate_functions(functions, sets):
     f_iadd         = format["iadd"]
     f_loop         = format["generate loop"]
 
-    ast_items = []
-
     # Create the function declarations -- only the (unique) variables we need
     const_vardecls = set([data[0] for data in functions.values() if data[1]])
+    const_ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                       for n in const_vardecls]
+
     vardecls = set([data[0] for data in functions.values() if not data[1]])
-    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
-                  for n in const_vardecls]
-    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
-                  for n in vardecls]
+    ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                 for n in vardecls]
 
     # Get sets.
     used_psi_tables = sets[1]
@@ -532,14 +537,14 @@ def _generate_functions(functions, sets):
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for grouping_key, list_of_functions in function_list.items():
+    for (cellwise_constant, loop_range), list_of_functions in function_list.items():
         function_expr = []
         function_numbers = []
         # Loop functions.
         func_ops = 0
         for function in list_of_functions:
             # Get name and number.
-            number, cellwise_constant, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
+            number, const, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
             if not isinstance(range_i, tuple):
                 range_i = tuple([range_i])
 
@@ -564,7 +569,6 @@ def _generate_functions(functions, sets):
 
         # Gather, sorted by string rep of function.
         lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn, _ in sorted(function_expr, key=lambda x: x[2])]
-        loop_range = grouping_key[1]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
@@ -574,10 +578,14 @@ def _generate_functions(functions, sets):
         # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
         it_var = c_sym(loop_vars[0][0])
         loop_size = c_sym(loop_vars[0][2])
-        ast_items.append(pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, loop_size), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(lines, open_scope=True)))
+        ast_item = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, loop_size),
+                             pyop2.Incr(it_var, c_sym(1)), pyop2.Block(lines, open_scope=True))
+        if cellwise_constant:
+            const_ast_items.append(ast_item)
+        else:
+            ast_items.append(ast_item)
 
-    return ast_items, total_ops
+    return const_ast_items, ast_items, total_ops
 
 def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
