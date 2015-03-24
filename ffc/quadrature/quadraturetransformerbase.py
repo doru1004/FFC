@@ -1315,7 +1315,7 @@ class QuadratureTransformerBase(Transformer):
                 for fe, lir in zip(function_expr, loop_index_range):
                     data = self.function_data.get(fe)
                     if data is None:
-                        data = (function_count, lir,
+                        data = (function_count, f_ip == "0", lir,
                                 self._count_operations(fe),
                                 psi_name, used_nzcs, ufl_function.element())
                         self.function_data[fe] = data
@@ -1323,7 +1323,7 @@ class QuadratureTransformerBase(Transformer):
                 data = self.function_data.get(function_expr)
                 if data is None:
                     function_count = len(self.function_data)
-                    data = (function_count, loop_index_range,
+                    data = (function_count, f_ip == "0", loop_index_range,
                             self._count_operations(function_expr),
                             psi_name, used_nzcs, ufl_function.element())
                     self.function_data[function_expr] = data

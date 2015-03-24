@@ -520,21 +520,23 @@ def _generate_functions(functions, sets):
     # Sort functions after loop ranges.
     function_list = {}
     for key, val in functions.items():
-        if val[1] in function_list:
-            function_list[val[1]].append(key)
+        # Group by: cellwise constant, loop range.
+        grouping_key = (val[1], val[2])
+        if grouping_key in function_list:
+            function_list[grouping_key].append(key)
         else:
-            function_list[val[1]] = [key]
+            function_list[grouping_key] = [key]
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in function_list.items():
+    for grouping_key, list_of_functions in function_list.items():
         function_expr = []
         function_numbers = []
         # Loop functions.
         func_ops = 0
         for function in list_of_functions:
             # Get name and number.
-            number, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
+            number, cellwise_constant, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
             if not isinstance(range_i, tuple):
                 range_i = tuple([range_i])
 
@@ -559,6 +561,7 @@ def _generate_functions(functions, sets):
 
         # Gather, sorted by string rep of function.
         lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn, _ in sorted(function_expr, key=lambda x: x[2])]
+        loop_range = grouping_key[1]
         if isinstance(loop_range, tuple):
             if not all(map(lambda x: x==loop_range[0], loop_range)):
                 raise RuntimeError("General mixed elements not yet supported in PyOP2")
