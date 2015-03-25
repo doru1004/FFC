@@ -41,6 +41,7 @@ from ffc.log import ffc_assert, error, info
 from ffc.fiatinterface import create_element, map_facet_points
 from ffc.mixedelement import MixedElement
 from ffc.cpp import format
+from ffc.utils import Bunch
 
 # FFC tensor modules.
 from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
@@ -1315,20 +1316,28 @@ class QuadratureTransformerBase(Transformer):
                 for fe, lir in zip(function_expr, loop_index_range):
                     data = self.function_data.get(fe)
                     if data is None:
-                        data = (function_count, f_ip == "0", lir,
-                                self._count_operations(fe),
-                                psi_name, used_nzcs, ufl_function.element())
+                        data = Bunch(id=function_count,
+                                     cellwise_constant=(f_ip == "0"),
+                                     loop_range=lir,
+                                     ops=self._count_operations(fe),
+                                     psi_name=psi_name,
+                                     used_nzcs=used_nzcs,
+                                     ufl_element=ufl_function.element())
                         self.function_data[fe] = data
             else:
                 data = self.function_data.get(function_expr)
                 if data is None:
                     function_count = len(self.function_data)
-                    data = (function_count, f_ip == "0", loop_index_range,
-                            self._count_operations(function_expr),
-                            psi_name, used_nzcs, ufl_function.element())
+                    data = Bunch(id=function_count,
+                                 cellwise_constant=(f_ip == "0"),
+                                 loop_range=loop_index_range,
+                                 ops=self._count_operations(function_expr),
+                                 psi_name=psi_name,
+                                 used_nzcs=used_nzcs,
+                                 ufl_element=ufl_function.element())
                     self.function_data[function_expr] = data
 
-            function_symbol_name = format["function value"](data[0])
+            function_symbol_name = format["function value"](data.id)
 
         # TODO: This access stuff was changed subtly during my refactoring, the
         # X_ACCESS vars is an attempt at making it right, make sure it is correct now!

@@ -23,6 +23,7 @@
 # Modified by Fabio Luporini, 2013
 
 # Python modules.
+import collections
 import numpy
 
 # UFL modules.
@@ -513,11 +514,11 @@ def _generate_functions(functions, sets):
     f_loop         = format["generate loop"]
 
     # Create the function declarations -- only the (unique) variables we need
-    const_vardecls = set([data[0] for data in functions.values() if data[1]])
+    const_vardecls = set(fd.id for fd in functions.values() if fd.cellwise_constant)
     const_ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
                        for n in const_vardecls]
 
-    vardecls = set([data[0] for data in functions.values() if not data[1]])
+    vardecls = set(fd.id for fd in functions.values() if not fd.cellwise_constant)
     ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
                  for n in vardecls]
 
@@ -525,47 +526,41 @@ def _generate_functions(functions, sets):
     used_psi_tables = sets[1]
     used_nzcs = sets[2]
 
-    # Sort functions after loop ranges.
-    function_list = {}
-    for key, val in functions.items():
-        # Group by: cellwise constant, loop range.
-        grouping_key = (val[1], val[2])
-        if grouping_key in function_list:
-            function_list[grouping_key].append(key)
-        else:
-            function_list[grouping_key] = [key]
+    # Sort functions after being cellwise constant and loop ranges.
+    function_groups = collections.defaultdict(list)
+    for f, fd in functions.items():
+        function_groups[(fd.cellwise_constant, fd.loop_range)].append(f)
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for (cellwise_constant, loop_range), list_of_functions in function_list.items():
+    for (cellwise_constant, loop_range), function_list in function_groups.iteritems():
         function_expr = []
-        function_numbers = []
         # Loop functions.
         func_ops = 0
-        for function in list_of_functions:
-            # Get name and number.
-            number, const, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
+        for function in function_list:
+            data = functions[function]
+            range_i = data.loop_range
             if not isinstance(range_i, tuple):
                 range_i = tuple([range_i])
 
             # Add name to used psi names and non zeros name to used_nzcs.
-            used_psi_tables.add(psi_name)
-            used_nzcs.update(u_nzcs)
+            used_psi_tables.add(data.psi_name)
+            used_nzcs.update(data.used_nzcs)
 
             # # TODO: This check can be removed for speed later.
             # REMOVED this, since we might need to increment into the same
             # number more than once for mixed element + interior facets
-            # ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
+            # ffc_assert(data.id not in function_expr, "This is definitely not supposed to happen!")
 
             # Convert function to COFFEE ast node, save string
             # representation for sorting (such that we're reproducible
             # in parallel).
             function = visit_rhs(function)
             key = str(function)
-            function_expr.append((number, function, key))
+            function_expr.append((data.id, function, key))
 
             # Get number of operations to compute entry and add to function operations count.
-            func_ops += (ops + 1)*sum(range_i)
+            func_ops += (data.ops + 1)*sum(range_i)
 
         # Gather, sorted by string rep of function.
         lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn, _ in sorted(function_expr, key=lambda x: x[2])]
