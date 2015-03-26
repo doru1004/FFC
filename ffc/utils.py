@@ -61,3 +61,8 @@ def compute_permutations(k, n, skip = []):
                permutations += [(i, ) + p]
    return permutations
 
+class Bunch(object):
+    """A utility class for data records."""
+
+    def __init__(self, **kwargs):
+        self.__dict__.update(**kwargs)

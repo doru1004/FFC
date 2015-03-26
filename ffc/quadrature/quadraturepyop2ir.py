@@ -23,7 +23,7 @@
 # Modified by Fabio Luporini, 2013
 
 # Python modules.
-import functools
+import collections
 import numpy
 
 # UFL modules.
@@ -384,11 +384,13 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     # Initialise return values.
     tensor_ops_count = 0
 
+    ffc_assert(1 == len(integrals), "This function is not capable of handling multiple integrals.")
+
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
 
-        ip_code = []
+        nest_ir = []
         ip_ir = []
         num_ops = 0
 
@@ -409,7 +411,8 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 
         # Generate code to compute function values.
         if functions:
-            func_code, ops = _generate_functions(functions, sets)
+            const_func_code, func_code, ops = _generate_functions(functions, sets)
+            nest_ir += const_func_code
             ip_ir += func_code
             num_ops += ops
 
@@ -434,25 +437,23 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         if len(ip_const_code) > 0:
             raise RuntimeError("IP Const code not supported")
         num_ops += ip_const_ops
-        if ip_const_code:
-            ip_code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
-            ip_code += [format["declaration"](format["float declaration"], f_I(len(ip_consts)))]
-            ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
-        nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
+        code, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
         num_ops += ops
         tensor_ops_count += num_ops*points
-        ip_ir += nest_ir
+        ip_ir += code
 
         # Loop code over all IPs.
         # @@@: for (ip ...) { A[0][0] += ... }
         if points > 1:
             it_var = pyop2.Symbol(f_ip, ())
-            nest_ir = [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, c_sym(points)), \
-                        pyop2.Incr(it_var, c_sym(1)), pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
+            nest_ir += [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)),
+                                  pyop2.Less(it_var, c_sym(points)),
+                                  pyop2.Incr(it_var, c_sym(1)),
+                                  pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
         else:
-            nest_ir = ip_ir
+            nest_ir += ip_ir
 
     return (nest_ir, tensor_ops_count)
 
@@ -512,56 +513,54 @@ def _generate_functions(functions, sets):
     f_iadd         = format["iadd"]
     f_loop         = format["generate loop"]
 
-    ast_items = []
-
     # Create the function declarations -- only the (unique) variables we need
-    vardecls = set([functions[function][0] for function in functions])
-    ast_items += [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0))) \
-                    for n in vardecls]
+    const_vardecls = set(fd.id for fd in functions.values() if fd.cellwise_constant)
+    const_ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                       for n in const_vardecls]
+
+    vardecls = set(fd.id for fd in functions.values() if not fd.cellwise_constant)
+    ast_items = [pyop2.Decl(f_double, c_sym(f_F(n)), c_sym(f_float(0)))
+                 for n in vardecls]
 
     # Get sets.
     used_psi_tables = sets[1]
     used_nzcs = sets[2]
 
-    # Sort functions after loop ranges.
-    function_list = {}
-    for key, val in functions.items():
-        if val[1] in function_list:
-            function_list[val[1]].append(key)
-        else:
-            function_list[val[1]] = [key]
+    # Sort functions after being cellwise constant and loop ranges.
+    function_groups = collections.defaultdict(list)
+    for f, fd in functions.items():
+        function_groups[(fd.cellwise_constant, fd.loop_range)].append(f)
 
     total_ops = 0
     # Loop ranges and get list of functions.
-    for loop_range, list_of_functions in function_list.items():
+    for (cellwise_constant, loop_range), function_list in function_groups.iteritems():
         function_expr = []
-        function_numbers = []
         # Loop functions.
         func_ops = 0
-        for function in list_of_functions:
-            # Get name and number.
-            number, range_i, ops, psi_name, u_nzcs, ufl_element = functions[function]
+        for function in function_list:
+            data = functions[function]
+            range_i = data.loop_range
             if not isinstance(range_i, tuple):
                 range_i = tuple([range_i])
 
             # Add name to used psi names and non zeros name to used_nzcs.
-            used_psi_tables.add(psi_name)
-            used_nzcs.update(u_nzcs)
+            used_psi_tables.add(data.psi_name)
+            used_nzcs.update(data.used_nzcs)
 
             # # TODO: This check can be removed for speed later.
             # REMOVED this, since we might need to increment into the same
             # number more than once for mixed element + interior facets
-            # ffc_assert(number not in function_expr, "This is definitely not supposed to happen!")
+            # ffc_assert(data.id not in function_expr, "This is definitely not supposed to happen!")
 
             # Convert function to COFFEE ast node, save string
             # representation for sorting (such that we're reproducible
             # in parallel).
             function = visit_rhs(function)
             key = str(function)
-            function_expr.append((number, function, key))
+            function_expr.append((data.id, function, key))
 
             # Get number of operations to compute entry and add to function operations count.
-            func_ops += (ops + 1)*sum(range_i)
+            func_ops += (data.ops + 1)*sum(range_i)
 
         # Gather, sorted by string rep of function.
         lines = [pyop2.Incr(c_sym(f_F(n)), fn) for n, fn, _ in sorted(function_expr, key=lambda x: x[2])]
@@ -574,10 +573,14 @@ def _generate_functions(functions, sets):
         # TODO: If loop_range == 1, this loop may be unneccessary. Not sure if it's safe to just skip it.
         it_var = c_sym(loop_vars[0][0])
         loop_size = c_sym(loop_vars[0][2])
-        ast_items.append(pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, loop_size), \
-                    pyop2.Incr(it_var, c_sym(1)), pyop2.Block(lines, open_scope=True)))
+        ast_item = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, loop_size),
+                             pyop2.Incr(it_var, c_sym(1)), pyop2.Block(lines, open_scope=True))
+        if cellwise_constant:
+            const_ast_items.append(ast_item)
+        else:
+            ast_items.append(ast_item)
 
-    return ast_items, total_ops
+    return const_ast_items, ast_items, total_ops
 
 def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
     "Generate code to evaluate the element tensor."
