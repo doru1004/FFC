@@ -23,7 +23,6 @@
 # Modified by Fabio Luporini, 2013
 
 # Python modules.
-import functools
 import numpy
 
 # UFL modules.
@@ -388,7 +387,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     # Loop points and forms.
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
 
-        ip_code = []
         ip_ir = []
         num_ops = 0
 
@@ -434,10 +432,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
         if len(ip_const_code) > 0:
             raise RuntimeError("IP Const code not supported")
         num_ops += ip_const_ops
-        if ip_const_code:
-            ip_code += ["", f_comment("Number of operations to compute ip constants: %d" %ip_const_ops)]
-            ip_code += [format["declaration"](format["float declaration"], f_I(len(ip_consts)))]
-            ip_code += ip_const_code
 
         # Generate code to evaluate the element tensor.
         nest_ir, ops = _generate_integral_ir(points, terms, sets, optimise_parameters, parameters)
