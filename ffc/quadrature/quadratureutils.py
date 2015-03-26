@@ -40,7 +40,7 @@ class EnrichedNumpyArray(numpy.ndarray):
         if not _is_mixed:
             self.zeros = None
             return
-        self.zeros = (self.view() == 0).all(axis=0)
+        self.zeros = (self.view() == 0).all(axis=-2)
 
     def get_zeros(self):
         return self.zeros
