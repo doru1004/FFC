@@ -26,7 +26,7 @@ transformers to translate UFL expressions."""
 
 # Python modules.
 from six.moves import zip
-from numpy import shape, allclose, array
+from numpy import shape, array
 
 # UFL Classes.
 from ufl.classes import FixedIndex, Index
@@ -1033,6 +1033,9 @@ class QuadratureTransformerBase(Transformer):
         if not self.mixed_elt_int_facet_mode:
             loop_index_range = shape(self.unique_tables[name])[-1]
 
+        if shape(self.unique_tables[name])[-2] == 1:
+            f_ip = "0"
+
         index_func = _make_index_function(shape(self.unique_tables[name]), entity, f_ip)
 
         # Create basis access, we never need to map the entry in the basis table
@@ -1143,7 +1146,7 @@ class QuadratureTransformerBase(Transformer):
 
         # Drop integration point if function is cellwise constant
         unique_table = self.unique_tables[psi_name]
-        if allclose(unique_table, unique_table.mean(axis=-2, keepdims=True)):
+        if shape(unique_table)[-2] == 1:
             f_ip = "0"
 
         index_func = _make_index_function(shape(unique_table), entity, f_ip)

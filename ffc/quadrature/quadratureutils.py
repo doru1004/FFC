@@ -152,6 +152,9 @@ def flatten_psi_tables(tables, entity_type):
                         for i in xrange(entity_count):
                             psi_table[i, :, :] = entity_tables[i]
 
+                    # Optimise table if constant along the integration points
+                    psi_table = collapse_constant_columns(psi_table)
+
                     psi_table = psi_table.view(EnrichedNumpyArray)
                     psi_table.track_zeros(is_mixed)
                     flat_tables[name] = psi_table
@@ -357,6 +360,27 @@ def unique_tables(tables):
             inverse_name_map[name] = name
 
     return (name_map, inverse_name_map)
+
+def collapse_constant_columns(table):
+    """If the table is column-wise constant, keep first row only."""
+
+    if len(table.shape) == 2:
+        first_row = table[0, :]
+    elif len(table.shape) == 3:
+        first_row = table[:, 0, :]
+    else:
+        # raise RuntimeError("I did not expect this.")
+        # Skip table
+        return table
+
+    shape = list(table.shape)
+    shape[-2] = 1  # set column length to 1
+    first_row = first_row.reshape(*shape)
+
+    if numpy.allclose(table, first_row):
+        return first_row
+    else:
+        return table
 
 def get_ones(tables):
     "Return names of tables for which all values are 1.0."
