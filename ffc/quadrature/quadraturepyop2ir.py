@@ -353,7 +353,7 @@ def _tabulate_tensor(ir, parameters):
         if zeroflags is not None and not zeroflags.all():
             nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
             nz_bounds = (nz_indices[0], nz_indices[-1])
-            pragma = "#pragma pyop2 mfs(%d, %d)" % nz_bounds
+            pragma = "#pragma coffee nonzerocolumns(%d, %d)" % nz_bounds
             init = pyop2.ColSparseArrayInit(value, nz_bounds, numpy_value[:nz_bounds[0],nz_bounds[1]])
         pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"], pragma=pragma))
 
@@ -449,7 +449,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             nest_ir += [pyop2.For(pyop2.Decl("int", it_var, c_sym(0)),
                                   pyop2.Less(it_var, c_sym(points)),
                                   pyop2.Incr(it_var, c_sym(1)),
-                                  pyop2.Block(ip_ir, open_scope=True), "#pragma pyop2 integration")]
+                                  pyop2.Block(ip_ir, open_scope=True))]
         else:
             nest_ir += ip_ir
 
@@ -645,13 +645,7 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             local_tensor = pyop2.Symbol(f_A(''), rank, offset)
             # Right hand side
             pyop2_rhs = visit_rhs(value)
-            if len(loop) == 2:
-                pragma = "#pragma pyop2 assembly(j,k)"
-            elif len(loop) == 1:
-                pragma = "#pragma pyop2 assembly(j)"
-            else:
-                pragma = ""
-            entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, pragma))
+            entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, "#pragma coffee expression"))
 
         if len(loop) == 0:
             nest = pyop2.Block(entry_ir, open_scope=True)
@@ -659,12 +653,12 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             it_var = c_sym(loop[0][0])
             end = c_sym(loop[0][2])
             nest = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                             pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
+                             pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma coffee itspace")
         if len(loop) == 2:
             it_var = c_sym(loop[1][0])
             end = c_sym(loop[1][2])
             nest_k = pyop2.For(pyop2.Decl("int", it_var, c_sym(0)), pyop2.Less(it_var, end), \
-                               pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma pyop2 itspace")
+                               pyop2.Incr(it_var, c_sym(1)), pyop2.Block(entry_ir, open_scope=True), "#pragma coffee itspace")
             nest.children[0] = pyop2.Block([nest_k], open_scope=True)
         nests.append(nest)
 
