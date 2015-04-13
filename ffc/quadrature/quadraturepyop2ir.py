@@ -26,10 +26,7 @@
 import collections
 import numpy
 
-# UFL modules.
-from ufl.algorithms.printing import tree_format
-
-## FFC modules.
+# FFC modules.
 from ffc.log import info, debug, ffc_assert
 from ffc.cpp import format, remove_unused, _choose_map
 
@@ -40,7 +37,7 @@ from coffee.base import c_sym
 from ffc.representationutils import initialize_integral_code
 
 # Utility and optimisation functions for quadraturegenerator.
-from symbolics import generate_aux_constants
+from ffc.quadrature.symbolics import generate_aux_constants
 
 def generate_pyop2_ir(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
