@@ -456,23 +456,6 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     return (nest_ir, tensor_ops_count)
 
 
-def split_ofs(loop_index):
-    rank, ofs = [], []
-    for i in loop_index:
-        if type(i) == int:
-            _rank, _ofs = [i], 0
-        else:
-            _loop_index = ''.join(c for c in i if c not in ' ()')
-            _rank, _ofs = _loop_index.split('+') if '+' in _loop_index else (_loop_index, 0)
-        rank += _rank
-        try:
-            _ofs = int(_ofs)
-        except:
-            pass
-        ofs += [(1, _ofs)]
-    return tuple(rank), tuple(ofs)
-
-
 def visit_rhs(node):
     """Create a PyOP2 AST-conformed object starting from a FFC node. """
 
@@ -498,7 +481,15 @@ def visit_rhs(node):
         return pyop2.Symbol(node.val, ())
     if node._prec == 1:
         # Symbol
-        return pyop2.Symbol(node.ide, tuple(node.loop_index))
+        rank, offset = [], []
+        for i in node.loop_index:
+            if hasattr(i, 'offset') and hasattr(i, 'loop_index'):
+                rank.append(i.loop_index)
+                offset.append((1, i.offset))
+            else:
+                rank.append(i)
+                offset.append((1, 0))
+        return pyop2.Symbol(node.ide, tuple(rank), tuple(offset))
     if node._prec in [2, 3] and len(node.vrs) == 1:
         # "Fake" Product, "Fake" Sum
         return pyop2.Par(visit_rhs(node.vrs[0]))
@@ -649,7 +640,9 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         for entry, value, ops in entry_vals:
             # Left hand side
             it_vars = entry if len(loop) > 0 else (0,)
-            local_tensor = pyop2.Symbol(f_A(''), *split_ofs(it_vars))
+            rank = tuple(i.loop_index if hasattr(i, 'loop_index') else i for i in it_vars)
+            offset = tuple((1, int(i.offset)) if hasattr(i, 'offset') else (1, 0) for i in it_vars)
+            local_tensor = pyop2.Symbol(f_A(''), rank, offset)
             # Right hand side
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 assembly(j,k)" if len(loop) == 2 else ""
