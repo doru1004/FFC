@@ -1399,6 +1399,10 @@ def _make_index_function(shape, entity, ip):
 
 
 class Access():
+    """Class to represent an access into a basis function array or similar.
+    Stores the loop index (letter) and offset (number) separately, but
+    pretends to be a string such as "j + 3" when needed"""
+
     def __init__(self, loop_index, offset=None):
         self.loop_index = loop_index
         self.offset = offset or 0
