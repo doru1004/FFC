@@ -1081,16 +1081,16 @@ class QuadratureTransformerBase(Transformer):
                 self.psi_tables_map[basis] = name
 
         # Create the correct mapping of the basis function into the local element tensor.
-        basis_map = loop_index
+        basis_map = Access(loop_index)
         if non_zeros and basis_map == "0":
-            basis_map = str(non_zeros[1][0])
+            basis_map = Access(str(non_zeros[1][0]))
         elif non_zeros:
-            basis_map = format["component"](format["nonzero columns"](non_zeros[0]), basis_map)
+            basis_map = Access(format["component"](format["nonzero columns"](non_zeros[0]), basis_map))
         if offset:
             if self.mixed_elt_int_facet_mode:
-                basis_map = [format["grouping"](format["add"]([basis_map, o])) for o in offset]
+                basis_map = [Access(basis_map.loop_index, o) for o in offset]
             else:
-                basis_map = format["grouping"](format["add"]([basis_map, offset]))
+                basis_map = Access(basis_map.loop_index, offset)
 
         # Try to evaluate basis map ("3 + 2" --> "5").
         try:
@@ -1236,10 +1236,10 @@ class QuadratureTransformerBase(Transformer):
                     cur += e.space_dimension()
 
         if self.mixed_elt_int_facet_mode:
-            coefficient_access = [format["add"]([coefficient_access, o]) for o in offset]
+            coefficient_access = [Access(coefficient_access, o) for o in offset]
         else:
             if offset:
-                coefficient_access = format["add"]([coefficient_access, offset])
+                coefficient_access = Access(coefficient_access, offset)
 
         # Try to evaluate coefficient access ("3 + 2" --> "5").
         try:
@@ -1396,3 +1396,23 @@ def _make_index_function(shape, entity, ip):
     else:
         raise RuntimeError("Tensor of dimension 2 or 3 expected.")
     return f
+
+
+class Access():
+    """Class to represent an access into a basis function array or similar.
+    Stores the loop index (letter) and offset (number) separately, but
+    pretends to be a string such as "j + 3" when needed"""
+
+    def __init__(self, loop_index, offset=None):
+        self.loop_index = loop_index
+        self.offset = offset or 0
+        if offset:
+            self.access = format["grouping"](format["add"]([loop_index, offset]))
+        else:
+            self.access = loop_index
+
+    def __getattr__(self, m):
+        return getattr(self.access, m)
+
+    def __eq__(self, other):
+        return self.loop_index == other.loop_index and self.offset == other.offset

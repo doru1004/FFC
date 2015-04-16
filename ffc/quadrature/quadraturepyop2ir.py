@@ -63,22 +63,23 @@ def _arglist(ir):
         prim_idims = [d*2 for d in prim_idims]
     localtensor = pyop2.Decl(float, pyop2.Symbol("A", tuple(prim_idims) or (1,)))
 
-    coordinates = pyop2.Decl(float, pyop2.Symbol("**vertex_coordinates", ()))
+    coordinates = pyop2.Decl("%s**" % float, pyop2.Symbol("vertex_coordinates", ()))
 
     coeffs = []
     for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
-        coeffs.append(pyop2.Decl(float, pyop2.Symbol("*%s%s" % \
-            ("c" if e.family() == 'Real' else "*", n[1:] if e.family() == 'Real' else n), ())))
+        typ = "%s*" % float if e.family() == 'Real' else "%s**" % float
+        coeffs.append(pyop2.Decl(typ, pyop2.Symbol("%s%s" % \
+            ("c" if e.family() == 'Real' else "", n[1:] if e.family() == 'Real' else n), ())))
 
     arglist = [localtensor, coordinates]
     # embedded manifold, passing in cell_orientation
     if ir['needs_oriented'] and \
         ir['cell'].topological_dimension() != ir['cell'].geometric_dimension():
-        cell_orientation = pyop2.Decl(int, pyop2.Symbol("**cell_orientation_", ()))
+        cell_orientation = pyop2.Decl("%s**" % int, pyop2.Symbol("cell_orientation_", ()))
         arglist.append(cell_orientation)
     arglist += coeffs
     if integral_type in ("exterior_facet", "exterior_facet_vert"):
-        arglist.append(pyop2.Decl(int, pyop2.Symbol("*facet_p", ()), qualifiers=["unsigned"]))
+        arglist.append(pyop2.Decl("%s*" % int, pyop2.Symbol("facet_p", ()), qualifiers=["unsigned"]))
     if integral_type in ("interior_facet", "interior_facet_vert"):
         arglist.append(pyop2.Decl(int, pyop2.Symbol("facet_p", (2,)), qualifiers=["unsigned"]))
 
@@ -480,7 +481,15 @@ def visit_rhs(node):
         return pyop2.Symbol(node.val, ())
     if node._prec == 1:
         # Symbol
-        return pyop2.Symbol(node.ide, tuple(node.loop_index))
+        rank, offset = [], []
+        for i in node.loop_index:
+            if hasattr(i, 'offset') and hasattr(i, 'loop_index'):
+                rank.append(i.loop_index)
+                offset.append((1, i.offset))
+            else:
+                rank.append(i)
+                offset.append((1, 0))
+        return pyop2.Symbol(node.ide, tuple(rank), tuple(offset))
     if node._prec in [2, 3] and len(node.vrs) == 1:
         # "Fake" Product, "Fake" Sum
         return pyop2.Par(visit_rhs(node.vrs[0]))
@@ -631,7 +640,9 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
         for entry, value, ops in entry_vals:
             # Left hand side
             it_vars = entry if len(loop) > 0 else (0,)
-            local_tensor = pyop2.Symbol(f_A(''), it_vars)
+            rank = tuple(i.loop_index if hasattr(i, 'loop_index') else i for i in it_vars)
+            offset = tuple((1, int(i.offset)) if hasattr(i, 'offset') else (1, 0) for i in it_vars)
+            local_tensor = pyop2.Symbol(f_A(''), rank, offset)
             # Right hand side
             pyop2_rhs = visit_rhs(value)
             pragma = "#pragma pyop2 assembly(j,k)" if len(loop) == 2 else ""
