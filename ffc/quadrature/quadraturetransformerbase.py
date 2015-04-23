@@ -1252,6 +1252,8 @@ class QuadratureTransformerBase(Transformer):
         # Format coefficient access
         if self.mixed_elt_int_facet_mode:
             coefficient = [format["coefficient"][p_format](str(ufl_function.count()), ca) for ca in coefficient_access]
+            coefficient_name = [format["coefficient"][p_format](str(ufl_function.count())) for ca in coefficient_access]
+            coefficient_li = [[ca, 0] for ca in coefficient_access]
         else:
             coefficient = format["coefficient"][p_format](str(ufl_function.count()), coefficient_access)
             coefficient_name = format["coefficient"][p_format](str(ufl_function.count()))
@@ -1279,14 +1281,15 @@ class QuadratureTransformerBase(Transformer):
                 basis_index = []
                 cur = 0
                 for e in ffc_element._elements:
-                    basis_index.append(format["add"]([loop_index, str(cur)]))
+                    basis_index.append(Access(loop_index, str(cur)))
                     cur += e.space_dimension()
-                basis_access = [format["component"]("", index_func(bi)) for bi in basis_index]
+                basis_li = [index_func(bi) for bi in basis_index]
+                basis_access = [format["component"]("", bi) for bi in basis_li]
                 basis_name = [psi_name + ba for ba in basis_access]
             else:
                 basis_index = "0" if loop_index_range == 1 else loop_index
-                basis_itvars = index_func(basis_index)
-                basis_access = format["component"]("", basis_itvars)
+                basis_li = index_func(basis_index)
+                basis_access = format["component"]("", basis_li)
                 basis_name = psi_name + basis_access
             # Try to set access to the outermost possible loop
             if f_ip == "0" and basis_access == "0":
@@ -1299,13 +1302,14 @@ class QuadratureTransformerBase(Transformer):
             # Format expression for function
             if self.mixed_elt_int_facet_mode:
                 function_expr = [self._create_product(\
-                            [self._create_symbol(bn, B_ACCESS, _iden=bn)[()], \
-                             self._create_symbol(co, C_ACCESS, _iden=co)[()]]) \
-                             for bn, co in zip(basis_name, coefficient)]
+                           [self._create_symbol(b, B_ACCESS, _iden=psi_name, _loop_index=bli)[()], \
+                            self._create_symbol(c, C_ACCESS, _iden=cn, _loop_index=cli)[()]]) \
+                            for b, bli, c, cn, cli in zip(basis_name, basis_li, coefficient,
+                                                          coefficient_name, coefficient_li)]
             else:
                 function_expr = self._create_product(\
                             [self._create_symbol(basis_name, B_ACCESS, _iden=psi_name,
-                                                 _loop_index=basis_itvars)[()], \
+                                                 _loop_index=basis_li)[()], \
                              self._create_symbol(coefficient, C_ACCESS, _iden=coefficient_name,
                                                  _loop_index=coefficient_li)[()]])
              
