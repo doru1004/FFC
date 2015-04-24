@@ -257,10 +257,10 @@ def _tabulate_tensor(ir, parameters):
     # Embedded manifold, need to pass in cell orientations
     if oriented and tdim != gdim and p_format == 'pyop2':
         if integral_type in ("interior_facet", "interior_facet_vert", "interior_facet_horiz"):
-            common += ["const int cell_orientation_0 = cell_orientation_[0][0];",
-                       "const int cell_orientation_1 = cell_orientation_[1][0];"]
+            common += ["const double cell_orientation_0 = (cell_orientation_[0][0] == 1 ? -1.0 : 1.0);",
+                       "const double cell_orientation_1 = (cell_orientation_[1][0] == 1 ? -1.0 : 1.0);"]
         else:
-            common += ["const int cell_orientation = cell_orientation_[0][0];"]
+            common += ["const double cell_orientation = (cell_orientation_[0][0] == 1 ? -1.0 : 1.0);"]
     # After we have generated the element code for all facets we can remove
     # the unused transformations and tabulate the used psi tables and weights.
     common += [remove_unused(jacobi_code, trans_set)]
