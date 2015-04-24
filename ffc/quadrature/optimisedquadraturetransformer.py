@@ -465,7 +465,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
             # if there's a good reason to go down this path then uncomment the following line
             # return {(): create_float(1.0)}
         else:
-            var = format["evaluate conditional"]("cell_orientation%s == 1" % _choose_map(self.restriction), -1.0, 1.0)
+            var = "cell_orientation%s" % _choose_map(self.restriction)
             name = create_symbol(var, IP, iden=var)
             return {(): name}
 
