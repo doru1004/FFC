@@ -23,6 +23,7 @@
 # Python modules
 from numpy import array, asarray, polymul, zeros, ones
 import six
+import weakref
 
 # UFL and FIAT modules
 import ufl
@@ -71,7 +72,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "InteriorElement")
 
 # Cache for computed elements
-_cache = {}
+
+_cache = weakref.WeakKeyDictionary()
 
 # Quadrilateral OuterProductCell
 _quad_opc = ufl.OuterProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
