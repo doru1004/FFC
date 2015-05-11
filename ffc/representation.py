@@ -12,7 +12,7 @@ function "foo", one should only need to use the data stored
 in the intermediate representation under the key "foo".
 """
 
-# Copyright (C) 2009-2014 Anders Logg
+# Copyright (C) 2009-2015 Anders Logg
 #
 # This file is part of FFC.
 #
@@ -31,7 +31,7 @@ in the intermediate representation under the key "foo".
 #
 # Modified by Marie E. Rognes 2010
 # Modified by Kristian B. Oelgaard 2010
-# Modified by Martin Alnaes, 2013-2014
+# Modified by Martin Alnaes, 2013-2015
 
 # Python modules
 from itertools import chain
@@ -48,6 +48,9 @@ from ffc.enrichedelement import SpaceOfReals
 from ffc.fiatinterface import DiscontinuousLagrangeTrace
 from ffc.quadratureelement import QuadratureElement
 from ffc.cpp import set_float_formatting
+
+# List of supported integral types
+ufc_integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
 
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
@@ -256,8 +259,7 @@ def _compute_form_ir(form_data, form_id, element_numbers):
     ir["create_finite_element"] = [element_numbers[e] for e in form_data.elements]
     ir["create_dofmap"] = [element_numbers[e] for e in form_data.elements]
 
-    integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
-    for integral_type in integral_types:
+    for integral_type in ufc_integral_types:
         ir["max_%s_subdomain_id" % integral_type] = _max_foo_subdomain_id(integral_type, form_data)
         ir["has_%s_integrals" % integral_type] = _has_foo_integrals(integral_type, form_data)
         ir["create_%s_integral" % integral_type] = _create_foo_integral(integral_type, form_data)
@@ -337,7 +339,7 @@ def _evaluate_dof(ufl_element, element):
             "reference_value_size": _value_size(element),
             "physical_value_size": _value_size(ufl_element),
             "cell": domain.cell(),
-            "dofs": [L.pt_dict for L in element.dual_basis()],
+            "dofs": [L.pt_dict if L else None for L in element.dual_basis()],
             "physical_offsets": _generate_physical_offsets(ufl_element)}
 
 def _extract_elements(element):
@@ -430,7 +432,7 @@ def _evaluate_basis(ufl_element, element):
 def _tabulate_coordinates(ufl_element, element):
     "Compute intermediate representation of tabulate_coordinates."
 
-    if uses_integral_moments(element):
+    if uses_integral_moments(element) or not element.dual_basis()[0]:
         return {}
 
     domain, = ufl_element.domains() # Assuming single domain
@@ -662,7 +664,7 @@ def uses_integral_moments(element):
     "True if element uses integral moments for its degrees of freedom."
 
     integrals = set(["IntegralMoment", "FrobeniusIntegralMoment"])
-    tags = set([L.get_type_tag() for L in element.dual_basis()])
+    tags = set([L.get_type_tag() for L in element.dual_basis() if L])
     return len(integrals & tags) > 0
 
 def needs_oriented_jacobian(element):
