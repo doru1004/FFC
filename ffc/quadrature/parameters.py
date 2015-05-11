@@ -37,29 +37,9 @@ def parse_optimise_parameters(parameters, itg_data):
     if parameters["optimize"] and itg_data.integral_type == "custom":
         warning("Optimization not available for custom integrals, skipping optimization.")
     elif parameters["optimize"]:
-        optimise_parameters["ignore ones"]        = True
+        # Disable "ignore ones", because it is broken
+        # optimise_parameters["ignore ones"]        = True
         optimise_parameters["remove zero terms"]  = True
         optimise_parameters["ignore zero tables"] = True
-
-        # Do not include this in below if/else clause since we want to be
-        # able to switch on this optimisation in addition to the other
-        # optimisations.
-        if "eliminate_zeros" in parameters:
-            optimise_parameters["eliminate zeros"] = True
-
-        if "simplify_expressions" in parameters:
-            optimise_parameters["optimisation"] = "simplify_expressions"
-        elif "precompute_ip_const" in parameters:
-            optimise_parameters["optimisation"] = "precompute_ip_const"
-        elif "precompute_basis_const" in parameters:
-            optimise_parameters["optimisation"] = "precompute_basis_const"
-        # The current default optimisation (for -O) is equal to
-        # '-feliminate_zeros -fsimplify_expressions'.
-        else:
-            # If '-O -feliminate_zeros' was given on the command line, do not
-            # simplify expressions
-            if not "eliminate_zeros" in parameters:
-                optimise_parameters["eliminate zeros"] = True
-                optimise_parameters["optimisation"]    = "simplify_expressions"
 
     return optimise_parameters
