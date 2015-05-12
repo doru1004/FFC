@@ -1042,7 +1042,7 @@ class QuadratureTransformerBase(Transformer):
             index_calc = []
             cur = 0
             for e in ffc_element._elements:
-                index_calc.append(format["add"]([loop_index, str(cur)]))
+                index_calc.append(Access(loop_index, str(cur)))
                 cur += e.space_dimension()
             basis_access = [format["component"]("", index_func(bi)) for bi in index_calc]
         else:
@@ -1052,6 +1052,7 @@ class QuadratureTransformerBase(Transformer):
             if self.restriction in ("+", "-") and self.integral_type == "custom" and offset != "":
                 # Special case access for custom integrals (all basis functions stored in flattened array)
                 basis_access = format["component"]("", index_func(format["add"]([loop_index, offset])))
+                index_calc = Access(loop_index, offset)
             else:
                 # Normal basis function access
                 basis_access = format["component"]("", index_func(loop_index))
