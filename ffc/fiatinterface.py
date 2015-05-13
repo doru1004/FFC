@@ -99,9 +99,10 @@ def create_element(ufl_element):
     element_signature = ufl_element
 
     # Check cache
-    if element_signature in _cache:
+    element = _cache.get(element_signature, None)
+    if element:
         debug("Reusing element from cache")
-        return _cache[element_signature]
+        return element
 
     if isinstance(ufl_element, ufl.MixedElement):
         # Create mixed element (implemented by FFC)
