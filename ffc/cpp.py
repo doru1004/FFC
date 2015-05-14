@@ -846,6 +846,30 @@ def set_exception_handling(convert_exceptions_to_warnings):
     if convert_exceptions_to_warnings:
         format["exception"] = format["warning"]
 
+def set_precision(vals):
+    """Set the proper floating precision for a numpy array."""
+
+    # Prefetch formats to speed up code generation
+    # FIXME: KBO: Change this to "float" once issue in set_float_formatting is fixed.
+    f_float     = format["floating point"]
+    f_epsilon   = format["epsilon"]
+
+    # Create numpy array and get shape.
+    tensor = numpy.array(vals)
+    shape = numpy.shape(tensor)
+    if len(shape) == 1:
+        # Create zeros if value is smaller than tolerance.
+        values = []
+        for v in tensor:
+            if abs(v) < f_epsilon:
+                values.append(f_float(0.0))
+            else:
+                values.append(f_float(v))
+        # Format values.
+        return numpy.array(values)
+    else:
+        return numpy.array([set_precision(tensor[i]) for i in range(shape[0])])
+
 # Declarations to examine
 types = [["double"],
          ["const", "double"],

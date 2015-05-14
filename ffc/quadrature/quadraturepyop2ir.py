@@ -28,7 +28,7 @@ import numpy
 
 # FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import format, remove_unused, _choose_map
+from ffc.cpp import format, remove_unused, set_precision, _choose_map
 
 # PyOP2 IR modules.
 from coffee import base as pyop2
@@ -331,10 +331,10 @@ def _tabulate_tensor(ir, parameters):
     pyop2_weights = []
     for weights, points in [quadrature_weights[p] for p in used_weights]:
         n_points = len(points)
-        value = f_float(weights[0])
         w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
-        values = f_float(weights[0]) if n_points == 1 else "{%s}" % ", ".join(map(str, [f_float(i) for i in weights]))
-        pyop2_weights.append(pyop2.Decl("double", w_sym, pyop2.ArrayInit(values), qualifiers=["static", "const"]))
+        pyop2_weights.append(pyop2.Decl("double", w_sym,
+                                        pyop2.ArrayInit(set_precision(weights)),
+                                        qualifiers=["static", "const"]))
 
     name_map = ir["name_map"]
     tables = ir["unique_tables"]
@@ -344,18 +344,19 @@ def _tabulate_tensor(ir, parameters):
     code, decl = _tabulate_psis(tables, used_psi_tables, name_map, used_nzcs, opt_par, parameters)
     pyop2_basis = []
     for name, data in decl.items():
-        rank, value, numpy_value = data
-        # Get position of zero columns
-        zeroflags = numpy_value.get_zeros()
+        rank, _, values = data
+        zeroflags = values.get_zeros()
         feo_sym = pyop2.Symbol(name, rank)
+        init = pyop2.ArrayInit(set_precision(values))
         pragma = ""
-        init = pyop2.ArrayInit(value)
         if zeroflags is not None and not zeroflags.all():
             nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
             nz_bounds = (nz_indices[0], nz_indices[-1])
             pragma = "#pragma coffee nonzerocolumns(%d, %d)" % nz_bounds
-            init = pyop2.ColSparseArrayInit(value, nz_bounds, numpy_value[:nz_bounds[0],nz_bounds[1]])
-        pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"], pragma=pragma))
+            init = pyop2.ColSparseArrayInit(set_precision(values), nz_bounds)
+        pyop2_basis.append(pyop2.Decl("double", feo_sym, init,
+                                      qualifiers=["static", "const"],
+                                      pragma=pragma))
 
     # Build the root of the PyOP2' ast
     pyop2_tables = pyop2_weights + [tab for tab in pyop2_basis]
