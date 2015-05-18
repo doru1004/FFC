@@ -862,9 +862,9 @@ def set_precision(vals):
         values = []
         for v in tensor:
             if abs(v) < f_epsilon:
-                values.append(f_float(0.0))
+                values.append(float(f_float(0.0)))
             else:
-                values.append(f_float(v))
+                values.append(float(f_float(v)))
         # Format values.
         return numpy.array(values)
     else:
