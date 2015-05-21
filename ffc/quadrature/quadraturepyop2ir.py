@@ -28,7 +28,7 @@ import numpy
 
 # FFC modules.
 from ffc.log import info, debug, ffc_assert
-from ffc.cpp import format, remove_unused, set_precision, _choose_map
+from ffc.cpp import format, remove_unused, _choose_map
 
 # PyOP2 IR modules.
 from coffee import base as pyop2
@@ -334,7 +334,7 @@ def _tabulate_tensor(ir, parameters):
         n_points = len(points)
         w_sym = pyop2.Symbol(f_weight(n_points), () if n_points == 1 else (n_points,))
         pyop2_weights.append(pyop2.Decl("double", w_sym,
-                                        pyop2.ArrayInit(set_precision(weights), precision),
+                                        pyop2.ArrayInit(weights, precision),
                                         qualifiers=["static", "const"]))
 
     name_map = ir["name_map"]
@@ -348,13 +348,13 @@ def _tabulate_tensor(ir, parameters):
         rank, _, values = data
         zeroflags = values.get_zeros()
         feo_sym = pyop2.Symbol(name, rank)
-        init = pyop2.ArrayInit(set_precision(values), precision)
+        init = pyop2.ArrayInit(values, precision)
         pragma = ""
         if zeroflags is not None and not zeroflags.all():
             nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
             nz_bounds = (nz_indices[0], nz_indices[-1])
             pragma = "#pragma coffee nonzerocolumns(%d, %d)" % nz_bounds
-            init = pyop2.ColSparseArrayInit(set_precision(values), precision, nz_bounds)
+            init = pyop2.ColSparseArrayInit(values, precision, nz_bounds)
         pyop2_basis.append(pyop2.Decl("double", feo_sym, init,
                                       qualifiers=["static", "const"],
                                       pragma=pragma))
