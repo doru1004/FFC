@@ -350,8 +350,12 @@ def _tabulate_tensor(ir, parameters):
         feo_sym = pyop2.Symbol(name, rank)
         init = pyop2.ArrayInit(values, precision)
         if zeroflags is not None and not zeroflags.all():
-            nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
-            nz_bounds = tuple([(0, i-1)] for i in rank[:-1]) + ([(nz_indices[0], nz_indices[-1])],)
+            nz_indices = numpy.logical_not(zeroflags).nonzero()
+            # Note: in the following, we take the last entry of /nz_indices/ since we /know/
+            # we have been tracking only zero-valued columns
+            nz_indices = nz_indices[-1]
+            nz_bounds = tuple([(0, i-1)] for i in rank[:-1])
+            nz_bounds += ([(min(nz_indices), max(nz_indices))],)
             init = pyop2.SparseArrayInit(values, precision, nz_bounds)
         pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"]))
 
