@@ -1410,7 +1410,10 @@ class Access():
 
     def __init__(self, loop_index, offset=None):
         self.loop_index = loop_index
-        self.offset = offset or 0
+        try:
+            self.offset = int(offset)
+        except:
+            self.offset = offset or 0
         if offset:
             self.access = format["grouping"](format["add"]([loop_index, offset]))
         else:
