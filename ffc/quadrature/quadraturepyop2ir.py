@@ -588,6 +588,10 @@ def _generate_integral_ir(points, terms, sets, optimise_parameters, parameters):
             pyop2_rhs = visit_rhs(value)
             entry_ir.append(pyop2.Incr(local_tensor, pyop2_rhs, "#pragma coffee expression"))
 
+        # Disgusting hack, ensure resulting IR comes out in same order
+        # on all processes.
+        entry_ir = sorted(entry_ir, key=lambda x: x.gencode())
+
         if len(loop) == 0:
             nest = pyop2.Block(entry_ir, open_scope=True)
         elif len(loop) in [1, 2]:
