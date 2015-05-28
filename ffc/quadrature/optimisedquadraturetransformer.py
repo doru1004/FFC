@@ -217,7 +217,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         val1 = operands[1][()]
         t = min(val0.t, val1.t)
         # FIXME: I don't know how to implement this the optimized way. Is this right?
-        new_val = create_symbol(format["min value"](str(val0), str(val1)), t)
+        if self.parameters["format"] == "pyop2":
+            new_val = create_funcall("fmin", [val0, val1])
+        else:
+            new_val = create_symbol(format["min value"](str(val0), str(val1)), t)
         return {():new_val}
 
     def max_value(self, o, *operands):
@@ -226,7 +229,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         val1 = operands[1][()]
         t = min(val0.t, val1.t)
         # FIXME: I don't know how to implement this the optimized way. Is this right?
-        new_val = create_symbol(format["max value"](str(val0), str(val1)), t)
+        if self.parameters["format"] == "pyop2":
+            new_val = create_funcall("fmax", [val0, val1])
+        else:
+            new_val = create_symbol(format["max value"](str(val0), str(val1)), t)
         return {():new_val}
 
     # -------------------------------------------------------------------------
