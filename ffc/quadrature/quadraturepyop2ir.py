@@ -37,7 +37,7 @@ from coffee.base import c_sym
 from ffc.representationutils import initialize_integral_code
 
 # Utility and optimisation functions for quadraturegenerator.
-from ffc.quadrature.symbolics import generate_aux_constants
+from ffc.quadrature.symbolics import generate_aux_constants, Expression
 
 def generate_pyop2_ir(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -427,7 +427,7 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
             for num in range(len(conditionals)):
                 name = format["conditional"](num)
                 ops, expr = reversed_conds[num]
-                ip_ir.append(pyop2.Assign(c_sym(name), c_sym(str(expr))))
+                ip_ir.append(pyop2.Assign(c_sym(name), visit_rhs(expr)))
                 num_ops += ops
 
         # Generate code for ip constant declarations.
@@ -461,6 +461,8 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
 def visit_rhs(node):
     """Create a PyOP2 AST-conformed object starting from a FFC node. """
 
+    if isinstance(node, Expression):
+        return node(*[visit_rhs(a) for a in node.args])
     def create_pyop2_node(typ, exp1, exp2):
         """Create an expr node starting from two FFC symbols."""
         if typ == 2:
