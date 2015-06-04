@@ -49,9 +49,11 @@ from ffc.quadrature.quadratureutils import create_permutations
 #from ffc.quadrature.symbolics import set_format
 from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
                                      create_sum, create_fraction, BASIS, IP, GEO, CONST,\
-                                     create_funcall
+                                     create_funcall, create_expression
                                      
 from ffc.cpp import _choose_map
+from coffee import base as ast
+
 
 class QuadratureTransformerOpt(QuadratureTransformerBase):
     "Transform UFL representation to quadrature code."
@@ -217,7 +219,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         val1 = operands[1][()]
         t = min(val0.t, val1.t)
         # FIXME: I don't know how to implement this the optimized way. Is this right?
-        new_val = create_symbol(format["min value"](str(val0), str(val1)), t)
+        if self.parameters["format"] == "pyop2":
+            new_val = create_funcall("fmin", [val0, val1])
+        else:
+            new_val = create_symbol(format["min value"](str(val0), str(val1)), t)
         return {():new_val}
 
     def max_value(self, o, *operands):
@@ -226,7 +231,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         val1 = operands[1][()]
         t = min(val0.t, val1.t)
         # FIXME: I don't know how to implement this the optimized way. Is this right?
-        new_val = create_symbol(format["max value"](str(val0), str(val1)), t)
+        if self.parameters["format"] == "pyop2":
+            new_val = create_funcall("fmax", [val0, val1])
+        else:
+            new_val = create_symbol(format["max value"](str(val0), str(val1)), t)
         return {():new_val}
 
     # -------------------------------------------------------------------------
@@ -239,6 +247,8 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         c, = operands
         ffc_assert(len(c) == 1 and firstkey(c) == (),\
             "Condition for NotCondition should only be one function: " + repr(c))
+        if self.parameters["format"] == "pyop2":
+            return {(): create_expression(ast.Not, [c[()]], c[()].t)}
         var = format["not"](str(c[()]))
         sym = create_symbol(var, c[()].t, base_op=c[()].ops()+1, iden=var)
         return {(): sym}
@@ -262,6 +272,17 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # Get the minimum type
         t = min(lhs[()].t, rhs[()].t)
         ops = lhs[()].ops() + rhs[()].ops() + 1
+        if self.parameters["format"] == "pyop2":
+            name_map = {"==": ast.Eq,
+                        "!=" : ast.NEq,
+                        "<": ast.Less,
+                        ">": ast.Greater,
+                        "<=": ast.LessEq,
+                        ">=": ast.GreaterEq,
+                        "&&": ast.And,
+                        "||": ast.Or}
+            expr = create_expression(name_map[o._name], [lhs[()], rhs[()]], t)
+            return {(): expr}
         cond = str(lhs[()])+format[name_map[o._name]]+str(rhs[()])
         var = format["grouping"](cond)
         sym = create_symbol(var, t, base_op=ops, iden=var)
@@ -292,7 +313,10 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
         # TODO: Handle this differently to expose the variables which are used
         # to create the expressions.
         var = format["evaluate conditional"](cond[()], t_val, f_val)
-        expr = create_symbol(var, t, iden=var)
+        if self.parameters["format"] == "pyop2":
+            expr = create_expression(ast.Ternary, [cond[()], t_val, f_val], t, base_op=ops)
+        else:
+            expr = create_symbol(var, t, iden=var)
         num = len(self.conditionals)
         var = format["conditional"](num)
         name = create_symbol(var, t, iden=var)

@@ -44,6 +44,36 @@ def create_float(val):
     _float_cache[val] = float_val
     return float_val
 
+class Expression(object):
+    """A generic expression object used to generate COFFEE IR.
+
+    :arg callable: The COFFEE ast Node to create.
+    :arg args: FFC-transformed arguments that will eventually be
+         passed to the Node constructor (must first be transformed to
+         COFFEE).
+    :arg typ: Loop type (one of ``BASIS``, ``IP``, ``GEO``, ``CONST``)
+    :arg ops: Number of operations
+    """
+    def __init__(self, callable, args, typ, ops):
+        self.callable = callable
+        self.args = args
+        self.t = typ
+        self._ops = ops
+
+    def __call__(self, *args):
+        """Construct the COFFEE node with given arguments."""
+        return self.callable(*args)
+
+    def ops(self):
+        return self._ops
+
+
+def create_expression(expr, args, symbol_type, base_expr=None, base_op=0, expo=None,
+                      cond=(), loop_index=[], iden=None):
+    """Build an Expression object (which see)"""
+    return Expression(expr, args, symbol_type, base_op)
+
+
 _symbol_cache = {}
 def create_symbol(variable, symbol_type, base_expr=None, base_op=0, expo=None,\
                   cond=(), loop_index=[], iden=None):
