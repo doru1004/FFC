@@ -31,8 +31,7 @@ from ufl.algorithms import extract_unique_elements, extract_type, extract_elemen
 # FFC modules
 from ffc.log import ffc_assert, info, error, warning
 from ffc.utils import product
-from ffc.fiatinterface import create_element
-from ffc.fiatinterface import map_facet_points, reference_cell_vertices
+from ffc.fiatinterface import create_element, reference_cell, reference_cell_vertices
 from ffc.quadrature_schemes import create_quadrature
 from ffc.mixedelement import MixedElement
 
@@ -105,12 +104,21 @@ def _map_entity_points(cell, points, entity_dim, entity, integral_type):
     if entity_dim == tdim:
         return points
     elif entity_dim == tdim-1:
+        # Special case, don't need to map coordinates on vertices
+        if len(points[0]) == 0:
+            return [[(0.0,), (1.0,)][entity]]
+
+        # Get mapping from facet to cell coordinates
         if integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
-            return map_facet_points(cell, points, entity, "horiz_facet")
+            t = reference_cell(cell).get_horiz_facet_transform(entity)
         elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
-            return map_facet_points(cell, points, entity, "vert_facet")
+            t = reference_cell(cell).get_vert_facet_transform(entity)
         else:
-            return map_facet_points(cell, points, entity, "facet")
+            t = reference_cell(cell).get_facet_transform(entity)
+
+        # Apply mapping for all points
+        return numpy.asarray(map(t, points))
+
     elif entity_dim == 0:
         return (reference_cell_vertices(cell.cellname())[entity],)
 
