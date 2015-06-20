@@ -1430,4 +1430,7 @@ class Access():
         return getattr(self.access, m)
 
     def __eq__(self, other):
-        return self.loop_index == other.loop_index and self.offset == other.offset
+        if isinstance(other, Access):
+            return self.loop_index == other.loop_index and self.offset == other.offset
+        else:
+            return str(self) == str(other)
