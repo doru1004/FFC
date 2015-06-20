@@ -193,8 +193,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         # Stage 5: format code
         cpu_time = time()
-        code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
-        write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
+        code = format_code(code, wrapper_code, prefix, parameters)
         _print_timing(5, time() - cpu_time)
 
         info_green("FFC finished in %g seconds.", time() - cpu_time_0)
