@@ -36,8 +36,8 @@ class EnrichedNumpyArray(numpy.ndarray):
     """A numpy array that also tracks the number of zero columns if the array
     comes from a mixed element."""
 
-    def track_zeros(self, _is_mixed):
-        if not _is_mixed:
+    def track_zeros(self, _is_zero_blocked):
+        if not _is_zero_blocked:
             self.zeros = None
             return
         self.zeros = (self.view() == 0).all(axis=-2)
@@ -98,7 +98,7 @@ def flatten_psi_tables(tables, entity_type):
             # There's a set of tables for non-averaged and averaged (averaged only occurs with num_points == 1)
             for avg, entity_tables in sorted_items(avg_tables):
                 name_entity_tables = collections.defaultdict(dict)
-                is_mixed = entity_tables._is_mixed
+                is_zero_blocked = entity_tables._is_zero_blocked
 
                 # There's a set of tables for each entity number (only 1 for the cell, >1 for facets and vertices)
                 for entity, derivs_tables in sorted_items(entity_tables):
@@ -153,7 +153,7 @@ def flatten_psi_tables(tables, entity_type):
                             psi_table[i, :, :] = entity_tables[i]
 
                     psi_table = psi_table.view(EnrichedNumpyArray)
-                    psi_table.track_zeros(is_mixed)
+                    psi_table.track_zeros(is_zero_blocked)
                     flat_tables[name] = psi_table
 
             # Increase unique numpoints*element counter
