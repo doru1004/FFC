@@ -258,53 +258,9 @@ def create_quadrature(cell, num_points):
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
     return quad_rule.get_points(), quad_rule.get_weights()
 
-def map_facet_points(cell, points, facet, facet_type):
-    """
-    Map points from the e (UFC) reference simplex of dimension d - 1
-    to a given facet on the (UFC) reference simplex of dimension d.
-    This may be used to transform points tabulated for example on the
-    2D reference triangle to points on a given facet of the reference
-    tetrahedron.
-    """
-
-    # Special case, don't need to map coordinates on vertices
-    if len(points[0]) == 0:
-        return [[(0.0,), (1.0,)][facet]]
-
-    if facet_type == "facet":
-        # Get mapping from facet to cell coordinates
-        t = reference_cell(cell).get_facet_transform(facet)
-
-        # Apply mapping for all points
-        return asarray([t(point) for point in points])
-    elif facet_type == "horiz_facet":
-        # A horiz_facet must be on the bottom (0) or top (1) of an
-        # extruded cell. Simply take the point and append a final
-        # coordinate of 0.0 or 1.0, as appropriate.
-        if facet == 0:
-            new_points = zeros((points.shape[0], points.shape[1]+1))
-            new_points[:,:-1] = points
-        elif facet == 1:
-            new_points = ones((points.shape[0], points.shape[1]+1))
-            new_points[:,:-1] = points
-        else:
-            raise Exception("facet number must be 0 or 1 for horiz_facet")
-
-    elif facet_type == "vert_facet":
-        # A vert_facet is one of the sides of the extruded cell. In particular,
-        # the vertical facets are themselves OuterProductCells.
-        # To do the mapping, we temporarily ignore the last coordinate
-        # of each point. We send the remaining coordinates back through
-        # this function as a normal facet of one degree less,
-        # then append the last coordinate back on.
-        temp_points = map_facet_points(cell._A, points[:,:-1], facet, "facet")
-        new_points = zeros((points.shape[0], points.shape[1]+1))
-        new_points[:,:-1] = temp_points
-        new_points[:,-1] = points[:,-1]
-    else:
-        raise Exception("facet type not recognised")
-
-    return new_points
+def map_facet_points(*arg, **kwargs):
+    # This is here to prevent import failures from dead code.
+    raise NotImplementedError("Function removed!")
 
 def _extract_elements(ufl_element, domain=None):
     "Recursively extract un-nested list of (component) elements."
