@@ -129,7 +129,13 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    form_data = compute_form_data(form)
+    form_data = compute_form_data(form,
+                                  do_apply_function_pullbacks=True,
+                                  do_apply_integral_scaling=True,
+                                  do_apply_geometry_lowering=True,
+                                  preserve_geometry_types=(),
+                                  do_apply_restrictions=True,
+                                  )
 
     info("")
     info(str(form_data))
