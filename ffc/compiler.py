@@ -165,7 +165,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     _print_timing(3, time() - cpu_time)
 
     # Return IR (PyOP2 mode) or code string (otherwise)
-    if parameters["pyop2-ir"]:
+    if parameters["pyop2-ir"] and all(i['representation'] == 'quadrature' for i in oir[2]):
         try:
             from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
         except ImportError:
