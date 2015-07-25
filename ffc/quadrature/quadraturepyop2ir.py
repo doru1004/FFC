@@ -349,15 +349,15 @@ def _tabulate_tensor(ir, parameters):
         zeroflags = values.get_zeros()
         feo_sym = pyop2.Symbol(name, rank)
         init = pyop2.ArrayInit(values, precision)
-        pragma = ""
         if zeroflags is not None and not zeroflags.all():
-            nz_indices = [i for i, j in enumerate(zeroflags.tolist()) if not j] or [-1]
-            nz_bounds = (nz_indices[0], nz_indices[-1])
-            pragma = "#pragma coffee nonzerocolumns(%d, %d)" % nz_bounds
-            init = pyop2.ColSparseArrayInit(values, precision, nz_bounds)
-        pyop2_basis.append(pyop2.Decl("double", feo_sym, init,
-                                      qualifiers=["static", "const"],
-                                      pragma=pragma))
+            nz_indices = numpy.logical_not(zeroflags).nonzero()
+            # Note: in the following, we take the last entry of /nz_indices/ since we /know/
+            # we have been tracking only zero-valued columns
+            nz_indices = nz_indices[-1]
+            nz_bounds = tuple([(i, 0)] for i in rank[:-1])
+            nz_bounds += ([(max(nz_indices) - min(nz_indices) + 1, min(nz_indices))],)
+            init = pyop2.SparseArrayInit(values, precision, nz_bounds)
+        pyop2_basis.append(pyop2.Decl("double", feo_sym, init, ["static", "const"]))
 
     # Build the root of the PyOP2' ast
     pyop2_tables = pyop2_weights + [tab for tab in pyop2_basis]
