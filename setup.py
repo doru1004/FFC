@@ -247,15 +247,6 @@ def run_install():
     # Generate config files
     generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
-    # Setup extension module for FFC time elements
-    ext_module_time = Extension("ffc_time_ext.time_elements_ext",
-                                ["ffc_time_ext/time_elements_interface.cpp",
-                                 "ffc_time_ext/time_elements.cpp",
-                                 "ffc_time_ext/LobattoQuadrature.cpp",
-                                 "ffc_time_ext/RadauQuadrature.cpp",
-                                 "ffc_time_ext/Legendre.cpp"],
-                                extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix])
-
     # Setup extension module for UFC
     swig_options = ["-c++", "-shadow", "-modern",
                     "-modernargs", "-fastdispatch",
@@ -264,14 +255,6 @@ def run_install():
                     "-fastinit", "-fastunpack",
                     "-fastquery", "-nobuildnone"]
     if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
-    ext_module_ufc = Extension("ufc._ufc",
-                               sources=[os.path.join("ufc", "ufc.i")],
-                               depends=[os.path.join("ufc", "ufc.h"),
-                                        os.path.join("ufc", "ufc_geometry.h")],
-                               swig_opts=swig_options,
-                               extra_compile_args=CXX_FLAGS.split(),
-                               extra_link_args=["-Wl,-rpath,%s/lib" % sys.prefix],
-                               include_dirs=[os.path.join("ufc")])
 
     # Call distutils to perform installation
     setup(name             = "FFC",
@@ -297,7 +280,6 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          ext_modules      = [ext_module_time, ext_module_ufc],
           cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
