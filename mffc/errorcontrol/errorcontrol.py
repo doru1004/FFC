@@ -23,8 +23,8 @@ error control
 from ufl.utils.sorting import sorted_by_key
 from ufl import Coefficient
 
-from ffc.log import info, error
-from ffc.compiler import compile_form
+from mffc.log import info, error
+from mffc.compiler import compile_form
 
 __all__ = ["compile_with_error_control"]
 
@@ -65,7 +65,7 @@ def compile_with_error_control(forms, object_names, reserved_objects,
     F, M, u = prepare_input_arguments(forms, object_names, reserved_objects)
 
     # Generate forms to be used for the error control
-    from ffc.errorcontrol.errorcontrolgenerators import UFLErrorControlGenerator
+    from mffc.errorcontrol.errorcontrolgenerators import UFLErrorControlGenerator
     generator = UFLErrorControlGenerator(F, M, u)
     ec_forms = generator.generate_all_error_control_forms()
 

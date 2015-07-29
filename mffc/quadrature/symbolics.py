@@ -20,8 +20,8 @@
 from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
-from ffc.log import debug, error
-from ffc.cpp import format
+from mffc.log import debug, error
+from mffc.cpp import format
 
 # TODO: Use proper errors, not just RuntimeError.
 # TODO: Change all if value == 0.0 to something more safe.

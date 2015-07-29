@@ -15,8 +15,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info
-from ffc.representationutils import initialize_integral_code
+from mffc.log import info
+from mffc.representationutils import initialize_integral_code
 
 from uflacs.backends.ffc.generation import generate_tabulate_tensor_code
 

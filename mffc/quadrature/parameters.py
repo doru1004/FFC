@@ -21,7 +21,7 @@
 # Modified by Martin Alnaes 2013-2014
 
 # FFC modules
-from ffc.log import warning
+from mffc.log import warning
 
 def parse_optimise_parameters(parameters, itg_data):
 

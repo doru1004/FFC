@@ -20,7 +20,7 @@
 from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
-from ffc.log import error
+from mffc.log import error
 
 from collections import deque
 

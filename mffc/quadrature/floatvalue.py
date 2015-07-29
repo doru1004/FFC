@@ -21,8 +21,8 @@
 # Last changed: 2010-02-09
 
 # FFC modules.
-from ffc.log import error
-from ffc.cpp import format
+from mffc.log import error
+from mffc.cpp import format
 
 # FFC quadrature modules.
 from .symbolics import CONST

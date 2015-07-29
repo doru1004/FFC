@@ -27,12 +27,12 @@
 # Last changed: 2013-02-10
 
 # FFC modules
-from ffc.log import error
-from ffc.cpp import format, remove_unused, count_ops
+from mffc.log import error
+from mffc.cpp import format, remove_unused, count_ops
 
 # FFC tensor representation modules
-from ffc.tensor.monomialtransformation import MonomialIndex
-from ffc.representationutils import initialize_integral_code
+from mffc.tensor.monomialtransformation import MonomialIndex
+from mffc.representationutils import initialize_integral_code
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."

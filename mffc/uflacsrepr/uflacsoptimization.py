@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info
+from mffc.log import info
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."

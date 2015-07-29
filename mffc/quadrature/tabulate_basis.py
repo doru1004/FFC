@@ -29,12 +29,13 @@ from ufl.classes import Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
 
 # FFC modules
-from ffc.log import ffc_assert, info, error, warning
-from ffc.utils import product
-from ffc.fiatinterface import create_element, reference_cell, reference_cell_vertices
-from ffc.quadrature_schemes import create_quadrature
-from ffc.mixedelement import MixedElement
+from mffc.log import ffc_assert, info, error, warning
+from mffc.utils import product
+from mffc.fiatinterface import create_element, reference_cell, reference_cell_vertices
+from mffc.quadrature_schemes import create_quadrature
+from mffc.mixedelement import MixedElement
 from FIAT.enriched import EnrichedElement
+
 
 def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":

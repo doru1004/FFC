@@ -27,17 +27,17 @@ import collections
 import numpy
 
 # FFC modules.
-from ffc.log import info, debug, ffc_assert
-from ffc.cpp import format, remove_unused, _choose_map
+from mffc.log import info, debug, ffc_assert
+from mffc.cpp import format, remove_unused, _choose_map
 
 # PyOP2 IR modules.
 from coffee import base as pyop2
 from coffee.base import c_sym
 
-from ffc.representationutils import initialize_integral_code
+from mffc.representationutils import initialize_integral_code
 
 # Utility and optimisation functions for quadraturegenerator.
-from ffc.quadrature.symbolics import generate_aux_constants, Expression
+from mffc.quadrature.symbolics import generate_aux_constants, Expression
 
 def generate_pyop2_ir(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."

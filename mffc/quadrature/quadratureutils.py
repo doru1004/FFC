@@ -28,8 +28,8 @@ import collections
 import numpy
 
 # FFC modules.
-from ffc.log import debug, error, ffc_assert
-from ffc.cpp import format
+from mffc.log import debug, error, ffc_assert
+from mffc.cpp import format
 
 
 class EnrichedNumpyArray(numpy.ndarray):

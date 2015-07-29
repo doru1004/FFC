@@ -47,8 +47,8 @@ FIAT (functional.pt_dict) in the intermediate representation stage.
 # First added:  2009-xx-yy
 # Last changed: 2013-01-10
 
-from ffc.cpp import format, remove_unused
-from ffc.utils import pick_first
+from mffc.cpp import format, remove_unused
+from mffc.utils import pick_first
 
 __all__ = ["evaluate_dof_and_dofs", "affine_weights"]
 

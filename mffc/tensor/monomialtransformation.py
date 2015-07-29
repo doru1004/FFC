@@ -30,14 +30,14 @@ from ufl.classes import FixedIndex
 from ufl.permutation import build_component_numbering
 
 # FFC modules
-from ffc.log import info, error, ffc_assert
-from ffc.fiatinterface import create_element
-from ffc.utils import all_equal
-from ffc.representationutils import transform_component
+from mffc.log import info, error, ffc_assert
+from mffc.fiatinterface import create_element
+from mffc.utils import all_equal
+from mffc.representationutils import transform_component
 
 # FFC tensor representation modules
-from ffc.tensor.monomialextraction import MonomialForm
-from ffc.tensor.monomialextraction import MonomialException
+from mffc.tensor.monomialextraction import MonomialForm
+from mffc.tensor.monomialextraction import MonomialException
 
 def transform_monomial_form(monomial_form):
     "Transform monomial form to reference element."

@@ -40,14 +40,14 @@ from itertools import chain
 import ufl
 
 # FFC modules
-from ffc.utils import compute_permutations, product
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
-from ffc.fiatinterface import create_element, reference_cell
-from ffc.mixedelement import MixedElement
-from ffc.enrichedelement import SpaceOfReals
-from ffc.fiatinterface import DiscontinuousLagrangeTrace
-from ffc.quadratureelement import QuadratureElement
-from ffc.cpp import set_float_formatting
+from mffc.utils import compute_permutations, product
+from mffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
+from mffc.fiatinterface import create_element, reference_cell
+from mffc.mixedelement import MixedElement
+from mffc.enrichedelement import SpaceOfReals
+from mffc.fiatinterface import DiscontinuousLagrangeTrace
+from mffc.quadratureelement import QuadratureElement
+from mffc.cpp import set_float_formatting
 
 # List of supported integral types
 ufc_integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "custom"]
@@ -55,13 +55,13 @@ ufc_integral_types = ["cell", "exterior_facet", "interior_facet", "vertex", "cus
 def pick_representation(representation):
     "Return one of the specialized code generation modules from a representation string."
     if representation == "quadrature":
-        from ffc import quadrature
+        from mffc import quadrature
         r = quadrature
     elif representation == "tensor":
-        from ffc import tensor
+        from mffc import tensor
         r = tensor
     elif representation == "uflacs":
-        from ffc import uflacsrepr
+        from mffc import uflacsrepr
         r = uflacsrepr
     else:
         error("Unknown representation: %s" % str(representation))

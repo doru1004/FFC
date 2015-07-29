@@ -29,8 +29,8 @@ representation.
 # Last changed: 2013-02-10
 
 # FFC modules
-from ffc.log import info, begin, end
-from ffc.representation import pick_representation
+from mffc.log import info, begin, end
+from mffc.representation import pick_representation
 
 def optimize_ir(ir, parameters):
     "Optimize intermediate form representation."

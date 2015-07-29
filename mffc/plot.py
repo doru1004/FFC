@@ -26,8 +26,8 @@ from numpy import dot, cross, array, sin, cos, pi, sqrt
 from numpy.linalg import norm
 import sys
 
-from ffc.fiatinterface import create_element
-from ffc.log import warning, error, info
+from mffc.fiatinterface import create_element
+from mffc.log import warning, error, info
 
 # Import Soya3D
 try:

@@ -37,11 +37,11 @@ from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_data
 
 # FFC modules
-from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
-from ffc.utils import all_equal
-from ffc.quadratureelement import default_quadrature_degree
-from ffc.utils import all_equal
-from ffc.tensor import estimate_cost
+from mffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
+from mffc.utils import all_equal
+from mffc.quadratureelement import default_quadrature_degree
+from mffc.utils import all_equal
+from mffc.tensor import estimate_cost
 
 def analyze_forms(forms, parameters):
     """

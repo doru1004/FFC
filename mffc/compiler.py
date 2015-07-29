@@ -118,16 +118,16 @@ from time import time
 import os
 
 # FFC modules
-from ffc.log import info, info_green, warning
-from ffc.parameters import default_parameters
+from mffc.log import info, info_green, warning
+from mffc.parameters import default_parameters
 
 # FFC modules
-from ffc.analysis import analyze_forms, analyze_elements
-from ffc.representation import compute_ir
-from ffc.optimization import optimize_ir
-from ffc.codegeneration import generate_code
-from ffc.formatting import format_code, write_code
-from ffc.wrappers import generate_wrapper_code
+from mffc.analysis import analyze_forms, analyze_elements
+from mffc.representation import compute_ir
+from mffc.optimization import optimize_ir
+from mffc.codegeneration import generate_code
+from mffc.formatting import format_code, write_code
+from mffc.wrappers import generate_wrapper_code
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     """This function generates UFC code for a given UFL form or list
@@ -167,7 +167,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     # Return IR (PyOP2 mode) or code string (otherwise)
     if parameters["pyop2-ir"]:
         try:
-            from ffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
+            from mffc.quadrature.quadraturepyop2ir import generate_pyop2_ir
         except ImportError:
             raise ImportError("Format pyop2-ir depends on PyOP2, which is not available.")
         # Stage 4: build PyOP2 intermediate representation

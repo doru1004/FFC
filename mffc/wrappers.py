@@ -19,11 +19,11 @@
 from itertools import chain
 
 # FFC modules
-from ffc.log import begin, end, info, error
-from ffc.utils import all_equal
-from ffc.cpp import format
-from ffc.backends.dolfin.wrappers import generate_dolfin_code
-from ffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
+from mffc.log import begin, end, info, error
+from mffc.utils import all_equal
+from mffc.cpp import format
+from mffc.backends.dolfin.wrappers import generate_dolfin_code
+from mffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
 
 __all__ = ["generate_wrapper_code"]
 

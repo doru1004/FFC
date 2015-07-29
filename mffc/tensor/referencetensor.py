@@ -22,7 +22,7 @@
 # Last changed: 2011-11-28
 
 # FFC modules.
-from ffc.log import debug
+from mffc.log import debug
 
 # FFC tensor representation modules.
 from .monomialintegration import integrate

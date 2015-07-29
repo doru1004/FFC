@@ -35,19 +35,19 @@ from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
 
 # FFC modules
-from ffc.log import log
-from ffc.log import info
-from ffc.log import warning
-from ffc.log import debug
-from ffc.log import error
-from ffc.log import set_level
-from ffc.log import set_prefix
-from ffc.log import INFO
-from ffc.parameters import default_parameters
-from ffc.mixedelement import MixedElement
-from ffc.compiler import compile_form
-from ffc.jitobject import JITObject
-from ffc.quadratureelement import default_quadrature_degree
+from mffc.log import log
+from mffc.log import info
+from mffc.log import warning
+from mffc.log import debug
+from mffc.log import error
+from mffc.log import set_level
+from mffc.log import set_prefix
+from mffc.log import INFO
+from mffc.parameters import default_parameters
+from mffc.mixedelement import MixedElement
+from mffc.compiler import compile_form
+from mffc.jitobject import JITObject
+from mffc.quadratureelement import default_quadrature_degree
 
 # Special Options for JIT-compilation
 FFC_PARAMETERS_JIT = default_parameters()
@@ -83,7 +83,7 @@ def check_swig_version(compiled_module):
 
 def jit_form(form, parameters=None):
     "Just-in-time compile the given form."
-    from ffc.backends.ufc import build_ufc_module
+    from mffc.backends.ufc import build_ufc_module
 
     # Check that we get a Form
     if not isinstance(form, Form):

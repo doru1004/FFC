@@ -1,8 +1,11 @@
-"""
-FEniCS Form Compiler (FFC)
---------------------------
+"""Modified FEniCS Form Compiler (MFFC)
+-----------------------------------
 
-FFC compiles finite element variational forms into C++ code.
+This version of FFC is modified to compile forms for the Firedrake
+finite element system.
+
+This modified FFC compiles finite element variational forms into a
+compiler intermediate representation used by the PyOP2 package.
 
 The interface consists of the following functions:
 
@@ -10,15 +13,16 @@ The interface consists of the following functions:
   compile_element    - Compilation of finite elements
   jit                - Just-In-Time compilation of forms and elements
   default_parameters - Default parameter values for FFC
+
 """
 
 __version__ = "1.6.0dev"
 
 # Import compiler functions
-from ffc.compiler import compile_form, compile_element
+from mffc.compiler import compile_form, compile_element
 
 # Import JIT compiler
-from ffc.jitcompiler import jit
+from mffc.jitcompiler import jit
 
 # Import default parameters
 from .parameters import default_parameters

@@ -40,18 +40,18 @@ from ufl.classes import Coefficient
 from ufl.classes import Operator
 
 # FFC modules.
-from ffc.log import info, debug, error, ffc_assert
-from ffc.cpp import format
-from ffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
-from ffc.quadrature.quadratureutils import create_permutations
+from mffc.log import info, debug, error, ffc_assert
+from mffc.cpp import format
+from mffc.quadrature.quadraturetransformerbase import QuadratureTransformerBase
+from mffc.quadrature.quadratureutils import create_permutations
 
 # Symbolics functions
-#from ffc.quadrature.symbolics import set_format
-from ffc.quadrature.symbolics import create_float, create_symbol, create_product,\
+#from mffc.quadrature.symbolics import set_format
+from mffc.quadrature.symbolics import create_float, create_symbol, create_product,\
                                      create_sum, create_fraction, BASIS, IP, GEO, CONST,\
                                      create_funcall, create_expression
                                      
-from ffc.cpp import _choose_map
+from mffc.cpp import _choose_map
 from coffee import base as ast
 
 

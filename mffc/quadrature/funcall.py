@@ -20,8 +20,8 @@
 # Last changed: 2015-01-13
 
 # FFC modules.
-from ffc.log import error
-from ffc.cpp import format
+from mffc.log import error
+from mffc.cpp import format
 
 # FFC quadrature modules.
 from .expr import Expr

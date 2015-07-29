@@ -28,17 +28,17 @@ from ufl.classes import Form, Integral
 from ufl.sorting import sorted_expr_sum
 
 # FFC modules
-from ffc.cpp import format
-from ffc.log import ffc_assert, info, error, warning
-from ffc.utils import product
-from ffc.fiatinterface import create_element
+from mffc.cpp import format
+from mffc.log import ffc_assert, info, error, warning
+from mffc.utils import product
+from mffc.fiatinterface import create_element
 
-from ffc.representationutils import initialize_integral_ir
-from ffc.quadrature.tabulate_basis import tabulate_basis
-from ffc.quadrature.parameters import parse_optimise_parameters
+from mffc.representationutils import initialize_integral_ir
+from mffc.quadrature.tabulate_basis import tabulate_basis
+from mffc.quadrature.parameters import parse_optimise_parameters
 
-from ffc.quadrature.quadraturetransformer import QuadratureTransformer
-from ffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
+from mffc.quadrature.quadraturetransformer import QuadratureTransformer
+from mffc.quadrature.optimisedquadraturetransformer import QuadratureTransformerOpt
 import six
 
 def compute_integral_ir(itg_data,

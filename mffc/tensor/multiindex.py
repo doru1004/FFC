@@ -27,8 +27,8 @@ import functools
 import numpy
 
 # FFC modules.
-from ffc.utils import listcopy
-from ffc.log import error
+from mffc.utils import listcopy
+from mffc.log import error
 
 def build_indices(dims):
     "Create a list of all index combinations."

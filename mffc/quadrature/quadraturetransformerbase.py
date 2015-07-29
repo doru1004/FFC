@@ -37,19 +37,19 @@ from ufl.permutation import build_component_numbering
 from ufl.algorithms import Transformer
 
 # FFC modules.
-from ffc.log import ffc_assert, error, info
-from ffc.fiatinterface import create_element, map_facet_points
-from ffc.mixedelement import MixedElement
-from ffc.cpp import format
-from ffc.utils import Bunch
+from mffc.log import ffc_assert, error, info
+from mffc.fiatinterface import create_element, map_facet_points
+from mffc.mixedelement import MixedElement
+from mffc.cpp import format
+from mffc.utils import Bunch
 
 # FFC tensor modules.
-from ffc.tensor.multiindex import MultiIndex as FFCMultiIndex
-from ffc.representationutils import transform_component
+from mffc.tensor.multiindex import MultiIndex as FFCMultiIndex
+from mffc.representationutils import transform_component
 
 # Utility and optimisation functions for quadraturegenerator.
-from ffc.quadrature.quadratureutils import create_psi_tables
-from ffc.quadrature.symbolics import BASIS, IP, GEO, CONST
+from mffc.quadrature.quadratureutils import create_psi_tables
+from mffc.quadrature.symbolics import BASIS, IP, GEO, CONST
 
 
 class EmptyIntegrandError(RuntimeError):

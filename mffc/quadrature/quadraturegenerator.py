@@ -30,13 +30,13 @@ from ufl.utils.sorting import sorted_by_key
 from ufl.utils.derivativetuples import compute_derivative_tuples
 
 # FFC modules
-from ffc.log import info, debug, ffc_assert, error, warning
-from ffc.cpp import format, remove_unused
+from mffc.log import info, debug, ffc_assert, error, warning
+from mffc.cpp import format, remove_unused
 
-from ffc.representationutils import initialize_integral_code
+from mffc.representationutils import initialize_integral_code
 
 # Utility and optimization functions for quadraturegenerator
-from ffc.quadrature.symbolics import generate_aux_constants
+from mffc.quadrature.symbolics import generate_aux_constants
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."

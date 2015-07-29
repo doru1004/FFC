@@ -135,5 +135,5 @@ def _create_entity_dofs(fiat_cell, num_dofs):
     return entity_dofs
 
 # FFC modules to avoid circular import
-from ffc.fiatinterface import reference_cell
-from ffc.quadrature_schemes import create_quadrature
+from mffc.fiatinterface import reference_cell
+from mffc.quadrature_schemes import create_quadrature

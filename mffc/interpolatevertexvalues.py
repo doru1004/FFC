@@ -21,7 +21,7 @@
 #
 # Last changed: 2010-02-09
 
-from ffc.cpp import format, remove_unused
+from mffc.cpp import format, remove_unused
 
 # Extract code manipulation formats
 inner =     format["inner product"]

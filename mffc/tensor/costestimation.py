@@ -19,11 +19,11 @@
 # Last changed: 2014-04-15
 
 # FFC modules
-from ffc.log import debug
+from mffc.log import debug
 
 # FFC tensor representation modules
-from ffc.tensor.monomialextraction import extract_monomial_form
-from ffc.tensor.monomialtransformation import transform_monomial_form
+from mffc.tensor.monomialextraction import extract_monomial_form
+from mffc.tensor.monomialtransformation import transform_monomial_form
 
 def estimate_cost(integral, function_replace_map):
     """

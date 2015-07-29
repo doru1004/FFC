@@ -29,9 +29,9 @@ import math
 import numpy
 
 # FFC modules
-from ffc.log import error, ffc_assert
-from ffc.evaluatebasis import _compute_basisvalues, _tabulate_coefficients
-from ffc.cpp import remove_unused, indent, format
+from mffc.log import error, ffc_assert
+from mffc.evaluatebasis import _compute_basisvalues, _tabulate_coefficients
+from mffc.cpp import remove_unused, indent, format
 
 def _evaluate_basis_derivatives_all(data):
     """Like evaluate_basis, but return the values of all basis

@@ -29,10 +29,10 @@ import numpy
 import time
 
 # FFC modules
-from ffc.log import info, debug, error
-from ffc.fiatinterface import create_element
-from ffc.fiatinterface import map_facet_points
-from ffc.quadrature_schemes import create_quadrature
+from mffc.log import info, debug, error
+from mffc.fiatinterface import create_element
+from mffc.fiatinterface import map_facet_points
+from mffc.quadrature_schemes import create_quadrature
 
 # FFC tensor representation modules
 from .multiindex import build_indices

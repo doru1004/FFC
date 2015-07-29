@@ -28,7 +28,7 @@ from ufl.classes import Form, Argument, Coefficient, ScalarValue, IntValue
 from ufl.algorithms import purge_list_tensors, apply_transformer, ReuseTransformer
 
 # FFC modules
-from ffc.log import info, debug, ffc_assert
+from mffc.log import info, debug, ffc_assert
 
 # Cache for computed integrand representations
 #_cache = {}

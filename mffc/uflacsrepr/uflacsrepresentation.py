@@ -15,13 +15,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 
-from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
+from mffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 
-from ffc.fiatinterface import create_element
-from ffc.representationutils import initialize_integral_ir
-from ffc.quadrature.parameters import parse_optimise_parameters
-from ffc.quadrature.tabulate_basis import tabulate_basis
-from ffc.quadrature.quadraturerepresentation import sort_integrals
+from mffc.fiatinterface import create_element
+from mffc.representationutils import initialize_integral_ir
+from mffc.quadrature.parameters import parse_optimise_parameters
+from mffc.quadrature.tabulate_basis import tabulate_basis
+from mffc.quadrature.quadraturerepresentation import sort_integrals
 
 from uflacs.backends.ffc.representation import compute_uflacs_integral_ir
 

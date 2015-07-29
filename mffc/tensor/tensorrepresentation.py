@@ -28,15 +28,15 @@ might be (re-)implemented in a future version of FFC
 # Modified by Martin Alnaes, 2013
 
 # FFC modules
-from ffc.log import info, error
-from ffc.representationutils import initialize_integral_ir
+from mffc.log import info, error
+from mffc.representationutils import initialize_integral_ir
 
 # FFC tensor representation modules
-from ffc.tensor.monomialextraction import extract_monomial_form
-from ffc.tensor.monomialtransformation import transform_monomial_form
-from ffc.tensor.referencetensor import ReferenceTensor
-from ffc.tensor.geometrytensor import GeometryTensor
-from ffc.tensor.tensorreordering import reorder_entries
+from mffc.tensor.monomialextraction import extract_monomial_form
+from mffc.tensor.monomialtransformation import transform_monomial_form
+from mffc.tensor.referencetensor import ReferenceTensor
+from mffc.tensor.geometrytensor import GeometryTensor
+from mffc.tensor.tensorreordering import reorder_entries
 
 def compute_integral_ir(itg_data,
                         form_data,

@@ -26,12 +26,12 @@ __all__ = ["compute_tensor_representation"]
 from time import time
 
 # FFC modules
-from ffc.compiler import _print_timing
-from ffc.parameters import default_parameters
-from ffc.analysis import analyze_forms
-from ffc.representation import compute_ir
-from ffc.optimization import optimize_ir
-from ffc.codegeneration import generate_code
+from mffc.compiler import _print_timing
+from mffc.parameters import default_parameters
+from mffc.analysis import analyze_forms
+from mffc.representation import compute_ir
+from mffc.optimization import optimize_ir
+from mffc.codegeneration import generate_code
 
 def compute_tensor_representation(form):
     """Compute tensor representation for given form. This function may

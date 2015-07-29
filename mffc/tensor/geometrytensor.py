@@ -22,7 +22,7 @@
 # Last changed: 2009-12-21
 
 # FFC modules.
-from ffc.log import debug
+from mffc.log import debug
 
 # FFC tensor representation modules.
 from .monomialtransformation import MonomialIndex

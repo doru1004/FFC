@@ -33,13 +33,13 @@ import FIAT
 from FIAT.trace import DiscontinuousLagrangeTrace
 
 # FFC modules
-from ffc.log import debug, error, ffc_assert
-from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
+from mffc.log import debug, error, ffc_assert
+from mffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 
 
-from ffc.mixedelement import MixedElement
-from ffc.restrictedelement import RestrictedElement
-from ffc.enrichedelement import SpaceOfReals
+from mffc.mixedelement import MixedElement
+from mffc.restrictedelement import RestrictedElement
+from mffc.enrichedelement import SpaceOfReals
 
 # Dictionary mapping from cellname to dimension
 from ufl.cell import cell2dim
@@ -149,11 +149,11 @@ def _create_fiat_element(ufl_element):
 
     # Handle the specialized time elements
     elif family == "Lobatto" :
-        from ffc.timeelements import LobattoElement as FFCLobattoElement
+        from mffc.timeelements import LobattoElement as FFCLobattoElement
         return FFCLobattoElement(ufl_element.degree())
 
     elif family == "Radau" :
-        from ffc.timeelements import RadauElement as FFCRadauElement
+        from mffc.timeelements import RadauElement as FFCRadauElement
         return FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?

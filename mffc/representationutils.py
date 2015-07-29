@@ -23,9 +23,9 @@ quadrature and tensor representation."""
 
 from ufl.measure import integral_type_to_measure_name
 
-from ffc.fiatinterface import create_element
-from ffc.cpp import format
-from ffc.log import error
+from mffc.fiatinterface import create_element
+from mffc.cpp import format
+from mffc.log import error
 
 def transform_component(component, offset, ufl_element):
     """

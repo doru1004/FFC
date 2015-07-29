@@ -21,10 +21,10 @@
 from ufl.utils.sorting import sorted_by_key
 
 # FFC modules
-from ffc.log import info, error, warning
-from ffc.cpp import format
-from ffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
-from ffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
+from mffc.log import info, error, warning
+from mffc.cpp import format
+from mffc.quadrature.symbolics import optimise_code, BASIS, IP, GEO, CONST
+from mffc.quadrature.symbolics import create_product, create_sum, create_symbol, create_fraction
 
 def optimize_integral_ir(ir, parameters):
     "Compute optimized intermediate representation of integral."

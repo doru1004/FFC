@@ -25,7 +25,7 @@
 import numpy
 
 # FFC modules
-from ffc.log import error
+from mffc.log import error
 
 class MixedElement:
     "Create a FFC mixed element from a list of FFC/FIAT elements."

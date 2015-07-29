@@ -27,18 +27,18 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Martin Alnaes, 2013-2015
 
 # FFC modules
-from ffc.log import info, begin, end, debug_code
-from ffc.cpp import format, indent
-from ffc.cpp import set_exception_handling
+from mffc.log import info, begin, end, debug_code
+from mffc.cpp import format, indent
+from mffc.cpp import set_exception_handling
 
 # FFC code generation modules
-from ffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
-from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives
-from ffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
-from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
-from ffc.interpolatevertexvalues import interpolate_vertex_values
+from mffc.evaluatebasis import _evaluate_basis, _evaluate_basis_all
+from mffc.evaluatebasisderivatives import _evaluate_basis_derivatives
+from mffc.evaluatebasisderivatives import _evaluate_basis_derivatives_all
+from mffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
+from mffc.interpolatevertexvalues import interpolate_vertex_values
 
-from ffc.representation import pick_representation, ufc_integral_types
+from mffc.representation import pick_representation, ufc_integral_types
 
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):

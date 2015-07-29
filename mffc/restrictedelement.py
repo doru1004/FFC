@@ -19,7 +19,7 @@
 
 import numpy
 from ufl.utils.sorting import sorted_by_key
-from ffc.log import error
+from mffc.log import error
 
 class RestrictedElement:
     "Create a restriction of a given FIAT element."

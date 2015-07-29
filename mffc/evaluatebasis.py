@@ -36,9 +36,9 @@ import math
 import numpy
 
 # FFC modules
-from ffc.log import error
-from ffc.cpp import remove_unused, indent, format
-from ffc.quadrature.symbolics import create_float, create_float, create_symbol,\
+from mffc.log import error
+from mffc.cpp import remove_unused, indent, format
+from mffc.quadrature.symbolics import create_float, create_float, create_symbol,\
                                      create_product, create_sum, create_fraction, CONST
 
 def _evaluate_basis_all(data):

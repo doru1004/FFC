@@ -25,7 +25,7 @@
 import re, numpy, platform
 
 # FFC modules
-from ffc.log import debug, error
+from mffc.log import debug, error
 from six.moves import zip
 
 # Mapping of restrictions
@@ -287,7 +287,7 @@ format.update({
 })
 
 # Code snippets
-from ffc.codesnippets import *
+from mffc.codesnippets import *
 
 format.update({
     "compute_jacobian":         lambda cell, r=None: \

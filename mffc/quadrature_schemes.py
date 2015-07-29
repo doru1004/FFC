@@ -45,9 +45,9 @@ from numpy import array, arange, float64
 import ufl
 
 # FFC modules
-from ffc.log import debug, error
-from ffc.fiatinterface import reference_cell
-from ffc.fiatinterface import create_quadrature as fiat_create_quadrature
+from mffc.log import debug, error
+from mffc.fiatinterface import reference_cell
+from mffc.fiatinterface import create_quadrature as fiat_create_quadrature
 
 # Dictionary mapping from cellname to dimension
 from ufl.cell import cell2dim
