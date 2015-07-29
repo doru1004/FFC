@@ -18,7 +18,7 @@
 # First added:  2010-01-24
 # Last changed: 2011-07-08
 
-from ffc.log import begin, end, info, info_green, info_red
+from mffc.log import begin, end, info, info_green, info_red
 import os
 from testutils import run_command
 

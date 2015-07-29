@@ -19,7 +19,7 @@
 
 import os
 import sys, sysconfig
-from ffc.log import begin, end, info, info_green, info_red
+from mffc.log import begin, end, info, info_green, info_red
 from instant.output import get_status_output
 from testutils import run_command
 

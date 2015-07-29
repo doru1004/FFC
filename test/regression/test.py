@@ -40,7 +40,7 @@ import os, sys, shutil, difflib
 from numpy import array, shape, abs, max, isnan
 from instant.output import get_status_output
 
-from ffc.log import begin, end, info, info_red, info_green, info_blue
+from mffc.log import begin, end, info, info_red, info_green, info_blue
 from ufctest import build_ufc_programs
 from pyop2test import build_pyop2_programs
 from testutils import run_command, _command_timings, logfile
