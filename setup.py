@@ -15,9 +15,9 @@ if sys.version_info < (2, 7):
     sys.exit(1)
 
 VERSION = re.findall('__version__ = "(.*)"',
-                     open('ffc/__init__.py', 'r').read())[0]
+                     open('mffc/__init__.py', 'r').read())[0]
 
-SCRIPTS = [os.path.join("scripts", "ffc")]
+SCRIPTS = [os.path.join("scripts", "mffc")]
 
 AUTHORS = """\
 Anders Logg, Kristian Oelgaard, Marie Rognes, Garth N. Wells,
@@ -187,7 +187,7 @@ def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
 
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
-    tmpdir = tempfile.mkdtemp(prefix="ffc-build-")
+    tmpdir = tempfile.mkdtemp(prefix="mffc-build-")
     devnull = oldstderr = None
     try:
         try:
@@ -257,8 +257,8 @@ def run_install():
     if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
 
     # Call distutils to perform installation
-    setup(name             = "FFC",
-          description      = "The FEniCS Form Compiler",
+    setup(name             = "MFFC",
+          description      = "The FEniCS Form Compiler Modified for Firedrake",
           version          = VERSION,
           author           = AUTHORS,
           classifiers      = [_f for _f in CLASSIFIERS.split('\n') if _f],
@@ -267,22 +267,22 @@ def run_install():
           maintainer_email = "fenics@fenicsproject.org",
           url              = "http://fenicsproject.org/",
           platforms        = ["Windows", "Linux", "Solaris", "Mac OS-X", "Unix"],
-          packages         = ["ffc",
-                              "ffc.quadrature",
-                              "ffc.tensor",
-                              "ffc.uflacsrepr",
-                              "ffc.errorcontrol",
-                              "ffc.backends",
-                              "ffc.backends.dolfin",
-                              "ffc.backends.ufc",
+          packages         = ["mffc",
+                              "mffc.quadrature",
+                              "mffc.tensor",
+                              "mffc.uflacsrepr",
+                              "mffc.errorcontrol",
+                              "mffc.backends",
+                              "mffc.backends.dolfin",
+                              "mffc.backends.ufc",
                               "ufc"],
-          package_dir      = {"ffc": "ffc",
+          package_dir      = {"mffc": "mffc",
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
           cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
-                               [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
+                               [os.path.join("doc", "man", "man1", "mffc.1.gz")]),
                               (os.path.join("include"),
                                [os.path.join("ufc", "ufc.h"),
                                 os.path.join("ufc", "ufc_geometry.h")]),
