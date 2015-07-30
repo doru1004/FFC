@@ -21,9 +21,6 @@ __version__ = "1.6.0dev"
 # Import compiler functions
 from mffc.compiler import compile_form, compile_element
 
-# Import JIT compiler
-from mffc.jitcompiler import jit
-
 # Import default parameters
 from .parameters import default_parameters
 
