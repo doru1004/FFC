@@ -56,41 +56,6 @@ def get_installation_prefix():
                 prefix = "/usr/local"
     return os.path.abspath(os.path.expanduser(prefix))
 
-def get_swig_executable():
-    "Get SWIG executable"
-
-    # SWIG >= 2.0.0 is required for Python 2 and >= 3.0.3 for Python 3
-    if sys.version_info[0] < 3:
-        swig_minimum_version = [2, 0, 0]
-    else:
-        swig_minimum_version = [3, 0, 3]
-    swig_minimum_version_str = ".".join([str(x) for x in swig_minimum_version])
-
-    # Find SWIG executable
-    swig_executable = None
-    for executable in ["swig", "swig3.0", "swig2.0"]:
-        swig_executable = spawn.find_executable(executable)
-        if swig_executable is not None:
-            break
-    if swig_executable is None:
-        raise OSError("Unable to find SWIG installation. Please install SWIG version %s or higher." % swig_minimum_version_str)
-
-    # Check that SWIG version is ok
-    output = subprocess.check_output([swig_executable, "-version"]).decode('utf-8')
-    swig_version = re.findall(r"SWIG Version ([0-9.]+)", output)[0]
-    swig_version_ok = True
-    for i, v in enumerate([int(v) for v in swig_version.split(".")]):
-        if swig_minimum_version[i] < v:
-            break
-        elif swig_minimum_version[i] == v:
-            continue
-        else:
-            swig_version_ok = False
-    if not swig_version_ok:
-        raise OSError("Unable to find SWIG version %s or higher." % swig_minimum_version_str)
-
-    return swig_executable
-
 def create_windows_batch_files(scripts):
     """Create Windows batch files, to get around problem that we
     cannot run Python scripts in the prompt without the .py
@@ -104,18 +69,6 @@ def create_windows_batch_files(scripts):
         batch_files.append(batch_file)
     scripts.extend(batch_files)
     return scripts
-
-def write_config_file(infile, outfile, variables={}):
-    "Write config file based on template"
-    class AtTemplate(string.Template):
-        delimiter = "@"
-    s = AtTemplate(open(infile, "r").read())
-    s = s.substitute(**variables)
-    a = open(outfile, "w")
-    try:
-        a.write(s)
-    finally:
-        a.close()
 
 def find_python_library():
     "Return the full path to the Python library (empty string if not found)"
@@ -143,47 +96,6 @@ def find_python_library():
         if libpython is not None:
             break
     return libpython or ""
-
-def generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS):
-    "Generate and install configuration files"
-
-    # Get variables
-    INSTALL_PREFIX = get_installation_prefix()
-    PYTHON_LIBRARY = os.environ.get("PYTHON_LIBRARY", find_python_library())
-    MAJOR, MINOR, MICRO = VERSION.split(".")
-
-    # Generate UFCConfig.cmake
-    write_config_file(os.path.join("cmake", "templates", "UFCConfig.cmake.in"),
-                      os.path.join("cmake", "templates", "UFCConfig.cmake"),
-                      variables=dict(INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS.strip(),
-                                     PYTHON_INCLUDE_DIR=sysconfig.get_python_inc(),
-                                     PYTHON_LIBRARY=PYTHON_LIBRARY,
-                                     PYTHON_EXECUTABLE=sys.executable,
-                                     SWIG_EXECUTABLE=SWIG_EXECUTABLE,
-                                     FULLVERSION=VERSION))
-
-    # Generate UFCConfigVersion.cmake
-    write_config_file(os.path.join("cmake", "templates", \
-                                   "UFCConfigVersion.cmake.in"),
-                      os.path.join("cmake", "templates", \
-                                   "UFCConfigVersion.cmake"),
-                      variables=dict(FULLVERSION=VERSION,
-                                     MAJOR=MAJOR, MINOR=MINOR, MICRO=MICRO))
-
-    # Generate UseUFC.cmake
-    write_config_file(os.path.join("cmake", "templates", "UseUFC.cmake.in"),
-                      os.path.join("cmake", "templates", "UseUFC.cmake"))
-
-    # FIXME: Generation of pkgconfig file may no longer be needed, so
-    # FIXME: we may consider removing this.
-
-    # Generate ufc-1.pc
-    write_config_file(os.path.join("cmake", "templates", "ufc-1.pc.in"),
-                      os.path.join("cmake", "templates", "ufc-1.pc"),
-                      variables=dict(FULLVERSION=VERSION,
-                                     INSTALL_PREFIX=INSTALL_PREFIX,
-                                     CXX_FLAGS=CXX_FLAGS))
 
 def has_cxx_flag(cc, flag):
     "Return True if compiler supports given flag"
@@ -219,20 +131,6 @@ def run_install():
     if platform.system() == "Windows" or "bdist_wininst" in sys.argv:
         scripts = create_windows_batch_files(scripts)
 
-    # Subclass extension building command to ensure that distutils to
-    # finds the correct SWIG executable
-    SWIG_EXECUTABLE = get_swig_executable()
-    class my_build_ext(build_ext.build_ext):
-        def find_swig(self):
-            return SWIG_EXECUTABLE
-
-    # Subclass the build command to ensure that build_ext produces
-    # ufc.py before build_py tries to copy it.
-    class my_build(build):
-        def run(self):
-            self.run_command('build_ext')
-            build.run(self)
-
     # Check that compiler supports C++11 features
     cc = new_compiler()
     CXX = os.environ.get("CXX")
@@ -243,18 +141,6 @@ def run_install():
         CXX_FLAGS += " -std=c++11"
     elif has_cxx_flag(cc, "-std=c++0x"):
         CXX_FLAGS += " -std=c++0x"
-
-    # Generate config files
-    generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
-
-    # Setup extension module for UFC
-    swig_options = ["-c++", "-shadow", "-modern",
-                    "-modernargs", "-fastdispatch",
-                    "-fvirtual", "-nosafecstrings",
-                    "-noproxydel", "-fastproxy",
-                    "-fastinit", "-fastunpack",
-                    "-fastquery", "-nobuildnone"]
-    if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
 
     # Call distutils to perform installation
     setup(name             = "MFFC",
@@ -271,33 +157,12 @@ def run_install():
                               "mffc.quadrature",
                               "mffc.tensor",
                               "mffc.uflacsrepr",
-                              "mffc.errorcontrol",
-                              "mffc.backends",
-                              "mffc.backends.dolfin",
-                              "mffc.backends.ufc",
-                              "ufc"],
-          package_dir      = {"mffc": "mffc",
-                              "ufc": "ufc"},
+                              "mffc.errorcontrol"],
+          package_dir      = {"mffc": "mffc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          cmdclass         = {"build": my_build, "build_ext": my_build_ext},
           data_files       = [(os.path.join("share", "man", "man1"),
-                               [os.path.join("doc", "man", "man1", "mffc.1.gz")]),
-                              (os.path.join("include"),
-                               [os.path.join("ufc", "ufc.h"),
-                                os.path.join("ufc", "ufc_geometry.h")]),
-                              (os.path.join("share", "ufc"),
-                               [os.path.join("cmake", "templates", \
-                                             "UFCConfig.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UFCConfigVersion.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UseUFC.cmake")]),
-                              (os.path.join("lib", "pkgconfig"),
-                               [os.path.join("cmake", "templates", "ufc-1.pc")]),
-                              (os.path.join("include", "swig"),
-                               [os.path.join("ufc", "ufc.i"),
-                                os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
+                               [os.path.join("doc", "man", "man1", "mffc.1.gz")])])
 
 if __name__ == "__main__":
     run_install()
