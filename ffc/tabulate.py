@@ -38,6 +38,20 @@ def static_single_assignment(expr, regs, code, prefix=None):
     return recurse(expr)
 
 
+def rounding(expr):
+    eps = format["epsilon"]
+
+    if isinstance(expr, (float, sympy.numbers.Float)):
+        v = float(expr)
+        if abs(v - round(v, 1)) < eps:
+            return round(v, 1)
+    elif isinstance(expr, sympy.Expr):
+        if expr.args:
+            return expr.func(*map(rounding, expr.args))
+
+    return expr
+
+
 def tabulate(fiat_element, order, reference_coordinates, prefix=None):
     points = numpy.array([map(Variable, reference_coordinates)])
     tabulations = fiat_element.tabulate(order, points)
@@ -51,7 +65,7 @@ def tabulate(fiat_element, order, reference_coordinates, prefix=None):
         t_flat = t.reshape(-1)
         u_flat = u.reshape(-1)
         for i, e in enumerate(t_flat):
-            u_flat[i] = static_single_assignment(e, regs, code, prefix=prefix)
+            u_flat[i] = static_single_assignment(rounding(e), regs, code, prefix=prefix)
 
         refs[alpha] = u
 
