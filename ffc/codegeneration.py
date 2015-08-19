@@ -42,6 +42,8 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 
 from ffc.representation import pick_representation, ufc_integral_types
 
+from sympy.printing import StrPrinter
+
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
     body = format["exception"]("%s not yet implemented." % function_name)
@@ -174,7 +176,7 @@ def _calculate_basisvalues(ir):
     tdim = ir["cell"].topological_dimension()
     refs, scode = ffc.tabulate(ir["fiat_elem"], 0, ("X", "Y", "Z")[:tdim])
     for si in scode:
-        code += ["\tdouble %s = %s;" % si]
+        code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
 
     code += ["", "\t// Values of basis functions"]
     code += [f_decl("double", f_component("phi", refs[(0,) * tdim].shape),
@@ -201,9 +203,9 @@ def _to_reference_coordinates(ir, data):
                                ("X[0]", "X[1]", "X[2]")[:ir["cell"].topological_dimension()],
                                prefix="t")
     for si in scode:
-        code += ["\tdouble %s = %s;" % si]
+        code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
 
-    from pymbolic.primitives import Variable
+    from sympy import Symbol as Variable
     C = np.array([[Variable("C[%d][%d]" % (i, j))for j in range(gdim)]
                    for i in range(ir["coords_fiat_elem"].space_dimension())])
 
@@ -671,3 +673,38 @@ def _remove_code(code, parameters):
             msg = "// Function %s not generated (compiled with -f%s)" \
                   % (key, flag)
             code[key] = format["exception"](msg)
+
+
+class CPrinter(StrPrinter):
+    def _print_Pow(self, expr, rational=False):
+        # WARNING: Code mostly copied from sympy source code!
+        from sympy.core import S
+        from sympy.printing.precedence import precedence
+
+        PREC = precedence(expr)
+
+        if expr.exp is S.Half and not rational:
+            return "sqrt(%s)" % self._print(expr.base)
+
+        if expr.is_commutative:
+            if -expr.exp is S.Half and not rational:
+                # Note: Don't test "expr.exp == -S.Half" here, because that will
+                # match -0.5, which we don't want.
+                return "1/sqrt(%s)" % self._print(expr.base)
+            if expr.exp is -S.One:
+                # Similarly to the S.Half case, don't test with "==" here.
+                return '1/%s' % self.parenthesize(expr.base, PREC)
+
+        e = self.parenthesize(expr.exp, PREC)
+        if self.printmethod == '_sympyrepr' and expr.exp.is_Rational and expr.exp.q != 1:
+            # the parenthesized exp should be '(Rational(a, b))' so strip parens,
+            # but just check to be sure.
+            if e.startswith('(Rational'):
+                e = e[1:-1]
+
+        if e == "2":
+            return '{0}*{0}'.format(self.parenthesize(expr.base, PREC))
+        elif e == "3":
+            return '{0}*{0}*{0}'.format(self.parenthesize(expr.base, PREC))
+        else:
+            return 'pow(%s,%s)' % (self.parenthesize(expr.base, PREC), e)

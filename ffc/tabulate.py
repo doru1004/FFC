@@ -1,18 +1,15 @@
 import collections
 import numpy
+import sympy
 
-from pymbolic.primitives import Expression, Variable, Quotient
+from ffc.cpp import format
+from sympy import Symbol as Variable, Expr as Expression
 
 
 def operands_and_reconstruct(expr):
-    if isinstance(expr, Variable):
-        return (), None
-    elif isinstance(expr, Quotient):
-        return ((expr.numerator, expr.denominator),
-                lambda children: Quotient(*children))
-    elif isinstance(expr, Expression):
-        return (expr.children,
-                lambda children: type(expr)(tuple(children)))
+    if isinstance(expr, Expression):
+        return (expr.args,
+                lambda children: expr.func(*children))
     else:
         # e.g. floating-point numbers
         return (), None
