@@ -154,7 +154,7 @@ def _inside_check(ir):
     import sympy
     point = sympy.symbols("X[0] X[1] X[2]")[:tdim]
 
-    return " && ".join("(%s)" % arg for arg in fiat_cell.has_point(point, 1e-10).args)
+    return " && ".join("(%s)" % arg for arg in fiat_cell.has_point(point, 1e-14).args)
 
 
 def _init_X(ir):
