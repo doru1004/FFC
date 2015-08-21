@@ -42,6 +42,7 @@ from ffc.interpolatevertexvalues import interpolate_vertex_values
 
 from ffc.representation import pick_representation, ufc_integral_types
 
+from sympy import symbols
 from sympy.printing import StrPrinter
 
 # Errors issued for non-implemented functions
@@ -147,34 +148,30 @@ def _generate_element_code(ir, prefix, parameters):
     return code
 
 
-def _inside_check(ir):
-    tdim = ir["cell"].topological_dimension()
-    fiat_cell = ffc.fiatinterface.reference_cell(ir["cell"])
+def _inside_check(ufl_cell, fiat_cell):
+    dim = ufl_cell.topological_dimension()
+    point = tuple(symbols("X[%d]" % i) for i in xrange(dim))
 
-    import sympy
-    point = sympy.symbols("X[0] X[1] X[2]")[:tdim]
-
-    return " && ".join("(%s)" % arg for arg in fiat_cell.has_point(point, 1e-14).args)
+    return " && ".join("(%s)" % arg for arg in fiat_cell.contains_point(point, epsilon=1e-14).args)
 
 
-def _init_X(ir):
-    fiat_el = ir["coords_fiat_elem"]
-    ref_el = fiat_el.get_reference_element()
-    vertices = np.array(ref_el.get_vertices())
+def _init_X(fiat_element):
+    fiat_cell = fiat_element.get_reference_element()
+    vertices = np.array(fiat_cell.get_vertices())
     X = np.average(vertices, axis=0)
-    return "\n".join("\tX[%d] = %g;" % (i, v) for i, v in enumerate(X))
+    return "\n".join("\tX[%d] = %.12f;" % (i, v) for i, v in enumerate(X))  # TODO: FP formatting
 
 
-def _calculate_basisvalues(ir):
+def _calculate_basisvalues(ufl_cell, fiat_element):
     f_table         = format["static const float declaration"]["ufc"]
     f_component     = format["component"]
     f_decl          = format["declaration"]
     f_tensor        = format["tabulate tensor"]
     f_new_line      = format["new line"]
 
-    code = _read_coordinates(ir["cell"].topological_dimension())
-    tdim = ir["cell"].topological_dimension()
-    refs, scode = ffc.tabulate(ir["fiat_elem"], 0, ("X", "Y", "Z")[:tdim])
+    code = _read_coordinates(ufl_cell.topological_dimension())
+    tdim = ufl_cell.topological_dimension()
+    refs, scode = ffc.tabulate(fiat_element, 0, ("X", "Y", "Z")[:tdim])
     for si in scode:
         code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
 
@@ -184,7 +181,7 @@ def _calculate_basisvalues(ir):
     return "\n".join(code)
 
 
-def _to_reference_coordinates(ir, data):
+def _to_reference_coordinates(ufl_cell, fiat_element, needs_orientation):
     f_table         = format["static const float declaration"]["ufc"]
     f_component     = format["component"]
     f_decl          = format["declaration"]
@@ -192,22 +189,21 @@ def _to_reference_coordinates(ir, data):
     f_new_line      = format["new line"]
 
     # Get the element cell name and geometric dimension.
-    cell = data["cell"]
-    element_cellname = cell.cellname()
+    cell = ufl_cell
     gdim = cell.geometric_dimension()
     tdim = cell.topological_dimension()
 
     code = []
-    refs, scode = ffc.tabulate(ir["coords_fiat_elem"],
+    refs, scode = ffc.tabulate(fiat_element,
                                1,
-                               ("X[0]", "X[1]", "X[2]")[:ir["cell"].topological_dimension()],
+                               ("X[0]", "X[1]", "X[2]")[:tdim],
                                prefix="t")
     for si in scode:
         code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
 
     from sympy import Symbol as Variable
     C = np.array([[Variable("C[%d][%d]" % (i, j))for j in range(gdim)]
-                   for i in range(ir["coords_fiat_elem"].space_dimension())])
+                   for i in range(fiat_element.space_dimension())])
 
     x_phi = refs[(0,) * tdim]
     x = x_phi.dot(C)
@@ -225,7 +221,7 @@ def _to_reference_coordinates(ir, data):
     # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
     # coordinates from physical element to the FIAT reference element.
     code_ = [format["compute_jacobian_inverse"](cell)]
-    if data["needs_oriented"]:
+    if needs_orientation:
         code_ += [format["orientation"]["ufc"](tdim, gdim)]
     # FIXME: very ugly hack!
     code_ = "\n".join(code_).split("\n")
@@ -246,14 +242,8 @@ def _to_reference_coordinates(ir, data):
 
 
 def _read_coordinates(topological_dimension):
-    code = []
-    if topological_dimension >= 1:
-        code += ["\tdouble X = reference_coords.X[0];"]
-    if topological_dimension >= 2:
-        code += ["\tdouble Y = reference_coords.X[1];"]
-    if topological_dimension >= 3:
-        code += ["\tdouble Z = reference_coords.X[2];"]
-    return code
+    return ["\tdouble %s = reference_coords.X[%d];" % (v, i)
+            for (i, v) in zip(range(topological_dimension), ["X", "Y", "Z"])]
 
 
 def _generate_dofmap_code(ir, prefix, parameters):

@@ -217,32 +217,26 @@ def compile_element(ufl_element, coordinates_ufl_element):
 
     # Create FIAT element
     element = create_actual_fiat_element(ufl_element)
+    coordinates_element = create_actual_fiat_element(coordinates_ufl_element)
     domain, = ufl_element.domains() # Assuming single domain
     cell = domain.cell()
 
     # Compute data for each function
-    ir = {}
-    ir["cell"] = cell
-    ir["space_dimension"] = element.space_dimension()
-    ir["value_rank"] = len(ufl_element.value_shape())
-    ir["value_dimension"] = ufl_element.value_shape()
-    ir["evaluate_basis"] = {
-        "cell": cell,
-        "needs_oriented": needs_oriented_jacobian(element),
-    }
-    ir["fiat_elem"] = element
-    ir["coords_fiat_elem"] = create_actual_fiat_element(coordinates_ufl_element)
+    if ufl_element.value_shape():
+        odim = ufl_element.value_shape()[0]
+    else:
+        odim = 1
 
     code = {
-        "geometric_dimension": ir["cell"].geometric_dimension(),
-        "topological_dimension": ir["cell"].topological_dimension(),
-        "inside_predicate": _inside_check(ir),
-        "to_reference_coords": _to_reference_coordinates(ir, ir["evaluate_basis"]),
-        "ndofs": ir["space_dimension"],
-        "n_coords_nodes": ir["coords_fiat_elem"].space_dimension(),
-        "calculate_basisvalues": _calculate_basisvalues(ir),
-        "odim": 1 if ir["value_rank"] == 0 else ir["value_dimension"][0],
-        "init_X": _init_X(ir),
+        "geometric_dimension": cell.geometric_dimension(),
+        "topological_dimension": cell.topological_dimension(),
+        "inside_predicate": _inside_check(cell, element.get_reference_element()),
+        "to_reference_coords": _to_reference_coordinates(cell, coordinates_element, needs_oriented_jacobian(element)),
+        "ndofs": element.space_dimension(),
+        "n_coords_nodes": coordinates_element.space_dimension(),
+        "calculate_basisvalues": _calculate_basisvalues(cell, element),
+        "odim": odim,
+        "init_X": _init_X(element),
     }
 
     evaluate_template_c = """#include <math.h>
