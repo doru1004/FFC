@@ -27,6 +27,8 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Martin Alnaes, 2013-2015
 
 # FFC modules
+import ffc
+import numpy as np
 from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent
 from ffc.cpp import set_exception_handling
@@ -140,6 +142,115 @@ def _generate_element_code(ir, prefix, parameters):
     # Postprocess code
     _postprocess_code(code, parameters)
 
+    return code
+
+
+def _inside_check(ir):
+    tdim = ir["cell"].topological_dimension()
+    fiat_cell = ffc.fiatinterface.reference_cell(ir["cell"])
+
+    import sympy
+    point = sympy.symbols("X[0] X[1] X[2]")[:tdim]
+
+    return " && ".join("(%s)" % arg for arg in fiat_cell.has_point(point, 1e-10).args)
+
+
+def _init_X(ir):
+    fiat_el = ir["coords_fiat_elem"]
+    ref_el = fiat_el.get_reference_element()
+    vertices = np.array(ref_el.get_vertices())
+    X = np.average(vertices, axis=0)
+    return "\n".join("\tX[%d] = %g;" % (i, v) for i, v in enumerate(X))
+
+
+def _calculate_basisvalues(ir):
+    f_table         = format["static const float declaration"]["ufc"]
+    f_component     = format["component"]
+    f_decl          = format["declaration"]
+    f_tensor        = format["tabulate tensor"]
+    f_new_line      = format["new line"]
+
+    code = _read_coordinates(ir["cell"].topological_dimension())
+    tdim = ir["cell"].topological_dimension()
+    refs, scode = ffc.tabulate(ir["fiat_elem"], 0, ("X", "Y", "Z")[:tdim])
+    for si in scode:
+        code += ["\tdouble %s = %s;" % si]
+
+    code += ["", "\t// Values of basis functions"]
+    code += [f_decl("double", f_component("phi", refs[(0,) * tdim].shape),
+                    f_new_line + f_tensor(refs[(0,) * tdim]))]
+    return "\n".join(code)
+
+
+def _to_reference_coordinates(ir, data):
+    f_table         = format["static const float declaration"]["ufc"]
+    f_component     = format["component"]
+    f_decl          = format["declaration"]
+    f_tensor        = format["tabulate tensor"]
+    f_new_line      = format["new line"]
+
+    # Get the element cell name and geometric dimension.
+    cell = data["cell"]
+    element_cellname = cell.cellname()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
+
+    code = []
+    refs, scode = ffc.tabulate(ir["coords_fiat_elem"],
+                               1,
+                               ("X[0]", "X[1]", "X[2]")[:ir["cell"].topological_dimension()],
+                               prefix="t")
+    for si in scode:
+        code += ["\tdouble %s = %s;" % si]
+
+    from pymbolic.primitives import Variable
+    C = np.array([[Variable("C[%d][%d]" % (i, j))for j in range(gdim)]
+                   for i in range(ir["coords_fiat_elem"].space_dimension())])
+
+    x_phi = refs[(0,) * tdim]
+    x = x_phi.dot(C)
+    for i, e in enumerate(x):
+        code += ["\tx[%d] = %s;" % (i, e)]
+
+    refs_keys = reversed(sorted(refs.keys()))
+    refs_keys = list(refs_keys)[:-1]  # skip all zeros
+    x_grad_phi = np.vstack([refs[k] for k in refs_keys])
+    J = np.transpose(x_grad_phi.dot(C))
+    for i, row in enumerate(J):
+        for j, e in enumerate(row):
+            code += ["\tJ[%d * %d + %d] = %s;" % (i, tdim, j, e)]
+
+    # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
+    # coordinates from physical element to the FIAT reference element.
+    code_ = [format["compute_jacobian_inverse"](cell)]
+    if data["needs_oriented"]:
+        code_ += [format["orientation"]["ufc"](tdim, gdim)]
+    # FIXME: very ugly hack!
+    code_ = "\n".join(code_).split("\n")
+    code_ = filter(lambda line: not line.startswith(("double J", "double K", "double detJ")), code_)
+    code += code_
+
+    x = np.array(map(lambda i: Variable("x[%d]" % i), range(gdim)))
+    x0 = np.array(map(lambda i: Variable("x0[%d]" % i), range(gdim)))
+    X = np.array(map(lambda i: Variable("X[%d]" % i), range(tdim)))
+    K = np.array(map(lambda i: Variable("K[%d]" % i), range(tdim * gdim)))
+    K = K.reshape(tdim, gdim)
+
+    X = X - K.dot(x - x0)
+    for i, e in enumerate(X):
+        code += ["\tX[%d] = %s;" % (i, e)]
+
+    return "\n".join(code)
+
+
+def _read_coordinates(topological_dimension):
+    code = []
+    if topological_dimension >= 1:
+        code += ["\tdouble X = reference_coords.X[0];"]
+    if topological_dimension >= 2:
+        code += ["\tdouble Y = reference_coords.X[1];"]
+    if topological_dimension >= 3:
+        code += ["\tdouble Z = reference_coords.X[2];"]
     return code
 
 

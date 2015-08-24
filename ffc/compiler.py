@@ -129,6 +129,10 @@ from ffc.codegeneration import generate_code
 from ffc.formatting import format_code, write_code
 from ffc.wrappers import generate_wrapper_code
 
+import ufl
+from ffc.fiatinterface import create_actual_fiat_element
+from ffc.cpp import format
+
 def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     """This function generates UFC code for a given UFL form or list
     of UFL forms."""
@@ -201,54 +205,127 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         return code
 
-def compile_element(elements, prefix="Element", parameters=None):
-    """This function generates UFC code for a given UFL element or
-    list of UFL elements."""
+def compile_element(ufl_element, coordinates_ufl_element):
+    parameters = _check_parameters(None)
 
-    info("Compiling element %s\n" % prefix)
+    # Set code generation parameters
+    from ffc.cpp import set_float_formatting
+    set_float_formatting(int(parameters["precision"]))
 
-    # Reset timing
-    cpu_time_0 = time()
+    from ffc.codegeneration import _value_dimension, _inside_check, _to_reference_coordinates, _calculate_basisvalues, _init_X
+    from ffc.representation import needs_oriented_jacobian
 
-    # Check input arguments
-    elements = _check_elements(elements)
-    if not elements:
-        return
-    parameters = _check_parameters(parameters)
+    # Create FIAT element
+    element = create_actual_fiat_element(ufl_element)
+    domain, = ufl_element.domains() # Assuming single domain
+    cell = domain.cell()
 
-    # Stage 1: analysis
-    cpu_time = time()
-    analysis = analyze_elements(elements, parameters)
-    _print_timing(1, time() - cpu_time)
+    # Compute data for each function
+    ir = {}
+    ir["cell"] = cell
+    ir["space_dimension"] = element.space_dimension()
+    ir["value_rank"] = len(ufl_element.value_shape())
+    ir["value_dimension"] = ufl_element.value_shape()
+    ir["evaluate_basis"] = {
+        "cell": cell,
+        "needs_oriented": needs_oriented_jacobian(element),
+    }
+    ir["fiat_elem"] = element
+    ir["coords_fiat_elem"] = create_actual_fiat_element(coordinates_ufl_element)
 
-    # Stage 2: intermediate representation
-    cpu_time = time()
-    ir = compute_ir(analysis, parameters)
-    _print_timing(2, time() - cpu_time)
+    code = {
+        "geometric_dimension": ir["cell"].geometric_dimension(),
+        "topological_dimension": ir["cell"].topological_dimension(),
+        "inside_predicate": _inside_check(ir),
+        "to_reference_coords": _to_reference_coordinates(ir, ir["evaluate_basis"]),
+        "ndofs": ir["space_dimension"],
+        "n_coords_nodes": ir["coords_fiat_elem"].space_dimension(),
+        "calculate_basisvalues": _calculate_basisvalues(ir),
+        "odim": 1 if ir["value_rank"] == 0 else ir["value_dimension"][0],
+        "init_X": _init_X(ir),
+    }
 
-    # Stage 3: optimization
-    cpu_time = time()
-    oir = optimize_ir(ir, parameters)
-    _print_timing(3, time() - cpu_time)
+    evaluate_template_c = """#include <math.h>
 
-    # Stage 4: code generation
-    cpu_time = time()
-    code = generate_code(oir, prefix, parameters)
-    _print_timing(4, time() - cpu_time)
+#include <function.h>
+#include <locate.h>
 
-    # Stage 4.1: generate wrappers
-    cpu_time = time()
-    object_names = {}
-    wrapper_code = generate_wrapper_code(analysis, prefix, object_names, parameters)
-    _print_timing(4.1, time() - cpu_time)
+#include "firedrake_geometry.h"
 
-    # Stage 5: format code
-    cpu_time = time()
-    code_h, code_c = format_code(code, wrapper_code, prefix, parameters)
-    write_code(code_h, code_c, prefix, parameters) # FIXME: Don't write to file in this function (issue #72)
-    _print_timing(5, time() - cpu_time)
+struct ReferenceCoords {
+	double X[%(geometric_dimension)d];
+	double J[%(geometric_dimension)d * %(topological_dimension)d];
+	double K[%(topological_dimension)d * %(geometric_dimension)d];
+	double detJ;
+};
 
-    info_green("FFC finished in %g seconds.", time() - cpu_time_0)
+int to_reference_coords(void *result_, struct Function *f, int cell, double *x0)
+{
+	struct ReferenceCoords *result = result_;
+
+	const int space_dim = %(geometric_dimension)d;
+
+	// Wrapper stuff
+	double *C[%(n_coords_nodes)d];
+	for (int r = 0; r < %(n_coords_nodes)d; r++) {
+		C[r] = &f->coords[f->coords_map[cell * %(n_coords_nodes)d + r] * space_dim];
+	}
+
+	/*
+	 * Mapping coordinates from physical to reference space
+	 */
+
+	double *X = result->X;
+%(init_X)s
+	double x[space_dim];
+	double *J = result->J;
+	double *K = result->K;
+	double detJ;
+
+%(to_reference_coords)s
+
+	result->detJ = detJ;
+
+	// Are we inside the reference element?
+	return %(inside_predicate)s;
+}
+
+int evaluate(struct Function *f, double *x, double *result)
+{
+	struct ReferenceCoords reference_coords;
+	int cell = locate_cell(f, x, %(geometric_dimension)d, &to_reference_coords, &reference_coords);
+	if (cell == -1) {
+		return -1;
+	}
+
+	if (!result) {
+		return 0;
+	}
+
+%(calculate_basisvalues)s
+
+    const int odim = %(odim)d;
+    for (int q = 0; q < odim; q++) {
+        result[q] = 0.0;
+    }
+
+    // Wrapper stuff
+    double *F[%(ndofs)d];
+    for (int r = 0; r < %(ndofs)d; r++) {
+        F[r] = &f->f[f->f_map[cell * %(ndofs)d + r] * odim];
+    }
+
+    for (int i = 0; i < %(ndofs)d; i++) {
+        for (int q = 0; q < odim; q++) {
+            result[q] += F[i][q] * phi[i];
+        }
+    }
+	return 0;
+}
+"""
+
+    return evaluate_template_c % code
+
 
 def _check_forms(forms):
     "Initial check of forms."
