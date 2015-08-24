@@ -30,6 +30,8 @@ from .plot import *
 from .extras import *
 from .fiatinterface import create_actual_fiat_element
 
+from .tabulate import tabulate
+
 # List of supported elements
 try:
 
