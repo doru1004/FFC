@@ -241,10 +241,8 @@ def compile_element(ufl_element, coordinates_ufl_element):
 
     evaluate_template_c = """#include <math.h>
 
-#include <function.h>
-#include <locate.h>
-
-#include "firedrake_geometry.h"
+#include <evaluate.h>
+#include <firedrake_geometry.h>
 
 struct ReferenceCoords {
 	double X[%(geometric_dimension)d];
