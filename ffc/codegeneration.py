@@ -234,9 +234,9 @@ def _to_reference_coordinates(ufl_cell, fiat_element, needs_orientation):
     K = np.array(map(lambda i: Variable("K[%d]" % i), range(tdim * gdim)))
     K = K.reshape(tdim, gdim)
 
-    X = X - K.dot(x - x0)
-    for i, e in enumerate(X):
-        code += ["\tX[%d] = %s;" % (i, e)]
+    dX = K.dot(x - x0)
+    for i, e in enumerate(dX):
+        code += ["\tdX[%d] = %s;" % (i, e)]
 
     return "\n".join(code)
 

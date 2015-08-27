@@ -205,6 +205,15 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         return code
 
+def _dX_norm_square(topological_dimension):
+    return " + ".join("dX[{0}]*dX[{0}]".format(i) for i in xrange(topological_dimension))
+
+def _X_iadd_dX(topological_dimension):
+    return "\n".join("\tX[{0}] -= dX[{0}];".format(i) for i in xrange(topological_dimension))
+
+def _is_affine(ufl_element):
+    return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
+
 def compile_element(ufl_element, coordinates_ufl_element):
     parameters = _check_parameters(None)
 
@@ -237,6 +246,10 @@ def compile_element(ufl_element, coordinates_ufl_element):
         "calculate_basisvalues": _calculate_basisvalues(cell, element),
         "odim": odim,
         "init_X": _init_X(element),
+        "max_iteration_count": 1 if _is_affine(coordinates_ufl_element) else 16,
+        "convergence_epsilon": 1e-12,
+        "dX_norm_square": _dX_norm_square(cell.topological_dimension()),
+        "X_iadd_dX": _X_iadd_dX(cell.topological_dimension()),
     }
 
     evaluate_template_c = """#include <math.h>
@@ -274,7 +287,18 @@ int to_reference_coords(void *result_, struct Function *f, int cell, double *x0)
 	double *K = result->K;
 	double detJ;
 
+    double dX[%(topological_dimension)d];
+    int converged = 0;
+
+    for (int it = 0; !converged && it < %(max_iteration_count)d; it++) {
 %(to_reference_coords)s
+
+         if (%(dX_norm_square)s < %(convergence_epsilon)g * %(convergence_epsilon)g) {
+             converged = 1;
+         }
+
+%(X_iadd_dX)s
+    }
 
 	result->detJ = detJ;
 
