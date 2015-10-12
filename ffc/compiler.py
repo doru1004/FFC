@@ -303,17 +303,6 @@ static inline void to_reference_coords_kernel(void *result_, double *x0, int *re
 static inline void wrap_to_reference_coords(void *result_, double *x, int *return_value,
                                             double *coords, int *coords_map, int cell);
 
-static inline void wrap_to_reference_coords(void *result_, double *x, int *return_value, double *coords, int *coords_map, int cell)
-{
-	const int space_dim = %(geometric_dimension)d;
-
-	double *C[%(n_coords_nodes)d];
-	for (int r = 0; r < %(n_coords_nodes)d; r++) {
-		C[r] = &coords[coords_map[cell * %(n_coords_nodes)d + r] * space_dim];
-	}
-	to_reference_coords_kernel(result_, x, return_value, C);
-}
-
 int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
 {
 	int return_value;
@@ -336,17 +325,6 @@ static inline void evaluate_kernel(double *result, double *phi, double **F)
 }
 
 static inline void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell);
-
-static inline void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell)
-{
-    const int odim = %(odim)d;
-
-    double *F[%(ndofs)d];
-    for (int r = 0; r < %(ndofs)d; r++) {
-        F[r] = &data[map[cell * %(ndofs)d + r] * odim];
-    }
-    evaluate_kernel(result, phi, F);
-}
 
 int evaluate(struct Function *f, double *x, double *result)
 {
