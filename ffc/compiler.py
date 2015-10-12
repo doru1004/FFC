@@ -321,6 +321,33 @@ int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
 	return return_value;
 }
 
+void evaluate_kernel(double *result, double *phi, double **F)
+{
+    const int odim = %(odim)d;
+    for (int q = 0; q < odim; q++) {
+        result[q] = 0.0;
+    }
+
+    for (int i = 0; i < %(ndofs)d; i++) {
+        for (int q = 0; q < odim; q++) {
+            result[q] += F[i][q] * phi[i];
+        }
+    }
+}
+
+extern void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell);
+
+void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell)
+{
+    const int odim = %(odim)d;
+
+    double *F[%(ndofs)d];
+    for (int r = 0; r < %(ndofs)d; r++) {
+        F[r] = &data[map[cell * %(ndofs)d + r] * odim];
+    }
+    evaluate_kernel(result, phi, F);
+}
+
 int evaluate(struct Function *f, double *x, double *result)
 {
 	struct ReferenceCoords reference_coords;
@@ -335,22 +362,7 @@ int evaluate(struct Function *f, double *x, double *result)
 
 %(calculate_basisvalues)s
 
-    const int odim = %(odim)d;
-    for (int q = 0; q < odim; q++) {
-        result[q] = 0.0;
-    }
-
-    // Wrapper stuff
-    double *F[%(ndofs)d];
-    for (int r = 0; r < %(ndofs)d; r++) {
-        F[r] = &f->f[f->f_map[cell * %(ndofs)d + r] * odim];
-    }
-
-    for (int i = 0; i < %(ndofs)d; i++) {
-        for (int q = 0; q < odim; q++) {
-            result[q] += F[i][q] * phi[i];
-        }
-    }
+	wrap_evaluate(result, phi, f->f, f->f_map, cell);
 	return 0;
 }
 """
