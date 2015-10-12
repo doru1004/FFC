@@ -264,7 +264,7 @@ struct ReferenceCoords {
 	double detJ;
 };
 
-void to_reference_coords_kernel(void *result_, double *x0, int *return_value, double **C)
+static inline void to_reference_coords_kernel(void *result_, double *x0, int *return_value, double **C)
 {
 	struct ReferenceCoords *result = result_;
 
@@ -300,10 +300,10 @@ void to_reference_coords_kernel(void *result_, double *x0, int *return_value, do
 	*return_value = %(inside_predicate)s;
 }
 
-extern void wrap_to_reference_coords(void *result_, double *x, int *return_value,
-                                     double *coords, int *coords_map, int cell);
+static inline void wrap_to_reference_coords(void *result_, double *x, int *return_value,
+                                            double *coords, int *coords_map, int cell);
 
-void wrap_to_reference_coords(void *result_, double *x, int *return_value, double *coords, int *coords_map, int cell)
+static inline void wrap_to_reference_coords(void *result_, double *x, int *return_value, double *coords, int *coords_map, int cell)
 {
 	const int space_dim = %(geometric_dimension)d;
 
@@ -321,7 +321,7 @@ int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
 	return return_value;
 }
 
-void evaluate_kernel(double *result, double *phi, double **F)
+static inline void evaluate_kernel(double *result, double *phi, double **F)
 {
     const int odim = %(odim)d;
     for (int q = 0; q < odim; q++) {
@@ -335,9 +335,9 @@ void evaluate_kernel(double *result, double *phi, double **F)
     }
 }
 
-extern void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell);
+static inline void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell);
 
-void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell)
+static inline void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell)
 {
     const int odim = %(odim)d;
 
