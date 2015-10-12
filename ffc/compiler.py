@@ -264,17 +264,11 @@ struct ReferenceCoords {
 	double detJ;
 };
 
-int to_reference_coords(void *result_, struct Function *f, int cell, double *x0)
+void to_reference_coords_kernel(void *result_, double *x0, int *return_value, double **C)
 {
 	struct ReferenceCoords *result = result_;
 
 	const int space_dim = %(geometric_dimension)d;
-
-	// Wrapper stuff
-	double *C[%(n_coords_nodes)d];
-	for (int r = 0; r < %(n_coords_nodes)d; r++) {
-		C[r] = &f->coords[f->coords_map[cell * %(n_coords_nodes)d + r] * space_dim];
-	}
 
 	/*
 	 * Mapping coordinates from physical to reference space
@@ -303,7 +297,28 @@ int to_reference_coords(void *result_, struct Function *f, int cell, double *x0)
 	result->detJ = detJ;
 
 	// Are we inside the reference element?
-	return %(inside_predicate)s;
+	*return_value = %(inside_predicate)s;
+}
+
+extern void wrap_to_reference_coords(void *result_, double *x, int *return_value,
+                                     double *coords, int *coords_map, int cell);
+
+void wrap_to_reference_coords(void *result_, double *x, int *return_value, double *coords, int *coords_map, int cell)
+{
+	const int space_dim = %(geometric_dimension)d;
+
+	double *C[%(n_coords_nodes)d];
+	for (int r = 0; r < %(n_coords_nodes)d; r++) {
+		C[r] = &coords[coords_map[cell * %(n_coords_nodes)d + r] * space_dim];
+	}
+	to_reference_coords_kernel(result_, x, return_value, C);
+}
+
+int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
+{
+	int return_value;
+	wrap_to_reference_coords(result_, x, &return_value, f->coords, f->coords_map, cell);
+	return return_value;
 }
 
 int evaluate(struct Function *f, double *x, double *result)
