@@ -271,7 +271,7 @@ struct ReferenceCoords {
 
 static inline void to_reference_coords_kernel(void *result_, double *x0, int *return_value, double **C)
 {
-	struct ReferenceCoords *result = result_;
+	struct ReferenceCoords *result = (struct ReferenceCoords *) result_;
 
 	const int space_dim = %(geometric_dimension)d;
 
