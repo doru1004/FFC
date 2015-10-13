@@ -236,6 +236,7 @@ def compile_element(ufl_element, coordinates_ufl_element):
     else:
         odim = 1
 
+    import FIAT
     code = {
         "geometric_dimension": cell.geometric_dimension(),
         "topological_dimension": cell.topological_dimension(),
@@ -250,6 +251,10 @@ def compile_element(ufl_element, coordinates_ufl_element):
         "convergence_epsilon": 1e-12,
         "dX_norm_square": _dX_norm_square(cell.topological_dimension()),
         "X_iadd_dX": _X_iadd_dX(cell.topological_dimension()),
+        "extruded_arg": ", int nlayers" if isinstance(element.get_reference_element(),
+                                                      FIAT.reference_element.two_product_cell) else "",
+        "nlayers": ", f->n_layers" if isinstance(element.get_reference_element(),
+                                                 FIAT.reference_element.two_product_cell) else "",
     }
 
     evaluate_template_c = """#include <math.h>
@@ -301,12 +306,12 @@ static inline void to_reference_coords_kernel(void *result_, double *x0, int *re
 }
 
 static inline void wrap_to_reference_coords(void *result_, double *x, int *return_value,
-                                            double *coords, int *coords_map, int cell);
+                                            double *coords, int *coords_map%(extruded_arg)s, int cell);
 
 int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
 {
 	int return_value;
-	wrap_to_reference_coords(result_, x, &return_value, f->coords, f->coords_map, cell);
+	wrap_to_reference_coords(result_, x, &return_value, f->coords, f->coords_map%(nlayers)s, cell);
 	return return_value;
 }
 
@@ -324,7 +329,7 @@ static inline void evaluate_kernel(double *result, double *phi, double **F)
     }
 }
 
-static inline void wrap_evaluate(double *result, double *phi, double *data, int *map, int cell);
+static inline void wrap_evaluate(double *result, double *phi, double *data, int *map%(extruded_arg)s, int cell);
 
 int evaluate(struct Function *f, double *x, double *result)
 {
@@ -340,7 +345,7 @@ int evaluate(struct Function *f, double *x, double *result)
 
 %(calculate_basisvalues)s
 
-	wrap_evaluate(result, phi, f->f, f->f_map, cell);
+	wrap_evaluate(result, phi, f->f, f->f_map%(nlayers)s, cell);
 	return 0;
 }
 """
