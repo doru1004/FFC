@@ -329,7 +329,7 @@ static inline void evaluate_kernel(double *result, double *phi_, double **F)
     for (int q = 0; q < cdim * vdim; q++) {
         result[q] = 0.0;
     }
-    for (int i = 0; i < %(ndofs)d; i++) {
+    for (int i = 0; i < ndofs; i++) {
         for (int c = 0; c < cdim; c++) {
             for (int v = 0; v < vdim; v++) {
                 result[c*vdim + v] += F[i][c] * phi[i][v];
@@ -351,6 +351,10 @@ int evaluate(struct Function *f, double *x, double *result)
 	if (!result) {
 		return 0;
 	}
+
+	double *J = reference_coords.J;
+	double *K = reference_coords.K;
+	double detJ = reference_coords.detJ;
 
 %(calculate_basisvalues)s
 

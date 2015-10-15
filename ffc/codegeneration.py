@@ -29,7 +29,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # FFC modules
 import ffc
 import numpy as np
-from ffc.log import info, begin, end, debug_code
+from ffc.log import info, error, begin, end, debug_code
 from ffc.cpp import format, indent
 from ffc.cpp import set_exception_handling
 
@@ -171,15 +171,37 @@ def _calculate_basisvalues(ufl_cell, fiat_element):
 
     code = _read_coordinates(ufl_cell.topological_dimension())
     tdim = ufl_cell.topological_dimension()
+    gdim = ufl_cell.geometric_dimension()
     refs, scode = ffc.tabulate(fiat_element, 0, ("X", "Y", "Z")[:tdim])
     for si in scode:
         code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
 
-    code += ["", "\t// Values of basis functions"]
-    code += [f_decl("double", f_component("phi", refs[(0,) * tdim].shape),
-                    f_new_line + f_tensor(refs[(0,) * tdim]))]
+    from sympy import Symbol as Variable
+    s_detJ = Variable('detJ')
+    s_J = np.array([[Variable("J[{i}*{tdim} + {j}]".format(i=i, j=j, tdim=tdim)) for j in range(tdim)]
+                    for i in range(gdim)])
+    s_Jinv = np.array([[Variable("K[{i}*{gdim} + {j}]".format(i=i, j=j, gdim=gdim)) for j in range(gdim)]
+                    for i in range(tdim)])
 
-    shape = refs[(0,) * tdim].shape
+    theta = refs[(0,) * tdim]
+    phi = []
+    for i, val in enumerate(theta):
+        mapping = fiat_element.mapping()[i]
+        if mapping == "affine":
+            phi.append(val)
+        elif mapping == "contravariant piola":
+            phi.append(s_J.dot(val) / s_detJ)
+        elif mapping == "covariant piola":
+            phi.append(s_Jinv.transpose().dot(val))
+        else:
+            error("Unknown mapping: %s" % mapping)
+    phi = np.asarray(phi, dtype=object)
+
+    code += ["", "\t// Values of basis functions"]
+    code += [f_decl("double", f_component("phi", phi.shape),
+                    f_new_line + f_tensor(phi))]
+
+    shape = phi.shape
     if len(shape) <= 1:
         vdim = 1
     elif len(shape) == 2:
