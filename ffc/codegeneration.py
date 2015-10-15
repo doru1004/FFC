@@ -178,7 +178,15 @@ def _calculate_basisvalues(ufl_cell, fiat_element):
     code += ["", "\t// Values of basis functions"]
     code += [f_decl("double", f_component("phi", refs[(0,) * tdim].shape),
                     f_new_line + f_tensor(refs[(0,) * tdim]))]
-    return "\n".join(code)
+
+    shape = refs[(0,) * tdim].shape
+    if len(shape) <= 1:
+        vdim = 1
+    elif len(shape) == 2:
+        vdim = shape[1]
+    else:
+        raise NotImplementedError("I am surprised.")
+    return "\n".join(code), vdim
 
 
 def _to_reference_coordinates(ufl_cell, fiat_element, needs_orientation):

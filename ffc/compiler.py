@@ -214,7 +214,7 @@ def _X_iadd_dX(topological_dimension):
 def _is_affine(ufl_element):
     return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
 
-def compile_element(ufl_element, coordinates_ufl_element):
+def compile_element(ufl_element, coordinates_ufl_element, cdim):
     parameters = _check_parameters(None)
 
     # Set code generation parameters
@@ -230,22 +230,19 @@ def compile_element(ufl_element, coordinates_ufl_element):
     domain, = ufl_element.domains() # Assuming single domain
     cell = domain.cell()
 
-    # Compute data for each function
-    if ufl_element.value_shape():
-        odim = ufl_element.value_shape()[0]
-    else:
-        odim = 1
+    calculate_basisvalues, vdim = _calculate_basisvalues(cell, element)
 
     import FIAT
     code = {
+        "cdim": cdim,
+        "vdim": vdim,
         "geometric_dimension": cell.geometric_dimension(),
         "topological_dimension": cell.topological_dimension(),
         "inside_predicate": _inside_check(cell, element.get_reference_element()),
         "to_reference_coords": _to_reference_coordinates(cell, coordinates_element, needs_oriented_jacobian(element)),
         "ndofs": element.space_dimension(),
         "n_coords_nodes": coordinates_element.space_dimension(),
-        "calculate_basisvalues": _calculate_basisvalues(cell, element),
-        "odim": odim,
+        "calculate_basisvalues": calculate_basisvalues,
         "init_X": _init_X(element),
         "max_iteration_count": 1 if _is_affine(coordinates_ufl_element) else 16,
         "convergence_epsilon": 1e-12,
@@ -315,16 +312,28 @@ int to_reference_coords(void *result_, struct Function *f, int cell, double *x)
 	return return_value;
 }
 
-static inline void evaluate_kernel(double *result, double *phi, double **F)
+static inline void evaluate_kernel(double *result, double *phi_, double **F)
 {
-    const int odim = %(odim)d;
-    for (int q = 0; q < odim; q++) {
+    const int ndofs = %(ndofs)d;
+    const int cdim = %(cdim)d;
+    const int vdim = %(vdim)d;
+
+    double (*phi)[vdim] = (double (*)[vdim]) phi_;
+
+    // F: ndofs x cdim
+    // phi: ndofs x vdim
+    // result = F' * phi: cdim x vdim
+    //
+    // Usually cdim == 1 or vdim == 1.
+
+    for (int q = 0; q < cdim * vdim; q++) {
         result[q] = 0.0;
     }
-
     for (int i = 0; i < %(ndofs)d; i++) {
-        for (int q = 0; q < odim; q++) {
-            result[q] += F[i][q] * phi[i];
+        for (int c = 0; c < cdim; c++) {
+            for (int v = 0; v < vdim; v++) {
+                result[c*vdim + v] += F[i][c] * phi[i][v];
+            }
         }
     }
 }
@@ -345,7 +354,7 @@ int evaluate(struct Function *f, double *x, double *result)
 
 %(calculate_basisvalues)s
 
-	wrap_evaluate(result, phi, f->f, f->f_map%(nlayers)s, cell);
+	wrap_evaluate(result, (double *)phi, f->f, f->f_map%(nlayers)s, cell);
 	return 0;
 }
 """
