@@ -118,7 +118,7 @@ from time import time
 import os
 
 # FFC modules
-from ffc.log import info, info_green, warning
+from ffc.log import error, info, info_green, warning
 from ffc.parameters import default_parameters
 
 # FFC modules
@@ -128,10 +128,6 @@ from ffc.optimization import optimize_ir
 from ffc.codegeneration import generate_code
 from ffc.formatting import format_code, write_code
 from ffc.wrappers import generate_wrapper_code
-
-import ufl
-from ffc.fiatinterface import create_actual_fiat_element
-from ffc.cpp import format
 
 def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     """This function generates UFC code for a given UFL form or list
@@ -205,53 +201,189 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         return code
 
-def _dX_norm_square(topological_dimension):
-    return " + ".join("dX[{0}]*dX[{0}]".format(i) for i in xrange(topological_dimension))
-
-def _X_iadd_dX(topological_dimension):
-    return "\n".join("\tX[{0}] -= dX[{0}];".format(i) for i in xrange(topological_dimension))
-
-def _is_affine(ufl_element):
-    return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
-
 def compile_element(ufl_element, coordinates_ufl_element, cdim):
-    parameters = _check_parameters(None)
+    from ffc.cpp import set_float_formatting, format
+    from ffc.fiatinterface import create_actual_fiat_element
+    from ffc.representation import needs_oriented_jacobian
+    from ffc.symbolic import ssa_arrays, c_print
+    from FIAT.reference_element import two_product_cell
+    import ufl
+    import sympy as sp
+    import numpy as np
 
     # Set code generation parameters
-    from ffc.cpp import set_float_formatting
+    parameters = _check_parameters(None)
     set_float_formatting(int(parameters["precision"]))
 
-    from ffc.codegeneration import _value_dimension, _inside_check, _to_reference_coordinates, _calculate_basisvalues, _init_X
-    from ffc.representation import needs_oriented_jacobian
+    def dX_norm_square(topological_dimension):
+        return " + ".join("dX[{0}]*dX[{0}]".format(i)
+                          for i in xrange(topological_dimension))
+
+    def X_iadd_dX(topological_dimension):
+        return "\n".join("\tX[{0}] -= dX[{0}];".format(i)
+                         for i in xrange(topological_dimension))
+
+    def is_affine(ufl_element):
+        return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
+
+    def inside_check(ufl_cell, fiat_cell):
+        dim = ufl_cell.topological_dimension()
+        point = tuple(sp.Symbol("X[%d]" % i) for i in xrange(dim))
+
+        return " && ".join("(%s)" % arg for arg in fiat_cell.contains_point(point, epsilon=1e-14).args)
+
+    def init_X(fiat_element):
+        f_float  = format["floating point"]
+        f_assign = format["assign"]
+
+        fiat_cell = fiat_element.get_reference_element()
+        vertices = np.array(fiat_cell.get_vertices())
+        X = np.average(vertices, axis=0)
+        return "\n".join(f_assign("X[%d]" % i, f_float(v)) for i, v in enumerate(X))
+
+    def calculate_basisvalues(ufl_cell, fiat_element):
+        f_component     = format["component"]
+        f_decl          = format["declaration"]
+        f_float_decl    = format["float declaration"]
+        f_tensor        = format["tabulate tensor"]
+        f_new_line      = format["new line"]
+
+        tdim = ufl_cell.topological_dimension()
+        gdim = ufl_cell.geometric_dimension()
+
+        code = []
+
+        # Symbolic tabulation
+        tabs = fiat_element.tabulate(0, np.array([[sp.Symbol("reference_coords.X[%d]" % i)
+                                                   for i in xrange(tdim)]]))
+        tabs = tabs[(0,) * tdim]
+        tabs = tabs.reshape(tabs.shape[:-1])
+
+        # Generate code for intermediate values
+        s_code, (theta,) = ssa_arrays([tabs])
+        for name, value in s_code:
+            code += [f_decl(f_float_decl, name, c_print(value))]
+
+        # Prepare Jacobian, Jacobian inverse and determinant
+        s_detJ = sp.Symbol('detJ')
+        s_J = np.array([[sp.Symbol("J[{i}*{tdim} + {j}]".format(i=i, j=j, tdim=tdim))
+                         for j in range(tdim)]
+                        for i in range(gdim)])
+        s_Jinv = np.array([[sp.Symbol("K[{i}*{gdim} + {j}]".format(i=i, j=j, gdim=gdim))
+                            for j in range(gdim)]
+                           for i in range(tdim)])
+
+        # Apply transformations
+        phi = []
+        for i, val in enumerate(theta):
+            mapping = fiat_element.mapping()[i]
+            if mapping == "affine":
+                phi.append(val)
+            elif mapping == "contravariant piola":
+                phi.append(s_J.dot(val) / s_detJ)
+            elif mapping == "covariant piola":
+                phi.append(s_Jinv.transpose().dot(val))
+            else:
+                error("Unknown mapping: %s" % mapping)
+        phi = np.asarray(phi, dtype=object)
+
+        # Dump tables of basis values
+        code += ["", "\t// Values of basis functions"]
+        code += [f_decl("double", f_component("phi", phi.shape),
+                        f_new_line + f_tensor(phi))]
+
+        shape = phi.shape
+        if len(shape) <= 1:
+            vdim = 1
+        elif len(shape) == 2:
+            vdim = shape[1]
+        return "\n".join(code), vdim
+
+    def to_reference_coordinates(ufl_cell, fiat_element, needs_orientation):
+        f_decl          = format["declaration"]
+        f_float_decl    = format["float declaration"]
+
+        # Get the element cell name and geometric dimension.
+        cell = ufl_cell
+        gdim = cell.geometric_dimension()
+        tdim = cell.topological_dimension()
+
+        code = []
+
+        # Symbolic tabulation
+        tabs = fiat_element.tabulate(1, np.array([[sp.Symbol("X[%d]" % i) for i in xrange(tdim)]]))
+        tabs = sorted((d, value.reshape(value.shape[:-1])) for d, value in tabs.iteritems())
+
+        # Generate code for intermediate values
+        s_code, d_phis = ssa_arrays(map(lambda (k, v): v, tabs), prefix="t")
+        phi = d_phis.pop(0)
+
+        for name, value in s_code:
+            code += [f_decl(f_float_decl, name, c_print(value))]
+
+        # Cell coordinate data
+        C = np.array([[sp.Symbol("C[%d][%d]" % (i, j)) for j in range(gdim)]
+                       for i in range(fiat_element.space_dimension())])
+
+        # Generate physical coordinates
+        x = phi.dot(C)
+        for i, e in enumerate(x):
+            code += ["\tx[%d] = %s;" % (i, e)]
+
+        # Generate Jacobian
+        grad_phi = np.vstack(reversed(d_phis))
+        J = np.transpose(grad_phi.dot(C))
+        for i, row in enumerate(J):
+            for j, e in enumerate(row):
+                code += ["\tJ[%d * %d + %d] = %s;" % (i, tdim, j, e)]
+
+        # Get code snippets for Jacobian, inverse of Jacobian and mapping of
+        # coordinates from physical element to the FIAT reference element.
+        code_ = [format["compute_jacobian_inverse"](cell)]
+        if needs_orientation:
+            code_ += [format["orientation"]["ufc"](tdim, gdim)]
+        # FIXME: ugly hack
+        code_ = "\n".join(code_).split("\n")
+        code_ = filter(lambda line: not line.startswith(("double J", "double K", "double detJ")), code_)
+        code += code_
+
+        x = np.array([sp.Symbol("x[%d]" % i) for i in xrange(gdim)])
+        x0 = np.array([sp.Symbol("x0[%d]" % i) for i in xrange(gdim)])
+        K = np.array([[sp.Symbol("K[%d]" % (i*gdim + j)) for j in range(gdim)]
+                      for i in range(tdim)])
+
+        dX = K.dot(x - x0)
+        for i, e in enumerate(dX):
+            code += ["\tdX[%d] = %s;" % (i, e)]
+
+        return "\n".join(code)
 
     # Create FIAT element
     element = create_actual_fiat_element(ufl_element)
     coordinates_element = create_actual_fiat_element(coordinates_ufl_element)
-    domain, = ufl_element.domains() # Assuming single domain
+    domain, = ufl_element.domains()  # Assuming single domain
     cell = domain.cell()
 
-    calculate_basisvalues, vdim = _calculate_basisvalues(cell, element)
+    calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
+    extruded = isinstance(element.get_reference_element(), two_product_cell)
 
-    import FIAT
     code = {
         "cdim": cdim,
         "vdim": vdim,
         "geometric_dimension": cell.geometric_dimension(),
         "topological_dimension": cell.topological_dimension(),
-        "inside_predicate": _inside_check(cell, element.get_reference_element()),
-        "to_reference_coords": _to_reference_coordinates(cell, coordinates_element, needs_oriented_jacobian(element)),
+        "inside_predicate": inside_check(cell, element.get_reference_element()),
+        "to_reference_coords": to_reference_coordinates(cell, coordinates_element, needs_oriented_jacobian(element)),
         "ndofs": element.space_dimension(),
         "n_coords_nodes": coordinates_element.space_dimension(),
         "calculate_basisvalues": calculate_basisvalues,
-        "init_X": _init_X(element),
-        "max_iteration_count": 1 if _is_affine(coordinates_ufl_element) else 16,
+        "init_X": init_X(element),
+        "max_iteration_count": 1 if is_affine(coordinates_ufl_element) else 16,
         "convergence_epsilon": 1e-12,
-        "dX_norm_square": _dX_norm_square(cell.topological_dimension()),
-        "X_iadd_dX": _X_iadd_dX(cell.topological_dimension()),
-        "extruded_arg": ", int nlayers" if isinstance(element.get_reference_element(),
-                                                      FIAT.reference_element.two_product_cell) else "",
-        "nlayers": ", f->n_layers" if isinstance(element.get_reference_element(),
-                                                 FIAT.reference_element.two_product_cell) else "",
+        "dX_norm_square": dX_norm_square(cell.topological_dimension()),
+        "X_iadd_dX": X_iadd_dX(cell.topological_dimension()),
+        "extruded_arg": ", int nlayers" if extruded else "",
+        "nlayers": ", f->n_layers" if extruded else "",
     }
 
     evaluate_template_c = """#include <math.h>

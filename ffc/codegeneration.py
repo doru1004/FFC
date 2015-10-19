@@ -27,9 +27,7 @@ UFC function from an (optimized) intermediate representation (OIR).
 # Modified by Martin Alnaes, 2013-2015
 
 # FFC modules
-import ffc
-import numpy as np
-from ffc.log import info, error, begin, end, debug_code
+from ffc.log import info, begin, end, debug_code
 from ffc.cpp import format, indent
 from ffc.cpp import set_exception_handling
 
@@ -41,9 +39,6 @@ from ffc.evaluatedof import evaluate_dof_and_dofs, affine_weights
 from ffc.interpolatevertexvalues import interpolate_vertex_values
 
 from ffc.representation import pick_representation, ufc_integral_types
-
-from sympy import symbols
-from sympy.printing import StrPrinter
 
 # Errors issued for non-implemented functions
 def _not_implemented(function_name, return_null=False):
@@ -146,134 +141,6 @@ def _generate_element_code(ir, prefix, parameters):
     _postprocess_code(code, parameters)
 
     return code
-
-
-def _inside_check(ufl_cell, fiat_cell):
-    dim = ufl_cell.topological_dimension()
-    point = tuple(symbols("X[%d]" % i) for i in xrange(dim))
-
-    return " && ".join("(%s)" % arg for arg in fiat_cell.contains_point(point, epsilon=1e-14).args)
-
-
-def _init_X(fiat_element):
-    fiat_cell = fiat_element.get_reference_element()
-    vertices = np.array(fiat_cell.get_vertices())
-    X = np.average(vertices, axis=0)
-    return "\n".join("\tX[%d] = %.12f;" % (i, v) for i, v in enumerate(X))  # TODO: FP formatting
-
-
-def _calculate_basisvalues(ufl_cell, fiat_element):
-    f_table         = format["static const float declaration"]["ufc"]
-    f_component     = format["component"]
-    f_decl          = format["declaration"]
-    f_tensor        = format["tabulate tensor"]
-    f_new_line      = format["new line"]
-
-    code = _read_coordinates(ufl_cell.topological_dimension())
-    tdim = ufl_cell.topological_dimension()
-    gdim = ufl_cell.geometric_dimension()
-    refs, scode = ffc.tabulate(fiat_element, 0, ("X", "Y", "Z")[:tdim])
-    for si in scode:
-        code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
-
-    from sympy import Symbol as Variable
-    s_detJ = Variable('detJ')
-    s_J = np.array([[Variable("J[{i}*{tdim} + {j}]".format(i=i, j=j, tdim=tdim)) for j in range(tdim)]
-                    for i in range(gdim)])
-    s_Jinv = np.array([[Variable("K[{i}*{gdim} + {j}]".format(i=i, j=j, gdim=gdim)) for j in range(gdim)]
-                    for i in range(tdim)])
-
-    theta = refs[(0,) * tdim]
-    phi = []
-    for i, val in enumerate(theta):
-        mapping = fiat_element.mapping()[i]
-        if mapping == "affine":
-            phi.append(val)
-        elif mapping == "contravariant piola":
-            phi.append(s_J.dot(val) / s_detJ)
-        elif mapping == "covariant piola":
-            phi.append(s_Jinv.transpose().dot(val))
-        else:
-            error("Unknown mapping: %s" % mapping)
-    phi = np.asarray(phi, dtype=object)
-
-    code += ["", "\t// Values of basis functions"]
-    code += [f_decl("double", f_component("phi", phi.shape),
-                    f_new_line + f_tensor(phi))]
-
-    shape = phi.shape
-    if len(shape) <= 1:
-        vdim = 1
-    elif len(shape) == 2:
-        vdim = shape[1]
-    else:
-        raise NotImplementedError("I am surprised.")
-    return "\n".join(code), vdim
-
-
-def _to_reference_coordinates(ufl_cell, fiat_element, needs_orientation):
-    f_table         = format["static const float declaration"]["ufc"]
-    f_component     = format["component"]
-    f_decl          = format["declaration"]
-    f_tensor        = format["tabulate tensor"]
-    f_new_line      = format["new line"]
-
-    # Get the element cell name and geometric dimension.
-    cell = ufl_cell
-    gdim = cell.geometric_dimension()
-    tdim = cell.topological_dimension()
-
-    code = []
-    refs, scode = ffc.tabulate(fiat_element,
-                               1,
-                               ("X[0]", "X[1]", "X[2]")[:tdim],
-                               prefix="t")
-    for si in scode:
-        code += ["\tdouble %s = %s;" % (si[0], CPrinter(dict(order=None)).doprint(si[1]))]
-
-    from sympy import Symbol as Variable
-    C = np.array([[Variable("C[%d][%d]" % (i, j))for j in range(gdim)]
-                   for i in range(fiat_element.space_dimension())])
-
-    x_phi = refs[(0,) * tdim]
-    x = x_phi.dot(C)
-    for i, e in enumerate(x):
-        code += ["\tx[%d] = %s;" % (i, e)]
-
-    refs_keys = reversed(sorted(refs.keys()))
-    refs_keys = list(refs_keys)[:-1]  # skip all zeros
-    x_grad_phi = np.vstack([refs[k] for k in refs_keys])
-    J = np.transpose(x_grad_phi.dot(C))
-    for i, row in enumerate(J):
-        for j, e in enumerate(row):
-            code += ["\tJ[%d * %d + %d] = %s;" % (i, tdim, j, e)]
-
-    # Get code snippets for Jacobian, Inverse of Jacobian and mapping of
-    # coordinates from physical element to the FIAT reference element.
-    code_ = [format["compute_jacobian_inverse"](cell)]
-    if needs_orientation:
-        code_ += [format["orientation"]["ufc"](tdim, gdim)]
-    # FIXME: very ugly hack!
-    code_ = "\n".join(code_).split("\n")
-    code_ = filter(lambda line: not line.startswith(("double J", "double K", "double detJ")), code_)
-    code += code_
-
-    x = np.array(map(lambda i: Variable("x[%d]" % i), range(gdim)))
-    x0 = np.array(map(lambda i: Variable("x0[%d]" % i), range(gdim)))
-    X = np.array(map(lambda i: Variable("X[%d]" % i), range(tdim)))
-    K = np.array(map(lambda i: Variable("K[%d]" % i), range(tdim * gdim)))
-    K = K.reshape(tdim, gdim)
-
-    dX = K.dot(x - x0)
-    for i, e in enumerate(dX):
-        code += ["\tdX[%d] = %s;" % (i, e)]
-
-    return "\n".join(code)
-
-
-def _read_coordinates(topological_dimension):
-    return ["\tdouble %s = reference_coords.X[%d];" % (v, i)
-            for (i, v) in zip(range(topological_dimension), ["X", "Y", "Z"])]
 
 
 def _generate_dofmap_code(ir, prefix, parameters):
@@ -693,38 +560,3 @@ def _remove_code(code, parameters):
             msg = "// Function %s not generated (compiled with -f%s)" \
                   % (key, flag)
             code[key] = format["exception"](msg)
-
-
-class CPrinter(StrPrinter):
-    def _print_Pow(self, expr, rational=False):
-        # WARNING: Code mostly copied from sympy source code!
-        from sympy.core import S
-        from sympy.printing.precedence import precedence
-
-        PREC = precedence(expr)
-
-        if expr.exp is S.Half and not rational:
-            return "sqrt(%s)" % self._print(expr.base)
-
-        if expr.is_commutative:
-            if -expr.exp is S.Half and not rational:
-                # Note: Don't test "expr.exp == -S.Half" here, because that will
-                # match -0.5, which we don't want.
-                return "1/sqrt(%s)" % self._print(expr.base)
-            if expr.exp is -S.One:
-                # Similarly to the S.Half case, don't test with "==" here.
-                return '1/%s' % self.parenthesize(expr.base, PREC)
-
-        e = self.parenthesize(expr.exp, PREC)
-        if self.printmethod == '_sympyrepr' and expr.exp.is_Rational and expr.exp.q != 1:
-            # the parenthesized exp should be '(Rational(a, b))' so strip parens,
-            # but just check to be sure.
-            if e.startswith('(Rational'):
-                e = e[1:-1]
-
-        if e == "2":
-            return '{0}*{0}'.format(self.parenthesize(expr.base, PREC))
-        elif e == "3":
-            return '{0}*{0}*{0}'.format(self.parenthesize(expr.base, PREC))
-        else:
-            return 'pow(%s,%s)' % (self.parenthesize(expr.base, PREC), e)
