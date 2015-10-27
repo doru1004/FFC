@@ -68,8 +68,7 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "EnrichedElement",
                       "BrokenElement",
                       "TraceElement",
-                      "FacetElement",
-                      "InteriorElement")
+                      "RestrictedElement")
 
 # Cache for computed elements
 
