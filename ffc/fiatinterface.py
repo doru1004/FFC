@@ -177,7 +177,11 @@ def create_actual_fiat_element(ufl_element):
         if ufl_element.cell().cellname() == "quadrilateral":
             fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
-            error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
+            if family in ("FacetElement", "InteriorElement"):
+                # rescue these
+                pass
+            else:
+                error("Sorry, finite element of type \"%s\" are not supported by FIAT.", family)
 
     # Skip all cases if FIAT element is ready already
     if fiat_element is not None:
@@ -188,6 +192,10 @@ def create_actual_fiat_element(ufl_element):
         fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
     elif isinstance(ufl_element, ufl.HCurl):
         fiat_element = FIAT.Hcurl(create_element(ufl_element._element))
+    elif isinstance(ufl_element, ufl.FacetElement):
+        fiat_element = FIAT.RestrictedElement(create_element(ufl_element._element), restriction_domain="facet")
+    elif isinstance(ufl_element, ufl.InteriorElement):
+        fiat_element = FIAT.RestrictedElement(create_element(ufl_element._element), restriction_domain="interior")
     else:
         # Look up FIAT element
         ElementClass = FIAT.supported_elements[family]
@@ -206,7 +214,7 @@ def create_actual_fiat_element(ufl_element):
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)
             fiat_element = ElementClass(A, B)
-        elif isinstance(ufl_element, (ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
+        elif isinstance(ufl_element, (ufl.BrokenElement, ufl.TraceElement)):
             fiat_element = ElementClass(create_element(ufl_element._element))
         elif ufl_element.cell().cellname() == "quadrilateral":
             fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
