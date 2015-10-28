@@ -202,6 +202,13 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
         return code
 
 def compile_element(ufl_element, coordinates_ufl_element, cdim):
+    """Generates C code for point evaluations.
+
+    :arg ufl_element: UFL element of the function space
+    :arg coordinates_ufl_element: UFL element of the coordinates
+    :arg cdim: ``cdim`` of the function space
+    :returns: C code as string
+    """
     from ffc.cpp import set_float_formatting, format
     from ffc.fiatinterface import create_actual_fiat_element
     from ffc.representation import needs_oriented_jacobian
@@ -219,7 +226,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
         return " + ".join("dX[{0}]*dX[{0}]".format(i)
                           for i in xrange(topological_dimension))
 
-    def X_iadd_dX(topological_dimension):
+    def X_isub_dX(topological_dimension):
         return "\n".join("\tX[{0}] -= dX[{0}];".format(i)
                          for i in xrange(topological_dimension))
 
@@ -381,7 +388,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
         "max_iteration_count": 1 if is_affine(coordinates_ufl_element) else 16,
         "convergence_epsilon": 1e-12,
         "dX_norm_square": dX_norm_square(cell.topological_dimension()),
-        "X_iadd_dX": X_iadd_dX(cell.topological_dimension()),
+        "X_isub_dX": X_isub_dX(cell.topological_dimension()),
         "extruded_arg": ", int nlayers" if extruded else "",
         "nlayers": ", f->n_layers" if extruded else "",
     }
@@ -425,7 +432,7 @@ static inline void to_reference_coords_kernel(void *result_, double *x0, int *re
              converged = 1;
          }
 
-%(X_iadd_dX)s
+%(X_isub_dX)s
     }
 
 	result->detJ = detJ;
