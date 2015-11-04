@@ -65,7 +65,7 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "RTCF",
                       "Bubble",
                       "Quadrature",
-                      "OuterProductElement",
+                      "TensorProductElement",
                       "EnrichedElement",
                       "BrokenElement",
                       "TraceElement",
@@ -76,8 +76,8 @@ supported_families = ("Brezzi-Douglas-Marini",
 
 _cache = weakref.WeakKeyDictionary()
 
-# Quadrilateral OuterProductCell
-_quad_opc = ufl.OuterProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
+# Quadrilateral TensorProductCell
+_quad_opc = ufl.TensorProductCell(ufl.Cell("interval"), ufl.Cell("interval"))
 
 def reference_cell(cell):
     # really want to be using cells only, but sometimes only cellname is passed
@@ -112,7 +112,7 @@ def create_element(ufl_element):
     elif isinstance(ufl_element, ufl.RestrictedElement):
         # Create restricted element(implemented by FFC)
         element = _create_restricted_element(ufl_element)
-    elif isinstance(ufl_element, (ufl.FiniteElement, ufl.OuterProductElement, ufl.EnrichedElement, ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
+    elif isinstance(ufl_element, (ufl.FiniteElement, ufl.TensorProductElement, ufl.EnrichedElement, ufl.BrokenElement, ufl.TraceElement, ufl.FacetElement, ufl.InteriorElement)):
         # Create regular FIAT finite element
         element = _create_fiat_element(ufl_element)
     else:
@@ -137,12 +137,12 @@ def _create_fiat_element(ufl_element):
     if family == "Real":
         domain, = ufl_element.domains() # Assuming single domain
 
-        if not isinstance(ufl_element.cell(), ufl.OuterProductCell):
+        if not isinstance(ufl_element.cell(), ufl.TensorProductCell):
             dg0_element = ufl.FiniteElement("DG", domain, 0)
         else:
             dg0_element_A = ufl.FiniteElement("DG", ufl_element.cell()._A, 0)
             dg0_element_B = ufl.FiniteElement("DG", ufl_element.cell()._B, 0)
-            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
+            dg0_element = ufl.TensorProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
 
         constant = _create_fiat_element(dg0_element)
         return SpaceOfReals(constant)
@@ -186,7 +186,7 @@ def create_actual_fiat_element(ufl_element):
     # Skip all cases if FIAT element is ready already
     if fiat_element is not None:
         pass
-    # HDiv and HCurl elements have family "OuterProductElement",
+    # HDiv and HCurl elements have family "TensorProductElement",
     # so get matching FIAT element directly rather than via lookup
     elif isinstance(ufl_element, ufl.HDiv):
         fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
@@ -205,11 +205,11 @@ def create_actual_fiat_element(ufl_element):
             B = create_element(ufl_element._elements[1])
             fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
-        elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement, ufl.OuterProductTensorElement)):
+        elif isinstance(ufl_element, (ufl.TensorProductElement, ufl.TensorProductVectorElement, ufl.TensorProductTensorElement)):
             domain, = ufl_element.domains() # Assuming single domain
             cell = domain.cell()            # Assuming single cell in domain
-            if not isinstance(cell, ufl.OuterProductCell):
-                error("An OuterProductElement must have an OuterProductCell as domain, sorry.")
+            if not isinstance(cell, ufl.TensorProductCell):
+                error("An TensorProductElement must have an TensorProductCell as domain, sorry.")
 
             A = create_element(ufl_element._A)
             B = create_element(ufl_element._B)

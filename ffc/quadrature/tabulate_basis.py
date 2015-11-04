@@ -40,7 +40,7 @@ def _create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     if integral_type == "cell":
         (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
-        # Since quadrilaterals use OuterProductElements, the degree is usually
+        # Since quadrilaterals use TensorProductElements, the degree is usually
         # a tuple, though not always. For example, in the constant times dx case
         # the degree is always a single number.
         if cell.cellname() == "quadrilateral" and isinstance(degree, tuple):
