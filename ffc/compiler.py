@@ -213,7 +213,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
     from ffc.fiatinterface import create_actual_fiat_element
     from ffc.representation import needs_oriented_jacobian
     from ffc.symbolic import ssa_arrays, c_print
-    from FIAT.reference_element import two_product_cell
+    from FIAT.reference_element import TensorProductCell
     import ufl
     import sympy as sp
     import numpy as np
@@ -372,7 +372,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
     cell = domain.cell()
 
     calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
-    extruded = isinstance(element.get_reference_element(), two_product_cell)
+    extruded = isinstance(element.get_reference_element(), TensorProductCell)
 
     code = {
         "cdim": cdim,
