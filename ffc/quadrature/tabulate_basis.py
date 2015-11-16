@@ -133,7 +133,10 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
         num_entities = cell._A.num_facets()  # number of "base cell" facets
     else:
-        num_entities = num_cell_entities[cell.cellname()][entity_dim]
+        if cell.cellname() == "OuterProductCell":
+            num_entities = cell.num_entities(entity_dim)
+        else:
+            num_entities = num_cell_entities[cell.cellname()][entity_dim]
     # Track geometric dimension of tables
     psi_table = EnrichedPsiTable(element)
     for entity in range(num_entities):

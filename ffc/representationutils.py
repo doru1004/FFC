@@ -35,7 +35,7 @@ from ffc.quadrature_schemes import create_quadrature
 def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
     "Create quadrature rule and return points and weights."
     if integral_type == "cell":
-        (points, weights) = create_quadrature(cell.cellname(), degree, rule)
+        (points, weights) = create_quadrature(cell, degree, rule)
     elif integral_type == "exterior_facet" or integral_type == "interior_facet":
         # Since quadrilaterals use OuterProductElements, the degree is usually
         # a tuple, though not always. For example, in the constant times dx case

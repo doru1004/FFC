@@ -43,9 +43,6 @@ from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import SpaceOfReals
 
-# Dictionary mapping from cellname to dimension
-from ufl.cell import cellname2dim
-
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini",
                       "Brezzi-Douglas-Fortin-Marini",
@@ -259,7 +256,12 @@ def create_quadrature(cell, num_points):
     if isinstance(cell, int) and cell == 0:
         return ([()], array([1.0,]))
 
-    if cellname2dim[cell] == 0:
+    if isinstance(cell, str):
+        cellname = cell
+    else:
+        cellname = cell.cellname()
+
+    if cellname == "vertex":
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
