@@ -29,6 +29,7 @@ import weakref
 # UFL and FIAT modules
 import ufl
 from ufl.utils.sorting import sorted_by_key
+from ufl.algorithms.elementtransformations import reconstruct_element
 import FIAT
 
 from FIAT.trace import DiscontinuousLagrangeTrace
@@ -171,7 +172,10 @@ def create_actual_fiat_element(ufl_element):
         # We support RTCE and RTCF elements on quadrilaterals,
         # even though they are not supported by FIAT.
         if ufl_element.cell().cellname() == "quadrilateral":
-            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
+            fiat_element = create_actual_fiat_element(reconstruct_element(ufl_element,
+                                                                          ufl_element.family(),
+                                                                          _quad_opc,
+                                                                          ufl_element.degree()))
         else:
             if family in ("FacetElement", "InteriorElement"):
                 # rescue these
