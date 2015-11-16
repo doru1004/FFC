@@ -610,7 +610,7 @@ def _generate_psi_name(counter, entity_type, component, derivatives, avg):
     elif entity_type == "vertex":
         name += "_v"
 
-    if component != () and component != []:
+    if component:
         name += "_C%d" % component
 
     if any(derivatives):
