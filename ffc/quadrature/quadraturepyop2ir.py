@@ -63,7 +63,7 @@ def _arglist(ir):
         prim_idims = [d*2 for d in prim_idims]
     localtensor = pyop2.Decl(float, pyop2.Symbol("A", tuple(prim_idims) or (1,)))
 
-    coordinates = pyop2.Decl("%s**" % float, pyop2.Symbol("vertex_coordinates", ()))
+    coordinates = pyop2.Decl("%s**" % float, pyop2.Symbol("coordinate_dofs", ()))
 
     coeffs = []
     for n, e in zip(ir['coefficient_names'], ir['coefficient_elements']):
@@ -223,9 +223,9 @@ def _tabulate_tensor(ir, parameters):
         if p_format == 'pyop2':
             common += ["unsigned int facet_0 = facet_p[0];"]
             common += ["unsigned int facet_1 = facet_p[1];"]
-            common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
+            common += ["double **coordinate_dofs_0 = coordinate_dofs;"]
             # Note that the following line is unsafe for isoparametric elements.
-            common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
+            common += ["double **coordinate_dofs_1 = coordinate_dofs + %d;" % num_vertices]
 
         # Generate tensor code for facets + set of used geometry terms.
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
@@ -270,9 +270,9 @@ def _tabulate_tensor(ir, parameters):
             raise RuntimeError("Invalid integral_type")
 
     elif integral_type == "interior_facet_horiz":
-        common += ["double **vertex_coordinates_0 = vertex_coordinates;"]
+        common += ["double **coordinate_dofs_0 = coordinate_dofs;"]
         # Note that the following line is unsafe for isoparametric elements.
-        common += ["double **vertex_coordinates_1 = vertex_coordinates + %d;" % num_vertices]
+        common += ["double **coordinate_dofs_1 = coordinate_dofs + %d;" % num_vertices]
 
         nest_ir, ops = _generate_element_tensor(integrals, sets, opt_par, parameters)
 
