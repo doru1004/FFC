@@ -553,10 +553,10 @@ const unsigned int v0 = edge_vertices[%(bt)s][0];
 const unsigned int v1 = edge_vertices[%(bt)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = coordinate_dofs%(restriction)s[3*v1 + 0] - coordinate_dofs%(restriction)s[3*v0 + 0];
-const double dx1 = coordinate_dofs%(restriction)s[3*v1 + 1] - coordinate_dofs%(restriction)s[3*v0 + 1];
-const double dx2 = coordinate_dofs%(restriction)s[3*v1 + 2] - coordinate_dofs%(restriction)s[3*v0 + 2];
-const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
+const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
+const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
+const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
 _horiz_facet_determinant_prism = """\
