@@ -130,7 +130,7 @@ def _tabulate_psi_table(integral_type, cell, element, deriv_order, points):
     elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
         num_entities = cell._A.num_facets()  # number of "base cell" facets
     else:
-        num_entities = cell.num_entities(entity_dim)
+        num_entities = num_cell_entities[cell.cellname()][entity_dim]
     # Track geometric dimension of tables
     psi_table = EnrichedPsiTable(element)
     for entity in range(num_entities):
@@ -146,7 +146,7 @@ def _tabulate_entities(integral_type, cell):
     # MSA: I attempted to generalize this function, could this way of
     # handling domain types generically extend to other parts of the code?
     entity_dim = domain_to_entity_dim(integral_type, cell)
-    num_entities = cell.num_entities(entity_dim)
+    num_entities = num_cell_entities[cell.cellname()][entity_dim]
     entities = set()
     for entity in range(num_entities):
         # TODO: Use 0 as key for cell and we may be able to generalize other places:
