@@ -43,7 +43,7 @@ from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import SpaceOfReals
 
 # Dictionary mapping from cellname to dimension
-from ufl.cell import cell2dim
+from ufl.cell import cellname2dim
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini",
@@ -258,7 +258,7 @@ def create_quadrature(cell, num_points):
     if isinstance(cell, int) and cell == 0:
         return ([()], array([1.0,]))
 
-    if cell2dim(cell) == 0:
+    if cellname2dim(cell.cellname()) == 0:
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
