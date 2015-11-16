@@ -20,10 +20,11 @@ the code found in FIAT."""
 # along with FFC. If not, see <http://www.gnu.org/licenses/>.
 #
 # First added:  2007-04-04
-# Last changed: 2013-01-10
+# Last changed: 2015-03-28
 #
 # Modified by Marie E. Rognes 2011
 # Modified by Anders Logg 2013
+# Modified by Lizao Li 2015
 #
 # MER: The original module generated code that was more or less a C++
 # representation of the code found in FIAT. I've modified this (for 2
@@ -169,8 +170,8 @@ def _evaluate_basis(data):
 
     # Create code for all basis values (dofs).
     dof_cases = []
-    for dof in data["dof_data"]:
-        dof_cases.append(_generate_dof_code(data, dof))
+    for dof_data in data["dofs_data"]:
+        dof_cases.append(_generate_dof_code(data, dof_data))
     code += [format["switch"](format["argument basis num"], dof_cases)]
 
     # Remove unused variables (from transformations and mappings) in code.
@@ -238,7 +239,6 @@ def _compute_values(data, dof_data):
     f_coefficients  = format["coefficients"]
     f_basisvalues   = format["basisvalues"]
     f_r             = format["free indices"][0]
-#    f_dof           = format["local dof"]
     f_deref_pointer = format["dereference pointer"]
     f_detJ          = format["det(J)"]
     f_inv           = format["inverse"]
@@ -260,7 +260,9 @@ def _compute_values(data, dof_data):
 
     # Get dof data.
     num_components = dof_data["num_components"]
-    offset = dof_data["offset"]
+    reference_offset = dof_data["reference_offset"]
+    physical_offset = dof_data["physical_offset"]
+    offset = reference_offset # physical_offset # FIXME: Should be physical offset but that breaks tests
 
     lines = []
     if data["reference_value_size"] != 1:
@@ -320,6 +322,29 @@ def _compute_values(data, dof_data):
             value = f_group(f_inner(inv_jacobian_column, basis_col))
             name = f_component(f_values, i + offset)
             code += [f_assign(name, value)]
+    elif mapping == "pullback as metric":
+        code += ["", f_comment("Using metric pullback to map values back to the physical element")]
+        # Get temporary values before mapping.
+        code += [f_const_float(f_tmp_ref(i), f_component(f_values, i + offset))\
+                  for i in range(num_components)]
+        # Create names for inner product.
+        tdim = data["topological_dimension"]
+        gdim = data["geometric_dimension"]
+        basis_col = [f_tmp_ref(j) for j in range(num_components)]
+        for p in range(num_components):
+            # unflatten the indices
+            i = p // tdim
+            l = p % tdim
+            # g_il = K_ji G_jk K_kl
+            value = f_group(f_inner(
+                [f_inner([f_trans("JINV", j, i, tdim, gdim, None)
+                          for j in range(tdim)],
+                         [basis_col[j * tdim + k] for j in range(tdim)])
+                 for k in range(tdim)],
+                [f_trans("JINV", k, l, tdim, gdim, None)
+                 for k in range(tdim)]))
+            name = f_component(f_values, p + offset)
+            code += [f_assign(name, value)]
     else:
         error("Unknown mapping: %s" % mapping)
 
@@ -353,40 +378,22 @@ def _compute_basisvalues(data, dof_data):
     f_tmp         = format["tmp value"]
     f_int         = format["int"]
 
-    f_r, f_s, f_t = format["free indices"][:3]
-    idx0          = f_r + f_r
-    idx1          = f_s + f_s
-    idx2          = f_t + f_t
+    f_r = format["free indices"][0]
 
     # Create temporary values.
     f1, f2, f3, f4, f5  = [create_symbol(f_tmp(i), CONST) for i in range(0,5)]
-    an, bn, cn          = [create_symbol(f_tmp(i), CONST) for i in range(5,8)]
 
     # Get embedded degree.
     embedded_degree = dof_data["embedded_degree"]
 
     # Create helper symbols.
     symbol_p    = create_symbol(f_r, CONST)
-    symbol_q    = create_symbol(f_s, CONST)
-    symbol_r    = create_symbol(f_t, CONST)
     symbol_x    = create_symbol(f_x, CONST)
     symbol_y    = create_symbol(f_y, CONST)
     symbol_z    = create_symbol(f_z, CONST)
-    basis_idx0  = create_symbol(f_component(f_basisvalue, idx0), CONST)
-    basis_idx1  = create_symbol(f_component(f_basisvalue, idx1), CONST)
-    basis_idx2  = create_symbol(f_component(f_basisvalue, idx2), CONST)
-    int_0     = f_int(0)
-    int_1     = f_int(1)
-    int_2    = f_int(2)
-    int_n    = f_int(embedded_degree)
     int_n1   = f_int(embedded_degree + 1)
-    int_nm1  = f_int(embedded_degree - 1)
-    float_0 = create_float(0)
     float_1 = create_float(1)
     float_2 = create_float(2)
-    float_3 = create_float(3)
-    float_4 = create_float(4)
-    float_1_5   = create_float(1.5)
     float_0_5   = create_float(0.5)
     float_0_25  = create_float(0.25)
 
@@ -400,13 +407,7 @@ def _compute_basisvalues(data, dof_data):
     code += [f_decl(f_double, f_component(f_basisvalue, num_mem), f_tensor([0.0]*num_mem))]
 
     # Declare helper variables, will be removed if not used.
-    code += ["", f_comment("Declare helper variables")]
-    code += [f_decl(f_uint, idx0, int_0)]
-    code += [f_decl(f_uint, idx1, int_0)]
-    code += [f_decl(f_uint, idx2, int_0)]
-    code += [f_decl(f_double, str(an), f_float(0))]
-    code += [f_decl(f_double, str(bn), f_float(0))]
-    code += [f_decl(f_double, str(cn), f_float(0))]
+    code += ["", f_comment("Declare helper variables")] # Keeping this here to avoid changing references
 
     # Get the element cell name
     element_cellname = data["cellname"]

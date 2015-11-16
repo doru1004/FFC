@@ -59,14 +59,14 @@ def get_data(ufl_element):
         deriv_order = element.degree()
 
     # Get coordinates of the reference cell.
-    domain, = ufl_element.domains()
-    ref_coords = reference_cell(domain.cell().cellname()).get_vertices()
+    cell = ufl_element.cell()
+    ref_coords = reference_cell(cell.cellname()).get_vertices()
 
     # Get the locations of the fiat element dofs.
     elem_points =  [list(L.pt_dict.keys())[0] for L in element.dual_basis()]
 
     # Add some random points.
-    geo_dim = domain.geometric_dimension()
+    geo_dim = cell.geometric_dimension()
     points = elem_points + random_points[geo_dim]
 
     return (element, points, geo_dim, ref_coords, deriv_order)
@@ -144,9 +144,15 @@ def get_fiat_values(ufl_element):
                         for deriv in combinations:
                             deriv_vals = values[deriv]
                             row[i].append(deriv_vals[i][c][p])
+                elif len(value_shape) == 2:
+                    for j in range(element.value_shape()[0]):
+                        for k in range(element.value_shape()[1]):
+                            for deriv in combinations:
+                                deriv_vals = values[deriv]
+                                row[i].append(deriv_vals[i][j][k][p])
                 else:
                     print(values)
-                    error("Did not expect tensor elements")
+                    error("Did not expect tensor elements of rank > 2")
             new_row = []
             for r in row:
                 new_row += r

@@ -95,37 +95,37 @@ footer = """\
 _compute_jacobian_interval_1d = """\
 // Compute Jacobian
 double J%(restriction)s[1];
-compute_jacobian_interval_1d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_interval_1d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_interval_2d = """\
 // Compute Jacobian
 double J%(restriction)s[2];
-compute_jacobian_interval_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_interval_2d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_interval_3d = """\
 // Compute Jacobian
 double J%(restriction)s[3];
-compute_jacobian_interval_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_interval_3d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_triangle_2d = """\
 // Compute Jacobian
 double J%(restriction)s[4];
-compute_jacobian_triangle_2d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_triangle_2d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_triangle_3d = """\
 // Compute Jacobian
 double J%(restriction)s[6];
-compute_jacobian_triangle_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_triangle_3d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_tetrahedron_3d = """\
 // Compute Jacobian
 double J%(restriction)s[9];
-compute_jacobian_tetrahedron_3d(J%(restriction)s, vertex_coordinates%(restriction)s);
+compute_jacobian_tetrahedron_3d(J%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _compute_jacobian_quad_2d = """\
@@ -397,8 +397,8 @@ const unsigned int v0 = edge_vertices[facet%(restriction)s][0];
 const unsigned int v1 = edge_vertices[facet%(restriction)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = vertex_coordinates%(restriction)s[2*v1 + 0] - vertex_coordinates%(restriction)s[2*v0 + 0];
-const double dx1 = vertex_coordinates%(restriction)s[2*v1 + 1] - vertex_coordinates%(restriction)s[2*v0 + 1];
+const double dx0 = coordinate_dofs%(restriction)s[2*v1 + 0] - coordinate_dofs%(restriction)s[2*v0 + 0];
+const double dx1 = coordinate_dofs%(restriction)s[2*v1 + 1] - coordinate_dofs%(restriction)s[2*v0 + 1];
 const double det = std::sqrt(dx0*dx0 + dx1*dx1);
 """
 
@@ -476,26 +476,11 @@ const unsigned int v1 = face_vertices[facet%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%(restriction)s][2];
 
 // Compute scale factor (area of face scaled by area of reference triangle)
-const double a0 = (vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] +
-                   vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v2 + 1] +
-                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v2 + 2])
-                - (vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] +
-                   vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v0 + 1] +
-                   vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v0 + 2]);
+const double a0 = (vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2]  + vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v2 + 1]  + vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v2 + 2]) - (vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v1 + 2] + vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v0 + 1] + vertex_coordinates%(restriction)s[3*v1 + 1]*vertex_coordinates%(restriction)s[3*v0 + 2]);
 
-const double a1 = (vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0] +
-                   vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v2 + 2] +
-                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v2 + 0])
-                - (vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0] +
-                   vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v0 + 2] +
-                   vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v0 + 0]);
+const double a1 = (vertex_coordinates%(restriction)s[3*v0 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  + vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v2 + 2] + vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v2 + 0]) - (vertex_coordinates%(restriction)s[3*v2 + 2]*vertex_coordinates%(restriction)s[3*v1 + 0]  + vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v0 + 2] + vertex_coordinates%(restriction)s[3*v1 + 2]*vertex_coordinates%(restriction)s[3*v0 + 0]);
 
-const double a2 = (vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1] +
-                   vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v2 + 0] +
-                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v2 + 1])
-                - (vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1] +
-                   vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v0 + 0] +
-                   vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v0 + 1]);
+const double a2 = (vertex_coordinates%(restriction)s[3*v0 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  + vertex_coordinates%(restriction)s[3*v0 + 1]*vertex_coordinates%(restriction)s[3*v2 + 0]  + vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v2 + 1]) - (vertex_coordinates%(restriction)s[3*v2 + 0]*vertex_coordinates%(restriction)s[3*v1 + 1]  + vertex_coordinates%(restriction)s[3*v2 + 1]*vertex_coordinates%(restriction)s[3*v0 + 0]  + vertex_coordinates%(restriction)s[3*v1 + 0]*vertex_coordinates%(restriction)s[3*v0 + 1]);
 
 const double det = std::sqrt(a0*a0 + a1*a1 + a2*a2);
 """
@@ -506,7 +491,6 @@ unsigned int face_vertices[4][3] = {{1, 2, 3}, {0, 2, 3}, {0, 1, 3}, {0, 1, 2}};
 const unsigned int v0 = face_vertices[facet%%(restriction)s][0];
 const unsigned int v1 = face_vertices[facet%%(restriction)s][1];
 const unsigned int v2 = face_vertices[facet%%(restriction)s][2];
-
 // Compute scale factor (area of face scaled by area of reference triangle)
 const double a0 = (vertex_coordinates%%(restriction)s[v0 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] + vertex_coordinates%%(restriction)s[v0 + %(z)s][0]*vertex_coordinates%%(restriction)s[v2 + %(y)s][0] + vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v2 + %(z)s][0]) - (vertex_coordinates%%(restriction)s[v2 + %(y)s][0]*vertex_coordinates%%(restriction)s[v1 + %(z)s][0] + vertex_coordinates%%(restriction)s[v2 + %(z)s][0]*vertex_coordinates%%(restriction)s[v0 + %(y)s][0] + vertex_coordinates%%(restriction)s[v1 + %(y)s][0]*vertex_coordinates%%(restriction)s[v0 + %(z)s][0]);
 
@@ -569,10 +553,10 @@ const unsigned int v0 = edge_vertices[%(bt)s][0];
 const unsigned int v1 = edge_vertices[%(bt)s][1];
 
 // Compute scale factor (length of edge scaled by length of reference interval)
-const double dx0 = vertex_coordinates%%(restriction)s[v1 + %(x)s][0] - vertex_coordinates%%(restriction)s[v0 + %(x)s][0];
-const double dx1 = vertex_coordinates%%(restriction)s[v1 + %(y)s][0] - vertex_coordinates%%(restriction)s[v0 + %(y)s][0];
-const double dx2 = vertex_coordinates%%(restriction)s[v1 + %(z)s][0] - vertex_coordinates%%(restriction)s[v0 + %(z)s][0];
-const double det = sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
+const double dx0 = coordinate_dofs%(restriction)s[3*v1 + 0] - coordinate_dofs%(restriction)s[3*v0 + 0];
+const double dx1 = coordinate_dofs%(restriction)s[3*v1 + 1] - coordinate_dofs%(restriction)s[3*v0 + 1];
+const double dx2 = coordinate_dofs%(restriction)s[3*v1 + 2] - coordinate_dofs%(restriction)s[3*v0 + 2];
+const double det = std::sqrt(dx0*dx0 + dx1*dx1 + dx2*dx2);
 """
 
 _horiz_facet_determinant_prism = """\
@@ -733,7 +717,7 @@ OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _vert_facet_determ
 # Facet normal directions
 
 _ufc_normal_direction_1D = """\
-const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restriction)s[0] > vertex_coordinates%(restriction)s[1] : vertex_coordinates%(restriction)s[1] > vertex_coordinates%(restriction)s[0];
+const bool direction = facet%(restriction)s == 0 ? coordinate_dofs%(restriction)s[0] > coordinate_dofs%(restriction)s[1] : coordinate_dofs%(restriction)s[1] > coordinate_dofs%(restriction)s[0];
 """
 
 _pyop2_normal_direction_1D = """\
@@ -741,7 +725,7 @@ const bool direction = facet%(restriction)s == 0 ? vertex_coordinates%(restricti
 """
 
 _ufc_normal_direction_2D = """\
-const bool direction = dx1*(vertex_coordinates%(restriction)s[2*%(facet)s] - vertex_coordinates%(restriction)s[2*v0]) - dx0*(vertex_coordinates%(restriction)s[2*%(facet)s + 1] - vertex_coordinates%(restriction)s[2*v0 + 1]) < 0;
+const bool direction = dx1*(coordinate_dofs%(restriction)s[2*%(facet)s] - coordinate_dofs%(restriction)s[2*v0]) - dx0*(coordinate_dofs%(restriction)s[2*%(facet)s + 1] - coordinate_dofs%(restriction)s[2*v0 + 1]) < 0;
 """
 
 _pyop2_normal_direction_2D = """\
@@ -757,7 +741,7 @@ const bool direction = dx1*(vertex_coordinates%%(restriction)s[edge_vertices[%%(
 """
 
 _ufc_normal_direction_3D = """\
-const bool direction = a0*(vertex_coordinates%(restriction)s[3*%(facet)s] - vertex_coordinates%(restriction)s[3*v0]) + a1*(vertex_coordinates%(restriction)s[3*%(facet)s + 1] - vertex_coordinates%(restriction)s[3*v0 + 1])  + a2*(vertex_coordinates%(restriction)s[3*%(facet)s + 2] - vertex_coordinates%(restriction)s[3*v0 + 2]) < 0;
+const bool direction = a0*(coordinate_dofs%(restriction)s[3*%(facet)s] - coordinate_dofs%(restriction)s[3*v0]) + a1*(coordinate_dofs%(restriction)s[3*%(facet)s + 1] - coordinate_dofs%(restriction)s[3*v0 + 1])  + a2*(coordinate_dofs%(restriction)s[3*%(facet)s + 2] - coordinate_dofs%(restriction)s[3*v0 + 2]) < 0;
 """
 
 _pyop2_normal_direction_3D = """\
@@ -914,13 +898,13 @@ double n%(restriction)s0 = 0.0;
 double n%(restriction)s1 = 0.0;
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[2];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[1] - vertex_coordinates%(restriction)s[3];
+  n%(restriction)s0 = coordinate_dofs%(restriction)s[0] - coordinate_dofs%(restriction)s[2];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[1] - coordinate_dofs%(restriction)s[3];
 }
 else
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[3] - vertex_coordinates%(restriction)s[1];
+  n%(restriction)s0 = coordinate_dofs%(restriction)s[2] - coordinate_dofs%(restriction)s[0];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[3] - coordinate_dofs%(restriction)s[1];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1);
 n%(restriction)s0 /= n%(restriction)s_length;
@@ -992,13 +976,13 @@ const unsigned int vertex%%(restriction)s2 = edge_vertices[facet%%(restriction)s
 """
 
 _ufc_facet_normal_3D_2D_middle = """
-double n%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 0];
-double n%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 1];
-double n%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s0 + 2];
-
-double t%(restriction)s0 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 0] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 0];
-double t%(restriction)s1 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 1] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 1];
-double t%(restriction)s2 = vertex_coordinates%(restriction)s[3*vertex%(restriction)s2 + 2] - vertex_coordinates%(restriction)s[3*vertex%(restriction)s1 + 2];
+double n%(restriction)s0 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 0] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s0 + 0];
+double n%(restriction)s1 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 1] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s0 + 1];
+double n%(restriction)s2 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 2] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s0 + 2];
+double t%(restriction)s0 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 0] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s1 + 0];
+double t%(restriction)s1 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 1] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s1 + 1];
+double t%(restriction)s2 = coordinate_dofs%(restriction)s[3*vertex%(restriction)s2 + 2] - coordinate_dofs%(restriction)s[3*vertex%(restriction)s1 + 2];
+const double t%(restriction)s_length = std::sqrt(t%(restriction)s0*t%(restriction)s0 + t%(restriction)s1*t%(restriction)s1 + t%(restriction)s2*t%(restriction)s2);
 """
 
 _pyop2_facet_normal_3D_2D_middle = """
@@ -1084,15 +1068,15 @@ n%%(restriction)s2 /= n%%(restriction)s_length;
 _ufc_facet_normal_3D_1D = _ufc_facet_normal_3D_1D_head + """
 if (facet%(restriction)s == 0)
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[0] - vertex_coordinates%(restriction)s[3];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[1] - vertex_coordinates%(restriction)s[4];
-  n%(restriction)s2 = vertex_coordinates%(restriction)s[2] - vertex_coordinates%(restriction)s[5];
+  n%(restriction)s0 = coordinate_dofs%(restriction)s[0] - coordinate_dofs%(restriction)s[3];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[1] - coordinate_dofs%(restriction)s[4];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[2] - coordinate_dofs%(restriction)s[5];
 }
 else
 {
-  n%(restriction)s0 = vertex_coordinates%(restriction)s[3] - vertex_coordinates%(restriction)s[0];
-  n%(restriction)s1 = vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[1];
-  n%(restriction)s2 = vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[2];
+  n%(restriction)s0 = coordinate_dofs%(restriction)s[3] - coordinate_dofs%(restriction)s[0];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[4] - coordinate_dofs%(restriction)s[1];
+  n%(restriction)s1 = coordinate_dofs%(restriction)s[5] - coordinate_dofs%(restriction)s[2];
 }
 const double n%(restriction)s_length = std::sqrt(n%(restriction)s0*n%(restriction)s0 + n%(restriction)s1*n%(restriction)s1 + n%(restriction)s2*n%(restriction)s2);
 """ + _ufc_facet_normal_3D_1D_tail
@@ -1287,7 +1271,7 @@ _pyop2_circumradius_1D = _circumradius_1D.format(abs='fabs')
 
 _ufc_circumradius_2D = """\
 // Compute circumradius of triangle in 2D
-const double v1v2%(restriction)s  = std::sqrt((vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2])*(vertex_coordinates%(restriction)s[4] - vertex_coordinates%(restriction)s[2]) + (vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[5] - vertex_coordinates%(restriction)s[3]) );
+const double v1v2%(restriction)s  = std::sqrt((coordinate_dofs%(restriction)s[4] - coordinate_dofs%(restriction)s[2])*(coordinate_dofs%(restriction)s[4] - coordinate_dofs%(restriction)s[2]) + (coordinate_dofs%(restriction)s[5] - coordinate_dofs%(restriction)s[3])*(coordinate_dofs%(restriction)s[5] - coordinate_dofs%(restriction)s[3]) );
 const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1]);
 const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2]);
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
@@ -1311,12 +1295,12 @@ _pyop2_circumradius_2D_1D = _circumradius_2D_1D.format(abs='fabs')
 
 _ufc_circumradius_3D = """\
 // Compute circumradius
-const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]) );
+const double v1v2%(restriction)s  = std::sqrt( (coordinate_dofs%(restriction)s[6] - coordinate_dofs%(restriction)s[3])*(coordinate_dofs%(restriction)s[6] - coordinate_dofs%(restriction)s[3]) + (coordinate_dofs%(restriction)s[7] - coordinate_dofs%(restriction)s[4])*(coordinate_dofs%(restriction)s[7] - coordinate_dofs%(restriction)s[4]) + (coordinate_dofs%(restriction)s[8] - coordinate_dofs%(restriction)s[5])*(coordinate_dofs%(restriction)s[8] - coordinate_dofs%(restriction)s[5]) );
 const double v0v2%(restriction)s  = std::sqrt(J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[4]*J%(restriction)s[4] + J%(restriction)s[7]*J%(restriction)s[7]);
 const double v0v1%(restriction)s  = std::sqrt(J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[6]*J%(restriction)s[6]);
 const double v0v3%(restriction)s  = std::sqrt(J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[5]*J%(restriction)s[5] + J%(restriction)s[8]*J%(restriction)s[8]);
-const double v1v3%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[5]) );
-const double v2v3%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[6])*(vertex_coordinates%(restriction)s[9] - vertex_coordinates%(restriction)s[6]) + (vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[7])*(vertex_coordinates%(restriction)s[10] - vertex_coordinates%(restriction)s[7]) + (vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[8])*(vertex_coordinates%(restriction)s[11] - vertex_coordinates%(restriction)s[8]) );
+const double v1v3%(restriction)s  = std::sqrt( (coordinate_dofs%(restriction)s[9] - coordinate_dofs%(restriction)s[3])*(coordinate_dofs%(restriction)s[9] - coordinate_dofs%(restriction)s[3]) + (coordinate_dofs%(restriction)s[10] - coordinate_dofs%(restriction)s[4])*(coordinate_dofs%(restriction)s[10] - coordinate_dofs%(restriction)s[4]) + (coordinate_dofs%(restriction)s[11] - coordinate_dofs%(restriction)s[5])*(coordinate_dofs%(restriction)s[11] - coordinate_dofs%(restriction)s[5]) );
+const double v2v3%(restriction)s  = std::sqrt( (coordinate_dofs%(restriction)s[9] - coordinate_dofs%(restriction)s[6])*(coordinate_dofs%(restriction)s[9] - coordinate_dofs%(restriction)s[6]) + (coordinate_dofs%(restriction)s[10] - coordinate_dofs%(restriction)s[7])*(coordinate_dofs%(restriction)s[10] - coordinate_dofs%(restriction)s[7]) + (coordinate_dofs%(restriction)s[11] - coordinate_dofs%(restriction)s[8])*(coordinate_dofs%(restriction)s[11] - coordinate_dofs%(restriction)s[8]) );
 const  double la%(restriction)s   = v1v2%(restriction)s*v0v3%(restriction)s;
 const  double lb%(restriction)s   = v0v2%(restriction)s*v1v3%(restriction)s;
 const  double lc%(restriction)s   = v0v1%(restriction)s*v2v3%(restriction)s;
@@ -1351,7 +1335,7 @@ _pyop2_circumradius_3D_1D = _circumradius_3D_1D.format(abs='fabs')
 
 _ufc_circumradius_3D_2D = """\
 // Compute circumradius of triangle in 3D
-const double v1v2%(restriction)s  = std::sqrt( (vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3])*(vertex_coordinates%(restriction)s[6] - vertex_coordinates%(restriction)s[3]) + (vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4])*(vertex_coordinates%(restriction)s[7] - vertex_coordinates%(restriction)s[4]) + (vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5])*(vertex_coordinates%(restriction)s[8] - vertex_coordinates%(restriction)s[5]));
+const double v1v2%(restriction)s  = std::sqrt( (coordinate_dofs%(restriction)s[6] - coordinate_dofs%(restriction)s[3])*(coordinate_dofs%(restriction)s[6] - coordinate_dofs%(restriction)s[3]) + (coordinate_dofs%(restriction)s[7] - coordinate_dofs%(restriction)s[4])*(coordinate_dofs%(restriction)s[7] - coordinate_dofs%(restriction)s[4]) + (coordinate_dofs%(restriction)s[8] - coordinate_dofs%(restriction)s[5])*(coordinate_dofs%(restriction)s[8] - coordinate_dofs%(restriction)s[5]));
 const double v0v2%(restriction)s = std::sqrt( J%(restriction)s[3]*J%(restriction)s[3] + J%(restriction)s[1]*J%(restriction)s[1] + J%(restriction)s[5]*J%(restriction)s[5]);
 const double v0v1%(restriction)s = std::sqrt( J%(restriction)s[0]*J%(restriction)s[0] + J%(restriction)s[2]*J%(restriction)s[2] + J%(restriction)s[4]*J%(restriction)s[4]);
 const double circumradius%(restriction)s = 0.25*(v1v2%(restriction)s*v0v2%(restriction)s*v0v1%(restriction)s)/(volume%(restriction)s);
@@ -1408,13 +1392,13 @@ for (unsigned int j = 0; j < %d; j++)
 _min_facet_edge_length_3D = """\
 // Min edge length of facet
 double min_facet_edge_length;
-compute_min_facet_edge_length_tetrahedron_3d(min_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+compute_min_facet_edge_length_tetrahedron_3d(min_facet_edge_length, facet%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 _max_facet_edge_length_3D = """\
 // Max edge length of facet
 double max_facet_edge_length;
-compute_max_facet_edge_length_tetrahedron_3d(max_facet_edge_length, facet%(restriction)s, vertex_coordinates%(restriction)s);
+compute_max_facet_edge_length_tetrahedron_3d(max_facet_edge_length, facet%(restriction)s, coordinate_dofs%(restriction)s);
 """
 
 # FIXME: This is dead slow because of all the new calls
@@ -1493,7 +1477,7 @@ const double w0 = 1.0 - X_%(i)d[%(j)s][0];
 const double w1 = X_%(i)d[%(j)s][0];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[1];"""
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[1];"""
 
 _map_onto_physical_2D = """\
 // Evaluate basis functions for affine mapping
@@ -1502,8 +1486,8 @@ const double w1 = X_%(i)d[%(j)s][0];
 const double w2 = X_%(i)d[%(j)s][1];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[2] + w2*vertex_coordinates[4];
-y[1] = w0*vertex_coordinates[1] + w1*vertex_coordinates[3] + w2*vertex_coordinates[5];"""
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[2] + w2*coordinate_dofs[4];
+y[1] = w0*coordinate_dofs[1] + w1*coordinate_dofs[3] + w2*coordinate_dofs[5];"""
 
 _map_onto_physical_2D_1D = """\
 // Evaluate basis functions for affine mapping
@@ -1511,8 +1495,8 @@ const double w0 = 1.0 - X_%(i)d[%(j)s][0];
 const double w1 = X_%(i)d[%(j)s][0];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[2];
-y[1] = w0*vertex_coordinates[1] + w1*vertex_coordinates[3];"""
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[2];
+y[1] = w0*coordinate_dofs[1] + w1*coordinate_dofs[3];"""
 
 _map_onto_physical_3D = """\
 // Evaluate basis functions for affine mapping
@@ -1522,9 +1506,9 @@ const double w2 = X_%(i)d[%(j)s][1];
 const double w3 = X_%(i)d[%(j)s][2];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[3] + w2*vertex_coordinates[6] + w3*vertex_coordinates[9];
-y[1] = w0*vertex_coordinates[1] + w1*vertex_coordinates[4] + w2*vertex_coordinates[7] + w3*vertex_coordinates[10];
-y[2] = w0*vertex_coordinates[2] + w1*vertex_coordinates[5] + w2*vertex_coordinates[8] + w3*vertex_coordinates[11];"""
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[3] + w2*coordinate_dofs[6] + w3*coordinate_dofs[9];
+y[1] = w0*coordinate_dofs[1] + w1*coordinate_dofs[4] + w2*coordinate_dofs[7] + w3*coordinate_dofs[10];
+y[2] = w0*coordinate_dofs[2] + w1*coordinate_dofs[5] + w2*coordinate_dofs[8] + w3*coordinate_dofs[11];"""
 
 _map_onto_physical_3D_1D = """\
 // Evaluate basis functions for affine mapping
@@ -1532,9 +1516,9 @@ const double w0 = 1.0 - X_%(i)d[%(j)s][0];
 const double w1 = X_%(i)d[%(j)s][0];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[3];
-y[1] = w0*vertex_coordinates[1] + w1*vertex_coordinates[4];
-y[2] = w0*vertex_coordinates[2] + w1*vertex_coordinates[5];"""
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[3];
+y[1] = w0*coordinate_dofs[1] + w1*coordinate_dofs[4];
+y[2] = w0*coordinate_dofs[2] + w1*coordinate_dofs[5];"""
 
 _map_onto_physical_3D_2D = """\
 // Evaluate basis functions for affine mapping
@@ -1543,61 +1527,94 @@ const double w1 = X_%(i)d[%(j)s][0];
 const double w2 = X_%(i)d[%(j)s][1];
 
 // Compute affine mapping y = F(X)
-y[0] = w0*vertex_coordinates[0] + w1*vertex_coordinates[3] + w2*vertex_coordinates[6];
-y[1] = w0*vertex_coordinates[1] + w1*vertex_coordinates[4] + w2*vertex_coordinates[7];
-y[2] = w0*vertex_coordinates[2] + w1*vertex_coordinates[5] + w2*vertex_coordinates[8];
+y[0] = w0*coordinate_dofs[0] + w1*coordinate_dofs[3] + w2*coordinate_dofs[6];
+y[1] = w0*coordinate_dofs[1] + w1*coordinate_dofs[4] + w2*coordinate_dofs[7];
+y[2] = w0*coordinate_dofs[2] + w1*coordinate_dofs[5] + w2*coordinate_dofs[8];
 """
 
 _ip_coordinates_1D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[1];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[1];"""
+
+_ip_coordinates_2D_1D = """\
+X%(num_ip)d[0] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[2];
+X%(num_ip)d[1] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[1] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[3];"""
+
+_ip_coordinates_3D_1D = """\
+X%(num_ip)d[0] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[3];
+X%(num_ip)d[1] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[1] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[4];
+X%(num_ip)d[2] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[2] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[5];"""
 
 _ip_coordinates_2D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[2] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[4];
-X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[5];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[2] + %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[4];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[1] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[3] + %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[5];"""
+
+_ip_coordinates_3D_2D = """\
+X%(num_ip)d[0] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[3] +\
+ %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[6];
+X%(num_ip)d[1] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[1] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[4] +\
+ %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[7];
+X%(num_ip)d[2] =\
+ %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[2] +\
+ %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[5] +\
+ %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[8];"""
 
 _ip_coordinates_3D = """\
-X%(num_ip)d[0] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[0] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[3] + \
-                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[6] + \
-                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[9];
-X%(num_ip)d[1] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[1] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[4] + \
-                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[7] + \
-                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[10];
-X%(num_ip)d[2] = %(name)s[%(ip)s][0]*vertex_coordinates%(restriction)s[2] + \
-                 %(name)s[%(ip)s][1]*vertex_coordinates%(restriction)s[5] + \
-                 %(name)s[%(ip)s][2]*vertex_coordinates%(restriction)s[8] + \
-                 %(name)s[%(ip)s][3]*vertex_coordinates%(restriction)s[11];"""
+X%(num_ip)d[0] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[0] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[3] + \
+                 %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[6] + \
+                 %(name)s[%(ip)s][3]*coordinate_dofs%(restriction)s[9];
+X%(num_ip)d[1] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[1] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[4] + \
+                 %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[7] + \
+                 %(name)s[%(ip)s][3]*coordinate_dofs%(restriction)s[10];
+X%(num_ip)d[2] = %(name)s[%(ip)s][0]*coordinate_dofs%(restriction)s[2] + \
+                 %(name)s[%(ip)s][1]*coordinate_dofs%(restriction)s[5] + \
+                 %(name)s[%(ip)s][2]*coordinate_dofs%(restriction)s[8] + \
+                 %(name)s[%(ip)s][3]*coordinate_dofs%(restriction)s[11];"""
 
 # Codesnippets used in evaluatebasis[|derivatives]
 _map_coordinates_FIAT_interval = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = (2.0*x[0] - vertex_coordinates[0] - vertex_coordinates[1]) / J[0];"""
+double X = (2.0*x[0] - coordinate_dofs[0] - coordinate_dofs[1]) / J[0];"""
 
 _map_coordinates_FIAT_interval_in_2D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) + std::pow(x[1] - vertex_coordinates[1], 2)) / detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - coordinate_dofs[0], 2) + std::pow(x[1] - coordinate_dofs[1], 2)) / detJ) - 1.0;"""
 
 _map_coordinates_FIAT_interval_in_3D = """\
 // Get coordinates and map to the reference (FIAT) element
-double X = 2*(std::sqrt(std::pow(x[0] - vertex_coordinates[0], 2) + std::pow(x[1] - vertex_coordinates[1], 2) + std::pow(x[2] - vertex_coordinates[2], 2))/ detJ) - 1.0;"""
+double X = 2*(std::sqrt(std::pow(x[0] - coordinate_dofs[0], 2) + std::pow(x[1] - coordinate_dofs[1], 2) + std::pow(x[2] - coordinate_dofs[2], 2))/ detJ) - 1.0;"""
 
 _map_coordinates_FIAT_triangle = """\
 // Compute constants
-const double C0 = vertex_coordinates[2] + vertex_coordinates[4];
-const double C1 = vertex_coordinates[3] + vertex_coordinates[5];
+const double C0 = coordinate_dofs[2] + coordinate_dofs[4];
+const double C1 = coordinate_dofs[3] + coordinate_dofs[5];
 
 // Get coordinates and map to the reference (FIAT) element
 double X = (J[1]*(C1 - 2.0*x[1]) + J[3]*(2.0*x[0] - C0)) / detJ;
 double Y = (J[0]*(2.0*x[1] - C1) + J[2]*(C0 - 2.0*x[0])) / detJ;"""
 
 _map_coordinates_FIAT_triangle_in_3D = """\
-const double b0 = vertex_coordinates[0];
-const double b1 = vertex_coordinates[1];
-const double b2 = vertex_coordinates[2];
+const double b0 = coordinate_dofs[0];
+const double b1 = coordinate_dofs[1];
+const double b2 = coordinate_dofs[2];
 
 // P_FFC = J^dag (p - b), P_FIAT = 2*P_FFC - (1, 1)
 double X = 2*(K[0]*(x[0] - b0) + K[1]*(x[1] - b1) + K[2]*(x[2] - b2)) - 1.0;
@@ -1606,9 +1623,9 @@ double Y = 2*(K[3]*(x[0] - b0) + K[4]*(x[1] - b1) + K[5]*(x[2] - b2)) - 1.0;
 
 _map_coordinates_FIAT_tetrahedron = """\
 // Compute constants
-const double C0 = vertex_coordinates[9]  + vertex_coordinates[6] + vertex_coordinates[3]  - vertex_coordinates[0];
-const double C1 = vertex_coordinates[10] + vertex_coordinates[7] + vertex_coordinates[4]  - vertex_coordinates[1];
-const double C2 = vertex_coordinates[11] + vertex_coordinates[8] + vertex_coordinates[5]  - vertex_coordinates[2];
+const double C0 = coordinate_dofs[9]  + coordinate_dofs[6] + coordinate_dofs[3]  - coordinate_dofs[0];
+const double C1 = coordinate_dofs[10] + coordinate_dofs[7] + coordinate_dofs[4]  - coordinate_dofs[1];
+const double C2 = coordinate_dofs[11] + coordinate_dofs[8] + coordinate_dofs[5]  - coordinate_dofs[2];
 
 // Compute subdeterminants
 const double d_00 = J[4]*J[8] - J[5]*J[7];
@@ -1653,9 +1670,12 @@ transform_snippet = {"interval": {1: _transform_snippet(1, 1),
                                   3: _transform_snippet(2, 3)},
                      "tetrahedron": {3: _transform_snippet(3, 3)}}
 
-ip_coordinates = {1: (3, _ip_coordinates_1D),
-                  2: (10, _ip_coordinates_2D),
-                  3: (21, _ip_coordinates_3D)}
+ip_coordinates = {1: {1: (3, _ip_coordinates_1D),
+                      2: (6, _ip_coordinates_2D_1D),
+                      3: (9, _ip_coordinates_3D_1D)},
+                  2: {2: (10, _ip_coordinates_2D),
+                      3: (15, _ip_coordinates_3D_2D)},
+                  3: {3: (21, _ip_coordinates_3D)}}
 
 # FIXME: Rename as in compute_jacobian _compute_foo_<shape>_<n>d
 
@@ -1717,7 +1737,7 @@ for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
 eval_basis = """\
 // Get current quadrature point and compute values of basis functions
 const double* x = quadrature_points + ip*%(gdim)s;
-const double* v = vertex_coordinates + %(vertex_offset)s;
+const double* v = coordinate_dofs + %(vertex_offset)s;
 %(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_all(%(eval_name)s, x, v, cell_orientation);"""
 
 eval_basis_copy = """\
@@ -1735,7 +1755,7 @@ for (std::size_t ip = 0; ip < num_quadrature_points; ip++)
 eval_derivs = """\
 // Get current quadrature point and compute values of basis function derivatives
 const double* x = quadrature_points + ip*%(gdim)s;
-const double* v = vertex_coordinates + %(vertex_offset)s;
+const double* v = coordinate_dofs + %(vertex_offset)s;
 %(form_prefix)s_finite_element_%(element_number)s::_evaluate_basis_derivatives_all(%(n)s, %(eval_name)s, x, v, cell_orientation);"""
 
 eval_derivs_copy = """\

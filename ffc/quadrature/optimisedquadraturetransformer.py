@@ -29,7 +29,7 @@ def firstkey(d):
     return next(iterkeys(d))
 
 # UFL common.
-from ufl.common import product
+from ufl import product
 from ufl.utils.sorting import sorted_by_key
 
 # UFL Classes.
@@ -425,7 +425,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def min_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        tdim = self.tdim
         if tdim < 3:
             return self.facet_area(o)
 
@@ -437,7 +437,7 @@ class QuadratureTransformerOpt(QuadratureTransformerBase):
     def max_facet_edge_length(self, o):
         # FIXME: this has no meaning for cell integrals. (Need check in FFC or UFL).
 
-        tdim = self.tdim # FIXME: o.domain().topological_dimension() ???
+        tdim = self.tdim
         if tdim < 3:
             return self.facet_area(o)
 

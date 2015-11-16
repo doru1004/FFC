@@ -28,13 +28,15 @@ form representation type.
 # Modified by Martin Alnaes, 2013-2014
 
 import os
+from itertools import chain
 
 # UFL modules
 from ufl.common import istr, tstr
-from ufl.finiteelement import MixedElement
+from ufl.finiteelement import MixedElement, EnrichedElement
 from ufl.algorithms import estimate_total_polynomial_degree
 from ufl.algorithms import sort_elements
 from ufl.algorithms import compute_form_data
+from ufl.algorithms.analysis import extract_sub_elements
 
 # FFC modules
 from ffc.log import log, info, begin, end, warning, debug, error, ffc_assert, warning_blue
@@ -59,11 +61,9 @@ def analyze_forms(forms, parameters):
                                      parameters) for form in forms)
 
     # Extract unique elements accross all forms
-    unique_elements = []
+    unique_elements = set()
     for form_data in form_datas:
-        for element in form_data.unique_sub_elements:
-            if not element in unique_elements:
-                unique_elements.append(element)
+        unique_elements.update(form_data.unique_sub_elements)
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
@@ -71,24 +71,19 @@ def analyze_forms(forms, parameters):
     # Compute element numbers
     element_numbers = _compute_element_numbers(unique_elements)
 
+    # Extract coordinate elements
+    unique_coordinate_elements = sorted(set(chain(*[form_data.coordinate_elements for form_data in form_datas])))
+
     end()
 
-    return form_datas, unique_elements, element_numbers
+    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 def analyze_elements(elements, parameters):
 
     begin("Compiler stage 1: Analyzing form(s)")
 
-    # Extract unique elements
-    unique_elements = []
-    element_numbers = {}
-    for element in elements:
-        # Get all (unique) nested elements.
-        for e in _get_nested_elements(element):
-            # Check if element is present
-            if not e in element_numbers:
-                element_numbers[e] = len(unique_elements)
-                unique_elements.append(e)
+    # Extract unique (sub)elements
+    unique_elements = set(extract_sub_elements(elements))
 
     # Sort elements
     unique_elements = sort_elements(unique_elements)
@@ -103,9 +98,12 @@ def analyze_elements(elements, parameters):
     for element in unique_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
+
     end()
 
-    return (), unique_elements, element_numbers
+    form_datas = ()
+    unique_coordinate_elements = ()
+    return form_datas, unique_elements, element_numbers, unique_coordinate_elements
 
 def _compute_element_numbers(elements):
     "Build map from elements to element numbers."
@@ -113,13 +111,6 @@ def _compute_element_numbers(elements):
     for (i, element) in enumerate(elements):
         element_numbers[element] = i
     return element_numbers
-
-def _get_nested_elements(element):
-    "Get unique nested elements (including self)."
-    nested_elements = [element]
-    for e in element.sub_elements():
-        nested_elements += _get_nested_elements(e)
-    return set(nested_elements)
 
 def _analyze_form(form, parameters):
     "Analyze form, returning form data."
@@ -129,7 +120,20 @@ def _analyze_form(form, parameters):
                "Form (%s) seems to be zero: cannot compile it." % str(form))
 
     # Compute form metadata
-    form_data = compute_form_data(form)
+    if parameters["representation"] == "uflacs":
+        # Temporary workaround to let uflacs have a different preprocessing pipeline
+        # than the legacy representations quadrature and tensor. This approach imposes
+        # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        from ufl.classes import Jacobian
+        form_data = compute_form_data(form,
+                                      do_apply_function_pullbacks=True,
+                                      do_apply_integral_scaling=True,
+                                      do_apply_geometry_lowering=True,
+                                      preserve_geometry_types=(Jacobian,),
+                                      do_apply_restrictions=True,
+                                      )
+    else:
+        form_data = compute_form_data(form)
 
     info("")
     info(str(form_data))
@@ -139,6 +143,7 @@ def _analyze_form(form, parameters):
 
     return form_data
 
+# FIXME: Refactor this code. The data flow here is really something special. It's also buggy with side effects into user code by modifying dicts in-place.
 def _attach_integral_metadata(form_data, parameters):
     "Attach integral metadata"
 
@@ -164,11 +169,12 @@ def _attach_integral_metadata(form_data, parameters):
 
             # Automatic selection of representation
             r = integral_metadata["representation"]
+
             # Hack to override representation with environment variable
             forced_r = os.environ.get("FFC_FORCE_REPRESENTATION")
             if forced_r:
                 r = forced_r
-                info("representation:    forced --> %s" % r)
+                warning("representation:    forced by $FFC_FORCE_REPRESENTATION to '%s'" % r)
             elif r == "auto":
                 r = _auto_select_representation(integral,
                                                 form_data.unique_sub_elements,
@@ -200,8 +206,9 @@ def _attach_integral_metadata(form_data, parameters):
             if not qd >= 0:
                 info("Valid choices are nonnegative integers or 'auto'.")
                 error("Illegal quadrature degree for integral: " + str(qd))
-            tdim = integral.domain().topological_dimension()
+            tdim = integral.ufl_domain().topological_dimension()
             _check_quadrature_degree(qd, tdim)
+
             integral_metadata["quadrature_degree"] = qd
             assert isinstance(qd, (int, tuple))
 
@@ -274,10 +281,11 @@ def _attach_integral_metadata(form_data, parameters):
     else:
         scheme = "canonical"
         info("Quadrature rule must be equal within each sub domain, using %s rule." % scheme)
+
     # FIXME: This modifies the elements depending on the form compiler parameters,
     #        this is a serious breach of the immutability of ufl objects, since the
     #        element quad scheme is part of the signature and hash of the element...
-    for element in form_data.sub_elements:
+    for element in form_data.unique_sub_elements:
         if element.family() == "Quadrature":
             element._quad_scheme = scheme
 
@@ -310,11 +318,6 @@ def _auto_select_representation(integral, elements, function_replace_map):
     # Use quadrature representation if we have a quadrature element
     if len([e for e in sub_elements if e.family() == "Quadrature"]):
         return "quadrature"
-
-    # Use quadrature representation if any elements are restricted to
-    # ufl.Measure. This is used when integrals are computed over discontinuities.
-    #if len([e for e in sub_elements if isinstance(e, ufl.RestrictedElement) and isinstance(e.cell_restriction(), Measure)]):
-    #    return "quadrature"
 
     # Estimate cost of tensor representation
     tensor_cost = estimate_cost(integral, function_replace_map)

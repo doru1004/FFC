@@ -29,7 +29,6 @@ import os, sys
 import instant
 
 # UFL modules
-from ufl.common import istr, tstr
 from ufl import TestFunction, ds, dx
 from ufl.classes import Form, FiniteElementBase
 from ufl.algorithms import extract_elements, extract_sub_elements, compute_form_data
@@ -154,10 +153,11 @@ def jit_form(form, parameters=None):
                     if os.path.isfile(cppfile):
                         os.unlink(cppfile)
 
-    # Extract compiled form
+    # Construct instance of compiled form
     check_swig_version(module)
-    compiled_form = _extract_form(module, module_name)
-    return compiled_form, module, module_name
+    prefix = module_name
+    compiled_form = _instantiate_form(module, prefix)
+    return compiled_form, module, prefix
 
 def jit_element(element, parameters=None):
     "Just-in-time compile the given element"
@@ -170,7 +170,7 @@ def jit_element(element, parameters=None):
 
     # Create simplest possible dummy form
     v = TestFunction(element)
-    ii = (0,)*v.rank()
+    ii = (0,)*len(v.ufl_shape)
     if element.family() == "Discontinuous Lagrange Trace":
         form = v[ii]*ds
     else:
@@ -178,9 +178,7 @@ def jit_element(element, parameters=None):
 
     # Compile form
     compiled_form, module, prefix = jit_form(form, parameters)
-
-    form_data = compute_form_data(form)
-    return _extract_element_and_dofmap(module, prefix, form_data)
+    return _instantiate_element_and_dofmap(module, prefix)
 
 def _check_parameters(form, parameters):
     "Check parameters and add any missing parameters"
@@ -205,16 +203,16 @@ def _check_parameters(form, parameters):
 
     return parameters
 
-def _extract_form(module, prefix):
-    "Extract form from module."
-    return getattr(module, prefix + "_form_0")()
+from ffc.cpp import make_classname
+def _instantiate_form(module, prefix):
+    "Extract the form from module with only one form."
+    form_id = 0
+    classname = make_classname(prefix, "form", form_id)
+    return getattr(module, classname)()
 
-def _extract_element_and_dofmap(module, prefix, form_data):
-    """
-    Extract element and dofmap from module. Code will be generated for
-    all unique elements (including sub elements) and to get the top
-    level element we need to extract the last element.
-    """
-    i = len(form_data.unique_sub_elements) - 1
-    return (getattr(module, prefix + ("_finite_element_%d" % i))(),
-            getattr(module, prefix + ("_dofmap_%d" % i))())
+def _instantiate_element_and_dofmap(module, prefix):
+    """Extract element and dofmap from module."""
+    form = _instantiate_form(module, prefix)
+    fe = form.create_finite_element(0)
+    dm = form.create_dofmap(0)
+    return (fe, dm)

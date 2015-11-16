@@ -73,9 +73,8 @@ class ErrorControlGenerator:
         assert(len(self.goal.arguments()) == 0)
         assert(len(self.weak_residual.arguments()) == 1)
 
-        # Get the domain, assuming there's only one
-        assert(len(self.weak_residual.domains()) == 1)
-        self.domain, = self.weak_residual.domains()
+        # Get the domain
+        self.domain = self.weak_residual.ufl_domain()
 
         # Store map from identifiers to names for forms and generated
         # coefficients
@@ -121,8 +120,7 @@ class ErrorControlGenerator:
 
         # Paranoid checks added after introduction of multidomain features in ufl:
         for i, form in enumerate((a_star, L_star, eta_h, a_R_T, L_R_T, a_R_dT, L_R_dT, eta_T)):
-            assert len(form.domains()) > 0, ("Zero domains at form %d" % i)
-            assert len(form.domains()) == 1, ("%d domains at form %d" % (len(form.domains()), i))
+            assert form.ufl_domain() is not None
 
         # Return all generated forms in CERTAIN order matching
         # constructor of dolfin/adaptivity/ErrorControl.h
@@ -248,30 +246,33 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         # coefficients are defined matters and should be considered
         # fixed.
 
-        from ufl import FiniteElement, Coefficient
+        from ufl import FiniteElement, FunctionSpace, Coefficient
         from ufl.algorithms.elementtransformations import tear, increase_order
 
         # Primal trial element space
-        self._V = self.u.element()
+        self._V = self.u.ufl_function_space()
+
+        # Extract domain
+        domain = self.u.ufl_domain()
 
         # Primal test space == Dual trial space
-        Vhat = self.weak_residual.arguments()[0].element()
+        Vhat = self.weak_residual.arguments()[0].ufl_function_space()
 
         # Discontinuous version of primal trial element space
-        self._dV = tear(self._V)
+        self._dV = FunctionSpace(domain, tear(self._V.ufl_element()))
 
-        # Extract domain and geometric dimension
-        domain, = self._V.domains()
+        # Extract geometric dimension
         gdim = domain.geometric_dimension()
 
         # Coefficient representing improved dual
-        E = increase_order(Vhat)
+        E = FunctionSpace(domain, increase_order(Vhat.ufl_element()))
         self._Ez_h = Coefficient(E)
         self.ec_names[id(self._Ez_h)] = "__improved_dual"
 
         # Coefficient representing cell bubble function
-        B = FiniteElement("B", domain, gdim + 1)
-        self._b_T = Coefficient(B)
+        Belm = FiniteElement("B", domain.ufl_cell(), gdim + 1)
+        Bfs = FunctionSpace(domain, Belm)
+        self._b_T = Coefficient(Bfs)
         self.ec_names[id(self._b_T)] = "__cell_bubble"
 
         # Coefficient representing strong cell residual
@@ -279,8 +280,9 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._R_T)] = "__cell_residual"
 
         # Coefficient representing cell cone function
-        C = FiniteElement("DG", domain, gdim)
-        self._b_e = Coefficient(C)
+        Celm = FiniteElement("DG", domain.ufl_cell(), gdim)
+        Cfs = FunctionSpace(domain, Celm)
+        self._b_e = Coefficient(Cfs)
         self.ec_names[id(self._b_e)] = "__cell_cone"
 
         # Coefficient representing strong facet residual
@@ -292,4 +294,4 @@ class UFLErrorControlGenerator(ErrorControlGenerator):
         self.ec_names[id(self._z_h)] = "__discrete_dual_solution"
 
         # Piecewise constants for assembling indicators
-        self._DG0 = FiniteElement("DG", domain, 0)
+        self._DG0 = FunctionSpace(domain, FiniteElement("DG", domain.ufl_cell(), 0))

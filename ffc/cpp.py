@@ -28,6 +28,16 @@ import re, numpy, platform
 from ffc.log import debug, error
 from six.moves import zip
 
+# ufc class names
+def make_classname(prefix, basename, signature):
+    pre = prefix.lower() + "_" if prefix else ""
+    sig = str(signature).lower()
+    return "%s%s_%s" % (pre, basename, sig)
+
+def make_integral_classname(prefix, integral_type, form_id, subdomain_id):
+    basename = "%s_integral_%s" % (integral_type, str(form_id).lower())
+    return make_classname(prefix, basename, subdomain_id)
+
 # Mapping of restrictions
 _fixed_map = {None: "", "+": "_0", "-": "_1"}
 _choose_map = lambda r: _fixed_map[r] if r in _fixed_map else "_%s" % str(r)
@@ -149,7 +159,7 @@ format.update({
 
 # Geometry related variable names (from code snippets).
 format.update({
-    "entity index":       "c.entity_indices",
+    "entity index":       "entity_indices",
     "num entities":       "num_global_entities",
     "cell":               lambda s: "ufc::%s" % s,
     "J":                  lambda i, j, m, n: "J[%d]" % _flatten(i, j, m, n),
@@ -168,7 +178,7 @@ format.update({
     "z coordinate":       "Z",
     "ip coordinates":     lambda i, j: "X%d[%d]" % (i, j),
     "affine map table":   lambda i, j: "FEA%d_f%d" % (i, j),
-    "vertex_coordinates": lambda r=None: "vertex_coordinates%s" % _choose_map(r)
+    "coordinate_dofs": lambda r=None: "coordinate_dofs%s" % _choose_map(r)
 })
 
 # UFC function arguments and class members (names)
@@ -247,10 +257,10 @@ format.update({
                                   % (i, format["argument basis num"], format["argument basis num"], j),
     "dereference pointer":        lambda n: "*%s" % n,
     "reference variable":         lambda n: "&%s" % n,
-    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_all":             "_evaluate_basis_all(values, x, vertex_coordinates, cell_orientation);",
-    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, vertex_coordinates, cell_orientation);" % (i, s),
-    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, vertex_coordinates, cell_orientation);" % s,
+    "call basis":                 lambda i, s: "_evaluate_basis(%s, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_all":             "_evaluate_basis_all(values, x, coordinate_dofs, cell_orientation);",
+    "call basis_derivatives":     lambda i, s: "_evaluate_basis_derivatives(%s, n, %s, x, coordinate_dofs, cell_orientation);" % (i, s),
+    "call basis_derivatives_all": lambda i, s: "_evaluate_basis_derivatives_all(n, %s, x, coordinate_dofs, cell_orientation);" % s,
 
     # quadrature code generators
     "integration points":   "ip",
@@ -309,7 +319,7 @@ format.update({
     "generate facet area":      lambda tdim, gdim: facet_area[tdim][gdim],
     "generate min facet edge length": lambda tdim, gdim, r=None: min_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
     "generate max facet edge length": lambda tdim, gdim, r=None: max_facet_edge_length[tdim][gdim] % {"restriction": _choose_map(r)},
-    "generate ip coordinates":  lambda g, num_ip, name, ip, r=None: (ip_coordinates[g][0], ip_coordinates[g][1] % \
+    "generate ip coordinates":  lambda g, t, num_ip, name, ip, r=None: (ip_coordinates[t][g][0], ip_coordinates[t][g][1] % \
                                 {"restriction": _choose_map(r), "ip": ip, "name": name, "num_ip": num_ip}),
     "scale factor snippet":     {"ufc": ufc_scale_factor,
                                  "pyop2": pyop2_scale_factor},
@@ -331,48 +341,8 @@ format.update({
     "eval_derivs_init":         eval_derivs_init,
     "eval_derivs":              eval_derivs,
     "eval_derivs_copy":         eval_derivs_copy,
-    "extract_cell_coordinates": lambda offset, r : "const double* vertex_coordinates_%d = vertex_coordinates + %d;" % (r, offset)
+    "extract_cell_coordinates": lambda offset, r : "const double* coordinate_dofs_%d = coordinate_dofs + %d;" % (r, offset)
     })
-
-# Class names
-format.update({
-    "classname finite_element": lambda prefix, i:\
-               "%s_finite_element_%d" % (prefix.lower(), i),
-
-    "classname dofmap":  lambda prefix, i: "%s_dofmap_%d" % (prefix.lower(), i),
-
-    "classname cell_integral":  lambda prefix, form_id, sub_domain:\
-               "%s_cell_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname exterior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname exterior_facet_bottom_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_bottom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname exterior_facet_top_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_top_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname exterior_facet_vert_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_exterior_facet_vert_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname interior_facet_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname interior_facet_horiz_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_horiz_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname interior_facet_vert_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_interior_facet_vert_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname vertex_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_vertex_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname custom_integral":  lambda prefix, form_id, sub_domain:\
-              "%s_custom_integral_%d_%s" % (prefix.lower(), form_id, sub_domain),
-
-    "classname form": lambda prefix, i: "%s_form_%d" % (prefix.lower(), i)
-})
 
 # Helper functions for formatting
 

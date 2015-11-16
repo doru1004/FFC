@@ -51,9 +51,8 @@ class QuadratureElement:
         # Create quadrature (only interested in points)
         # TODO: KBO: What should we do about quadrature functions that live on ds, dS?
         # Get cell and facet names.
-        domain, = ufl_element.domains() # Assuming single domain
-        cell = domain.cell()
-        #facet_cellname = domain.cell().facet_cellname()
+        cell = ufl_element.cell()
+        cellname = cell.cellname()
         points, weights = create_quadrature(cellname, degree, self._quad_scheme)
 
         # Save the quadrature points
@@ -70,7 +69,7 @@ class QuadratureElement:
         # Save the geometric dimension.
         # FIXME: KBO: Do we need to change this in order to integrate on facets?
         #        MSA: Not the geometric dimension, but maybe the topological dimension somewhere?
-        self._geometric_dimension = domain.geometric_dimension()
+        self._geometric_dimension = cell.geometric_dimension()
 
     def space_dimension(self):
         "The element space dimension is simply the number of quadrature points"

@@ -1,4 +1,4 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.6.0dev.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.7.0dev.
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
@@ -17,15 +17,15 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Evaluate function at given point in cell
-  virtual void evaluate(double* values,
-                        const double* coordinates,
-                        const ufc::cell& c) const
+  void evaluate(double * values,
+                const double * coordinates,
+                const ufc::cell& c) const final override
   {
 %(evaluate)s
   }
@@ -44,12 +44,12 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Evaluate function at given point in cell
-  virtual void evaluate(double* values,
-                        const double* coordinates,
-                        const ufc::cell& c) const;
+  void evaluate(double * values,
+                const double * coordinates,
+                const ufc::cell& c) const final override;
 
 };
 """
@@ -68,8 +68,8 @@ function_implementation = """\
 }
 
 /// Evaluate function at given point in cell
-void %(classname)s::evaluate(double* values,
-                             const double* coordinates,
+void %(classname)s::evaluate(double * values,
+                             const double * coordinates,
                              const ufc::cell& c) const
 {
 %(evaluate)s

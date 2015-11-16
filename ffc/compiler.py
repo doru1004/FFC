@@ -156,7 +156,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, object_names, parameters)
+    ir = compute_ir(analysis, prefix, parameters, object_names=object_names)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -525,6 +525,12 @@ def _check_parameters(parameters):
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in parameters:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
+
+    # HACK
+    import os
+    r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if r: parameters["representation"] = r
+
     return parameters
 
 def _print_timing(stage, timing):
