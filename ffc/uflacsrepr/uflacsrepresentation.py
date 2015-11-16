@@ -23,7 +23,7 @@ from ffc.quadrature.parameters import parse_optimise_parameters
 from ffc.quadrature.tabulate_basis import tabulate_basis
 from ffc.quadrature.quadraturerepresentation import sort_integrals
 
-from uflacs.backends.ffc.representation import compute_uflacs_integral_ir
+from uflacs.backends.firedrake.representation import compute_firedrake_integral_ir
 
 def compute_integral_ir(itg_data,
                         form_data,
@@ -51,7 +51,7 @@ def compute_integral_ir(itg_data,
     ir["element_numbers"] = element_numbers
 
     # Delegate to flacs to build its intermediate representation and add to ir
-    uflacs_ir = compute_uflacs_integral_ir(psi_tables, ir["entitytype"], integrals_dict, form_data, parameters)
+    uflacs_ir = compute_firedrake_integral_ir(psi_tables, ir["entitytype"], integrals_dict, form_data, parameters)
 
     # Store uflacs generated part separately
     ir["uflacs"] = uflacs_ir

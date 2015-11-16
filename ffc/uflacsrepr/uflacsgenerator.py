@@ -18,7 +18,7 @@
 from ffc.log import info
 from ffc.representationutils import initialize_integral_code
 
-from uflacs.backends.ffc.generation import generate_tabulate_tensor_code
+from uflacs.backends.firedrake.generation import generate_tabulate_tensor_ast
 
 def generate_integral_code(ir, prefix, parameters):
     "Generate code for integral from intermediate representation."
@@ -29,7 +29,7 @@ def generate_integral_code(ir, prefix, parameters):
     code = initialize_integral_code(ir, prefix, parameters)
 
     # Generate tabulate_tensor body using uflacs algorithms
-    uflacs_code = generate_tabulate_tensor_code(ir, parameters)
+    uflacs_code = generate_tabulate_tensor_ast(ir, parameters)
     tabulate_tensor_code = \
 """
 void %s(%s)
