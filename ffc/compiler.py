@@ -174,7 +174,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         cpu_time = time()
         #FIXME: need a cleaner interface
-        pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[2]]
+        pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[3]]
         _print_timing(4, time() - cpu_time)
 
         info_green("FFC finished in %g seconds.", time() - cpu_time_0)
