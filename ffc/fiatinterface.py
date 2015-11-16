@@ -255,7 +255,7 @@ def create_quadrature(cell, num_points):
     if isinstance(cell, int) and cell == 0:
         return ([()], array([1.0,]))
 
-    if cellname2dim(cell) == 0:
+    if cellname2dim[cell] == 0:
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
