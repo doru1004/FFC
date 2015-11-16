@@ -140,14 +140,14 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     if family == "Real":
-        domain, = ufl_element.domains() # Assuming single domain
+        cell = ufl_element.cell()
 
-        if not isinstance(ufl_element.cell(), ufl.OuterProductCell):
-            dg0_element = ufl.FiniteElement("DG", domain, 0)
+        if not isinstance(cell, ufl.OuterProductCell):
+            dg0_element = ufl.FiniteElement("DG", cell, 0)
         else:
-            dg0_element_A = ufl.FiniteElement("DG", ufl_element.cell()._A, 0)
-            dg0_element_B = ufl.FiniteElement("DG", ufl_element.cell()._B, 0)
-            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
+            dg0_element_A = ufl.FiniteElement("DG", cell._A, 0)
+            dg0_element_B = ufl.FiniteElement("DG", cell._B, 0)
+            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(cell=cell)
 
         constant = _create_fiat_element(dg0_element)
         return SpaceOfReals(constant)
