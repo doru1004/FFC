@@ -24,6 +24,7 @@ import numpy, itertools
 
 # UFL modules
 import ufl
+from ufl import MixedElement, EnrichedElement
 from ufl.cell import Cell, num_cell_entities
 from ufl.classes import ReferenceGrad, Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
