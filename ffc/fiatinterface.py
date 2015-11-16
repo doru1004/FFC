@@ -130,8 +130,7 @@ def _create_fiat_element(ufl_element):
 
     # Get element data
     family = ufl_element.family()
-    domain, = ufl_element.domains() # Assuming single domain
-    cellname = domain.cell().cellname() # Assuming single cell in domain
+    cell = ufl_element.cell()
     degree = ufl_element.degree()
 
     # Check that FFC supports this element
@@ -203,8 +202,7 @@ def create_actual_fiat_element(ufl_element):
             fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
         elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement, ufl.OuterProductTensorElement)):
-            domain, = ufl_element.domains() # Assuming single domain
-            cell = domain.cell()            # Assuming single cell in domain
+            cell = ufl_element.cell()
             if not isinstance(cell, ufl.OuterProductCell):
                 error("An OuterProductElement must have an OuterProductCell as domain, sorry.")
 
@@ -217,8 +215,7 @@ def create_actual_fiat_element(ufl_element):
             fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
             # "Normal element" case
-            domain, = ufl_element.domains() # Assuming single domain
-            cell = domain.cell()            # Assuming single cell in domain
+            cell = ufl_element.cell()
             degree = ufl_element.degree()
             fiat_cell = reference_cell(cell)
             fiat_element = ElementClass(fiat_cell, degree)
