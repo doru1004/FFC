@@ -231,7 +231,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
                          for i in xrange(topological_dimension))
 
     def is_affine(ufl_element):
-        return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
+        return ufl_element.cell().is_simplex() and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
 
     def inside_check(ufl_cell, fiat_cell):
         dim = ufl_cell.topological_dimension()
@@ -368,8 +368,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
     # Create FIAT element
     element = create_actual_fiat_element(ufl_element)
     coordinates_element = create_actual_fiat_element(coordinates_ufl_element)
-    domain, = ufl_element.domains()  # Assuming single domain
-    cell = domain.cell()
+    cell = ufl_element.cell()
 
     calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
     extruded = isinstance(element.get_reference_element(), two_product_cell)
