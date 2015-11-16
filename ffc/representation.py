@@ -94,16 +94,17 @@ def compute_ir(analysis, prefix, parameters, object_names=None):
         info("Computing representation of %d dofmaps" % len(elements))
         ir_dofmaps = [_compute_dofmap_ir(e, prefix, element_numbers)
                       for e in elements]
+        # Compute representation of coordinate mappings
+        info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
+        ir_compute_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
+                                          for e in coordinate_elements]
     else:
         ir_dofmaps = [None]
-    # Compute representation of coordinate mappings
-    info("Computing representation of %d coordinate mappings" % len(coordinate_elements))
-    ir_compute_coordinate_mappings = [_compute_coordinate_mapping_ir(e, prefix, element_numbers)
-                                      for e in coordinate_elements]
+        ir_compute_coordinate_mappings = [None]
 
     # Compute and flatten representation of integrals
     info("Computing representation of integrals")
-    irs = [_compute_integral_ir(fd, i, prefix, element_numbers, parameters)
+    irs = [_compute_integral_ir(fd, i, prefix, element_numbers, parameters, object_names=object_names)
            for (i, fd) in enumerate(form_datas)]
     ir_integrals = [ir for ir in chain(*irs) if not ir is None]
 
@@ -327,11 +328,13 @@ def _needs_mesh_entities(fiat_element):
         return [d > 0 for d in num_dofs_per_entity]
 
 
-def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters):
+def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters, object_names=None):
     "Compute intermediate represention for form integrals."
 
     irs = []
 
+    if object_names is None:
+        object_names = {}
     # Iterate over integrals
     for itg_data in form_data.integral_data:
 
