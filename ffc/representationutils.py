@@ -43,7 +43,7 @@ def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
         if cell.cellname() == "quadrilateral" and isinstance(degree, tuple):
             assert len(degree) == 2 and degree[0] == degree[1]
             degree = degree[0]
-        (points, weights) = create_quadrature(cell.facet_cellname(), degree, rule)
+        (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
     elif integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
         (points, weights) = create_quadrature(cell.facet_horiz, degree[0], rule)
     elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
