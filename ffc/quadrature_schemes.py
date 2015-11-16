@@ -50,7 +50,7 @@ from ffc.fiatinterface import reference_cell
 from ffc.fiatinterface import create_quadrature as fiat_create_quadrature
 
 # Dictionary mapping from cellname to dimension
-from ufl.cell import cell2dim
+from ufl.cell import cellname2dim
 
 def create_quadrature(cell, degree, scheme="default"):
     """
@@ -60,7 +60,7 @@ def create_quadrature(cell, degree, scheme="default"):
 
     # FIXME: KBO: Can this be handled more elegantly?
     # Handle point case
-    if isinstance(cell, int) and cell == 0 or cell2dim(cell) == 0:
+    if isinstance(cell, int) and cell == 0 or cellname2dim(cell.cellname()) == 0:
         return ([()], array([1.0,]))
         
     if isinstance(cell, str):
