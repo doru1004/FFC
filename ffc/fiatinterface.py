@@ -185,9 +185,9 @@ def create_actual_fiat_element(ufl_element):
         pass
     # HDiv and HCurl elements have family "OuterProductElement",
     # so get matching FIAT element directly rather than via lookup
-    elif isinstance(ufl_element, ufl.HDiv):
+    elif isinstance(ufl_element, ufl.HDivElement):
         fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
-    elif isinstance(ufl_element, ufl.HCurl):
+    elif isinstance(ufl_element, ufl.HCurlElement):
         fiat_element = FIAT.Hcurl(create_element(ufl_element._element))
     elif isinstance(ufl_element, ufl.FacetElement):
         fiat_element = FIAT.RestrictedElement(create_element(ufl_element._element), restriction_domain="facet")
