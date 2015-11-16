@@ -24,7 +24,6 @@ import numpy, itertools
 
 # UFL modules
 import ufl
-from ufl import MixedElement, EnrichedElement
 from ufl.cell import Cell, num_cell_entities
 from ufl.classes import ReferenceGrad, Grad, CellAvg, FacetAvg
 from ufl.algorithms import extract_unique_elements, extract_type, extract_elements
@@ -35,6 +34,9 @@ from ffc.utils import product
 from ffc.fiatinterface import create_element, reference_cell, reference_cell_vertices
 from ffc.quadrature_schemes import create_quadrature
 from ffc.representationutils import create_quadrature_points_and_weights
+from ffc.mixedelement import MixedElement
+from FIAT.enriched import EnrichedElement
+
 
 def _find_element_derivatives(expr, elements, element_replace_map):
     "Find the highest derivatives of given elements in expression."
