@@ -183,7 +183,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
     else:
         # Stage 4: code generation
         cpu_time = time()
-        code = generate_code(oir, prefix, parameters)
+        code = generate_code(oir, parameters)
         _print_timing(4, time() - cpu_time)
 
         # Stage 4.1: generate wrappers
