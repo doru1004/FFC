@@ -341,7 +341,7 @@ def _compute_integral_ir(form_data, form_id, prefix, element_numbers, parameters
         # Select representation
         # TODO: Is it possible to detach this metadata from
         # IntegralData? It's a bit strange from the ufl side.
-        r = pick_representation("quadrature" if parameters["format"] == "pyop2" else itg_data.metadata["representation"])
+        r = pick_representation(itg_data.metadata["representation"])
 
         # Compute representation
         ir = r.compute_integral_ir(itg_data,
