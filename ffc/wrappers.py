@@ -21,7 +21,7 @@ from itertools import chain
 # FFC modules
 from ffc.log import begin, end, info, error
 from ffc.utils import all_equal
-from ffc.cpp import format
+from ffc.cpp import make_classname
 from ffc.backends.dolfin.wrappers import generate_dolfin_code
 from ffc.backends.dolfin.capsules import UFCElementNames, UFCFormNames
 
@@ -59,7 +59,9 @@ def _generate_dolfin_wrapper(analysis, prefix, object_names, parameters):
 def _encapsulate(prefix, object_names, analysis, parameters):
 
     # Extract data from analysis
-    form_datas, elements, element_map = analysis
+    form_datas, elements, element_map, domains = analysis
+
+    # FIXME: Encapsulate domains?
 
     num_form_datas = len(form_datas)
     common_space = False
@@ -69,48 +71,43 @@ def _encapsulate(prefix, object_names, analysis, parameters):
         capsules = _encapsule_element(prefix, elements)
 
     # Special case: with error control
-    elif (parameters["error_control"] and num_form_datas == 11):
-        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
-                    (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
+    elif parameters["error_control"] and num_form_datas == 11:
+        capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map)
+                    for (i, form_data) in enumerate(form_datas[:num_form_datas-1])]
         capsules += [_encapsule_form(prefix, object_names, form_datas[-1], num_form_datas-1,
                                      element_map, "GoalFunctional")]
-
     # Otherwise: generate standard capsules for each form
     else:
         capsules = [_encapsule_form(prefix, object_names, form_data, i, element_map) for
                     (i, form_data) in enumerate(form_datas)]
-
-        # Check if all elements are equal
+        # Check if all argument elements are equal
         elements = []
         for form_data in form_datas:
-            elements += form_data.elements[:form_data.rank]
+            elements += form_data.argument_elements
         common_space = all_equal(elements)
 
     return (capsules, common_space)
 
 
 def _encapsule_form(prefix, object_names, form_data, i, element_map, superclassname=None):
-    element_numbers = [element_map[e] for e in form_data.elements]
+    element_numbers = [element_map[e] for e in form_data.argument_elements + form_data.coefficient_elements]
 
     if superclassname is None:
         superclassname = "Form"
 
     form_names = UFCFormNames(
         object_names.get(id(form_data.original_form), "%d" % i),
-        [object_names.get(id(obj), "w%d" % j)
-         for j, obj in enumerate(form_data.reduced_coefficients)],
-        format["classname form"](prefix, i),
-        [format["classname finite_element"](prefix, j)
-         for j in element_numbers],
-        [format["classname dofmap"](prefix, j)
-         for j in element_numbers],
+        [object_names.get(id(obj), "w%d" % j) for j, obj in enumerate(form_data.reduced_coefficients)],
+        make_classname(prefix, "form", i),
+        [make_classname(prefix, "finite_element", j) for j in element_numbers],
+        [make_classname(prefix, "dofmap", j) for j in element_numbers],
         superclassname)
 
     return form_names
 
 def _encapsule_element(prefix, elements):
-    element_number = len(elements) - 1
+    element_number = len(elements) - 1 # eh? this doesn't make any sense
     args = ("0",
-            [format["classname finite_element"](prefix, element_number)],
-            [format["classname dofmap"](prefix, element_number)])
+            [make_classname(prefix, "finite_element", element_number)],
+            [make_classname(prefix, "dofmap", element_number)])
     return UFCElementNames(*args)

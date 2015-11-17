@@ -1,4 +1,4 @@
-# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.6.0dev.
+# Code generation format strings for UFC (Unified Form-assembly Code) v. 1.7.0dev.
 # This code is released into the public domain.
 #
 # The FEniCS Project (http://www.fenicsproject.org/) 2006-2015
@@ -19,22 +19,22 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const
+  const std::vector<bool> & enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
 
   /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               int cell_orientation) const
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       int cell_orientation) const final override
   {
 %(tabulate_tensor)s
   }
@@ -55,16 +55,16 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const;
+  const std::vector<bool> & enabled_coefficients() const final override;
 
   /// Tabulate the tensor for the contribution from a local cell
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               int cell_orientation) const;
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       int cell_orientation) const final override;
 
 };
 """
@@ -89,9 +89,9 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 }
 
 /// Tabulate the tensor for the contribution from a local cell
-void %(classname)s::tabulate_tensor(double* %(restrict)s A,
-                                    const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
                                     int cell_orientation) const
 {
 %(tabulate_tensor)s
@@ -114,23 +114,23 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const
+  const std::vector<bool> & enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               std::size_t facet,
-                               int cell_orientation) const
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t facet,
+                       int cell_orientation) const final override
   {
 %(tabulate_tensor)s
   }
@@ -151,17 +151,17 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const;
+  const std::vector<bool> & enabled_coefficients() const final override;
 
   /// Tabulate the tensor for the contribution from a local exterior facet
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               std::size_t facet,
-                               int cell_orientation) const;
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t facet,
+                       int cell_orientation) const final override;
 
 };
 """
@@ -186,9 +186,9 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 }
 
 /// Tabulate the tensor for the contribution from a local exterior facet
-void %(classname)s::tabulate_tensor(double* %(restrict)s A,
-                                    const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
                                     std::size_t facet,
                                     int cell_orientation) const
 {
@@ -212,26 +212,26 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const
+  const std::vector<bool> & enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates_0,
-                               const double* %(restrict)s vertex_coordinates_1,
-                               std::size_t facet_0,
-                               std::size_t facet_1,
-                               int cell_orientation_0,
-                               int cell_orientation_1) const
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs_0,
+                       const double * coordinate_dofs_1,
+                       std::size_t facet_0,
+                       std::size_t facet_1,
+                       int cell_orientation_0,
+                       int cell_orientation_1) const final override
   {
 %(tabulate_tensor)s
   }
@@ -252,20 +252,20 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const;
+  const std::vector<bool> & enabled_coefficients() const final override;
 
   /// Tabulate the tensor for the contribution from a local interior facet
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates_0,
-                               const double* %(restrict)s vertex_coordinates_1,
-                               std::size_t facet_0,
-                               std::size_t facet_1,
-                               int cell_orientation_0,
-                               int cell_orientation_1) const;
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs_0,
+                       const double * coordinate_dofs_1,
+                       std::size_t facet_0,
+                       std::size_t facet_1,
+                       int cell_orientation_0,
+                       int cell_orientation_1) const final override;
 
 };
 """
@@ -290,10 +290,10 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 }
 
 /// Tabulate the tensor for the contribution from a local interior facet
-void %(classname)s::tabulate_tensor(double* %(restrict)s A,
-                                    const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates_0,
-                                    const double* %(restrict)s vertex_coordinates_1,
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs_0,
+                                    const double * coordinate_dofs_1,
                                     std::size_t facet_0,
                                     std::size_t facet_1,
                                     int cell_orientation_0,
@@ -318,23 +318,23 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const
+  const std::vector<bool> & enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
 
   /// Tabulate the tensor for the contribution from the local vertex
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               std::size_t vertex,
-                               int cell_orientation) const
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t vertex,
+                       int cell_orientation) const final override
   {
 %(tabulate_tensor)s
   }
@@ -354,17 +354,17 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const;
+  const std::vector<bool> & enabled_coefficients() const final override;
 
   /// Tabulate the tensor for the contribution from the local vertex
-  virtual void tabulate_tensor(double* %(restrict)s A,
-                               const double * const * %(restrict)s w,
-                               const double* %(restrict)s vertex_coordinates,
-                               std::size_t vertex,
-                               int cell_orientation) const;
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t vertex,
+                       int cell_orientation) const final override;
 
 };
 """
@@ -389,9 +389,9 @@ const std::vector<bool> & %(classname)s::enabled_coefficients() const
 }
 
 /// Tabulate the tensor for the contribution from the local vertex
-void %(classname)s::tabulate_tensor(double* %(restrict)s A,
-                                    const double * const * %(restrict)s w,
-                                    const double* %(restrict)s vertex_coordinates,
+void %(classname)s::tabulate_tensor(double * A,
+                                    const double * const * w,
+                                    const double * coordinate_dofs,
                                     std::size_t vertex,
                                     int cell_orientation) const
 {
@@ -416,32 +416,32 @@ public:
   }
 
   /// Destructor
-  virtual ~%(classname)s()
+  ~%(classname)s() override
   {
 %(destructor)s
   }
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const
+  const std::vector<bool> & enabled_coefficients() const final override
   {
 %(enabled_coefficients)s
   }
 
   /// Return the number of cells involved in evaluation of the integral
-  virtual std::size_t num_cells() const
+  std::size_t num_cells() const final override
   {
 %(num_cells)s
   }
 
   /// Tabulate the tensor for the contribution from a custom domain
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
-                               std::size_t num_quadrature_points,
-                               const double* quadrature_points,
-                               const double* quadrature_weights,
-                               const double* facet_normals,
-                               int cell_orientation) const
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       const double * facet_normals,
+                       int cell_orientation) const final override
   {
 %(tabulate_tensor)s
   }
@@ -463,23 +463,23 @@ public:
   %(classname)s(%(constructor_arguments)s);
 
   /// Destructor
-  virtual ~%(classname)s();
+  ~%(classname)s() override;
 
   /// Tabulate which form coefficients are used by this integral
-  virtual const std::vector<bool> & enabled_coefficients() const;
+  const std::vector<bool> & enabled_coefficients() const final override;
 
   /// Return the number of cells involved in evaluation of the integral
-  virtual std::size_t num_cells() const;
+  std::size_t num_cells() const final override;
 
   /// Tabulate the tensor for the contribution from a custom domain
-  virtual void tabulate_tensor(double* A,
-                               const double * const * w,
-                               const double* vertex_coordinates,
-                               std::size_t num_quadrature_points,
-                               const double* quadrature_points,
-                               const double* quadrature_weights,
-                               const double* facet_normals,
-                               int cell_orientation) const;
+  void tabulate_tensor(double * A,
+                       const double * const * w,
+                       const double * coordinate_dofs,
+                       std::size_t num_quadrature_points,
+                       const double * quadrature_points,
+                       const double * quadrature_weights,
+                       const double * facet_normals,
+                       int cell_orientation) const final override;
 
 };
 """
@@ -510,13 +510,13 @@ std::size_t %(classname)s::num_cells() const
 }
 
 /// Tabulate the tensor for the contribution from a custom domain
-void %(classname)s::tabulate_tensor(double* A,
+void %(classname)s::tabulate_tensor(double * A,
                                     const double * const * w,
-                                    const double* vertex_coordinates,
+                                    const double * coordinate_dofs,
                                     std::size_t num_quadrature_points,
-                                    const double* quadrature_points,
-                                    const double* quadrature_weights,
-                                    const double* facet_normals,
+                                    const double * quadrature_points,
+                                    const double * quadrature_weights,
+                                    const double * facet_normals,
                                     int cell_orientation) const
 {
 %(tabulate_tensor)s

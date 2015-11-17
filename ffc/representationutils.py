@@ -21,11 +21,44 @@ quadrature and tensor representation."""
 # Modified by Martin Alnaes 2013-2015
 # Modified by Anders Logg 2014
 
+import numpy
+
 from ufl.measure import integral_type_to_measure_name
+from ufl.cell import cellname2facetname
 
 from ffc.fiatinterface import create_element
-from ffc.cpp import format
+from ffc.cpp import make_integral_classname
 from ffc.log import error
+
+from ffc.quadrature_schemes import create_quadrature
+
+def create_quadrature_points_and_weights(integral_type, cell, degree, rule):
+    "Create quadrature rule and return points and weights."
+    if integral_type == "cell":
+        (points, weights) = create_quadrature(cell, degree, rule)
+    elif integral_type == "exterior_facet" or integral_type == "interior_facet":
+        # Since quadrilaterals use OuterProductElements, the degree is usually
+        # a tuple, though not always. For example, in the constant times dx case
+        # the degree is always a single number.
+        if cell.cellname() == "quadrilateral" and isinstance(degree, tuple):
+            assert len(degree) == 2 and degree[0] == degree[1]
+            degree = degree[0]
+        (points, weights) = create_quadrature(cellname2facetname[cell.cellname()], degree, rule)
+    elif integral_type in ("exterior_facet_top", "exterior_facet_bottom", "interior_facet_horiz"):
+        (points, weights) = create_quadrature(cell.facet_horiz, degree[0], rule)
+    elif integral_type in ("exterior_facet_vert", "interior_facet_vert"):
+        if cell.topological_dimension() == 2:
+            # extruded interval, so the vertical facet is a line, not an OP cell
+            (points, weights) = create_quadrature(cell.facet_vert, degree[1], rule)
+        else:
+            (points, weights) = create_quadrature(cell.facet_vert, degree, rule)
+    elif integral_type == "vertex":
+        (points, weights) = ([()], numpy.array([1.0,])) # TODO: Will be fixed
+    elif integral_type == "custom":
+        (points, weights) = (None, None)
+    else:
+        error("Unknown integral type: " + str(integral_type))
+    return (points, weights)
 
 def transform_component(component, offset, ufl_element):
     """
@@ -39,9 +72,9 @@ def transform_component(component, offset, ufl_element):
     # This code is used for tensor/monomialtransformation.py and
     # quadrature/quadraturetransformerbase.py.
 
-    domain, = ufl_element.domains() # Assuming single domain
-    gdim = domain.geometric_dimension()
-    tdim = domain.topological_dimension()
+    cell = ufl_element.cell()
+    gdim = cell.geometric_dimension()
+    tdim = cell.topological_dimension()
 
     # Do nothing if we are not in a special case: The special cases
     # occur if we have piola mapped elements (for which value_shape !=
@@ -119,10 +152,10 @@ def initialize_integral_ir(representation, itg_data, form_data, form_id):
                    }[itg_data.integral_type]
 
     # Extract data
-    cell = itg_data.domain.cell()
+    cell = itg_data.domain.ufl_cell()
     cellname = cell.cellname()
     tdim = cell.topological_dimension()
-    assert all(tdim == itg.domain().topological_dimension() for itg in itg_data.integrals)
+    assert all(tdim == itg.ufl_domain().topological_dimension() for itg in itg_data.integrals)
 
     # Set number of cells if not set TODO: Get automatically from number of domains
     num_cells = itg_data.metadata.get("num_cells")
@@ -164,13 +197,12 @@ def initialize_integral_code(ir, prefix, parameters):
     "Representation independent default initialization of code dict for integral from intermediate representation."
     code = {}
     code["class_type"] = ir["integral_type"] + "_integral"
-    code["restrict"] = parameters["restrict_keyword"]
-    code["classname"] = format["classname " + ir["integral_type"] + "_integral"](prefix, ir["form_id"], ir["subdomain_id"])
+    code["classname"] = make_integral_classname(prefix, ir["integral_type"], ir["form_id"], ir["subdomain_id"])
     code["members"] = ""
-    code["constructor"] = format["do nothing"]
+    code["constructor"] = ""
     code["constructor_arguments"] = ""
     code["initializer_list"] = ""
-    code["destructor"] = format["do nothing"]
+    code["destructor"] = ""
     code["enabled_coefficients"] = generate_enabled_coefficients(ir["enabled_coefficients"])
     #code["additional_includes_set"] = set() #ir["additional_includes_set"]
     return code

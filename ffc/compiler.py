@@ -156,7 +156,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
     # Stage 2: intermediate representation
     cpu_time = time()
-    ir = compute_ir(analysis, object_names, parameters)
+    ir = compute_ir(analysis, prefix, parameters, object_names=object_names)
     _print_timing(2, time() - cpu_time)
 
     # Stage 3: optimization
@@ -174,7 +174,7 @@ def compile_form(forms, object_names=None, prefix="Form", parameters=None):
 
         cpu_time = time()
         #FIXME: need a cleaner interface
-        pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[2]]
+        pyop2_ir = [generate_pyop2_ir(ir, prefix, parameters) for ir in oir[3]]
         _print_timing(4, time() - cpu_time)
 
         info_green("FFC finished in %g seconds.", time() - cpu_time_0)
@@ -231,7 +231,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
                          for i in xrange(topological_dimension))
 
     def is_affine(ufl_element):
-        return ufl_element.cell().cellname() in ufl.cell.affine_cells and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
+        return ufl_element.cell().is_simplex() and ufl_element.degree() <= 1 and ufl_element.family() in ["Discontinuous Lagrange", "Lagrange"]
 
     def inside_check(ufl_cell, fiat_cell):
         dim = ufl_cell.topological_dimension()
@@ -368,8 +368,7 @@ def compile_element(ufl_element, coordinates_ufl_element, cdim):
     # Create FIAT element
     element = create_actual_fiat_element(ufl_element)
     coordinates_element = create_actual_fiat_element(coordinates_ufl_element)
-    domain, = ufl_element.domains()  # Assuming single domain
-    cell = domain.cell()
+    cell = ufl_element.cell()
 
     calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
     extruded = isinstance(element.get_reference_element(), two_product_cell)
@@ -525,6 +524,12 @@ def _check_parameters(parameters):
         warning("BLAS mode unavailable (will return in a future version).")
     if "quadrature_points" in parameters:
         warning("Option 'quadrature_points' has been replaced by 'quadrature_degree'.")
+
+    # HACK
+    import os
+    r = os.environ.get("FFC_FORCE_REPRESENTATION")
+    if r: parameters["representation"] = r
+
     return parameters
 
 def _print_timing(stage, timing):

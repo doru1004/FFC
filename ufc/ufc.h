@@ -1,4 +1,4 @@
-// This is UFC (Unified Form-assembly Code) v. 1.6.0dev.
+// This is UFC (Unified Form-assembly Code) v. 1.7.0dev.
 // This code is released into the public domain.
 //
 // The FEniCS Project (http://www.fenicsproject.org/) 2006-2015.
@@ -7,7 +7,7 @@
 #define __UFC_H
 
 #define UFC_VERSION_MAJOR 1
-#define UFC_VERSION_MINOR 6
+#define UFC_VERSION_MINOR 7
 #define UFC_VERSION_MAINTENANCE 0
 #define UFC_VERSION_RELEASE 0
 
@@ -83,8 +83,8 @@ namespace ufc
     virtual ~function() {}
 
     /// Evaluate function at given point in cell
-    virtual void evaluate(double* values,
-                          const double* coordinates,
+    virtual void evaluate(double * values,
+                          const double * coordinates,
                           const cell& c) const = 0;
 
   };
@@ -98,7 +98,7 @@ namespace ufc
     virtual ~finite_element() {}
 
     /// Return a string identifying the finite element
-    virtual const char* signature() const = 0;
+    virtual const char * signature() const = 0;
 
     /// Return the cell shape
     virtual shape cell_shape() const = 0;
@@ -118,32 +118,44 @@ namespace ufc
     /// Return the dimension of the value space for axis i
     virtual std::size_t value_dimension(std::size_t i) const = 0;
 
+    /// Return the number of components of the value space
+    virtual std::size_t value_size() const = 0;
+
+    /// Return the rank of the reference value space
+    virtual std::size_t reference_value_rank() const = 0;
+
+    /// Return the dimension of the reference value space for axis i
+    virtual std::size_t reference_value_dimension(std::size_t i) const = 0;
+
+    /// Return the number of components of the reference value space
+    virtual std::size_t reference_value_size() const = 0;
+
     /// Evaluate basis function i at given point x in cell
     virtual void evaluate_basis(std::size_t i,
-                                double* values,
-                                const double* x,
-                                const double* vertex_coordinates,
+                                double * values,
+                                const double * x,
+                                const double * coordinate_dofs,
                                 int cell_orientation) const = 0;
 
     /// Evaluate all basis functions at given point x in cell
-    virtual void evaluate_basis_all(double* values,
-                                    const double* x,
-                                    const double* vertex_coordinates,
+    virtual void evaluate_basis_all(double * values,
+                                    const double * x,
+                                    const double * coordinate_dofs,
                                     int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of basis function i at given point x in cell
     virtual void evaluate_basis_derivatives(std::size_t i,
                                             std::size_t n,
-                                            double* values,
-                                            const double* x,
-                                            const double* vertex_coordinates,
+                                            double * values,
+                                            const double * x,
+                                            const double * coordinate_dofs,
                                             int cell_orientation) const = 0;
 
     /// Evaluate order n derivatives of all basis functions at given point x in cell
     virtual void evaluate_basis_derivatives_all(std::size_t n,
-                                                double* values,
-                                                const double* x,
-                                                const double* vertex_coordinates,
+                                                double * values,
+                                                const double * x,
+                                                const double * coordinate_dofs,
                                                 int cell_orientation) const = 0;
 
     // FIXME: cell argument only included here so we can pass it to the eval function...
@@ -151,42 +163,36 @@ namespace ufc
     /// Evaluate linear functional for dof i on the function f
     virtual double evaluate_dof(std::size_t i,
                                 const function& f,
-                                const double* vertex_coordinates,
+                                const double * coordinate_dofs,
                                 int cell_orientation,
                                 const cell& c) const = 0;
 
     /// Evaluate linear functionals for all dofs on the function f
-    virtual void evaluate_dofs(double* values,
+    virtual void evaluate_dofs(double * values,
                                const function& f,
-                               const double* vertex_coordinates,
+                               const double * coordinate_dofs,
                                int cell_orientation,
                                const cell& c) const = 0;
 
     /// Interpolate vertex values from dof values
-    virtual void interpolate_vertex_values(double* vertex_values,
-                                           const double* dof_values,
-                                           const double* vertex_coordinates,
+    virtual void interpolate_vertex_values(double * vertex_values,
+                                           const double * dof_values,
+                                           const double * coordinate_dofs,
                                            int cell_orientation,
                                            const cell& c) const = 0;
 
-    /// Map coordinate xhat from reference cell to coordinate x in cell
-    virtual void map_from_reference_cell(double* x,
-                                         const double* xhat,
-                                         const cell& c) const = 0;
-
-    /// Map from coordinate x in cell to coordinate xhat in reference cell
-    virtual void map_to_reference_cell(double* xhat,
-                                       const double* x,
-                                       const cell& c) const = 0;
+    /// Tabulate the coordinates of all dofs on a cell
+    virtual void tabulate_dof_coordinates(double * dof_coordinates,
+                                          const double * coordinate_dofs) const = 0;
 
     /// Return the number of sub elements (for a mixed element)
     virtual std::size_t num_sub_elements() const = 0;
 
     /// Create a new finite element for sub element i (for a mixed element)
-    virtual finite_element* create_sub_element(std::size_t i) const = 0;
+    virtual finite_element * create_sub_element(std::size_t i) const = 0;
 
     /// Create a new class instance
-    virtual finite_element* create() const = 0;
+    virtual finite_element * create() const = 0;
 
   };
 
@@ -200,7 +206,7 @@ namespace ufc
     virtual ~dofmap() {}
 
     /// Return a string identifying the dofmap
-    virtual const char* signature() const = 0;
+    virtual const char * signature() const = 0;
 
     /// Return true iff mesh entities of topological dimension d are
     /// needed
@@ -208,9 +214,6 @@ namespace ufc
 
     /// Return the topological dimension of the associated cell shape
     virtual std::size_t topological_dimension() const = 0;
-
-    /// Return the geometric dimension of the associated cell shape
-    virtual std::size_t geometric_dimension() const = 0;
 
     /// Return the dimension of the global finite element function space
     virtual std::size_t global_dimension(const std::vector<std::size_t>&
@@ -228,30 +231,96 @@ namespace ufc
     virtual std::size_t num_entity_dofs(std::size_t d) const = 0;
 
     /// Tabulate the local-to-global mapping of dofs on a cell
-    virtual void tabulate_dofs(std::size_t* dofs,
+    virtual void tabulate_dofs(std::size_t * dofs,
                                const std::vector<std::size_t>& num_global_entities,
-                               const cell& c) const = 0;
+                               const std::vector<std::vector<std::size_t>>& entity_indices) const = 0;
 
     /// Tabulate the local-to-local mapping from facet dofs to cell dofs
-    virtual void tabulate_facet_dofs(std::size_t* dofs,
+    virtual void tabulate_facet_dofs(std::size_t * dofs,
                                      std::size_t facet) const = 0;
 
     /// Tabulate the local-to-local mapping of dofs on entity (d, i)
-    virtual void tabulate_entity_dofs(std::size_t* dofs,
+    virtual void tabulate_entity_dofs(std::size_t * dofs,
                                       std::size_t d, std::size_t i) const = 0;
-
-    /// Tabulate the coordinates of all dofs on a cell
-    virtual void tabulate_coordinates(double* dof_coordinates,
-                                      const double* vertex_coordinates) const = 0;
 
     /// Return the number of sub dofmaps (for a mixed element)
     virtual std::size_t num_sub_dofmaps() const = 0;
 
     /// Create a new dofmap for sub dofmap i (for a mixed element)
-    virtual dofmap* create_sub_dofmap(std::size_t i) const = 0;
+    virtual dofmap * create_sub_dofmap(std::size_t i) const = 0;
 
     /// Create a new class instance
-    virtual dofmap* create() const = 0;
+    virtual dofmap * create() const = 0;
+
+  };
+
+  /// A representation of a coordinate mapping parameterized by a local finite element basis on each cell
+  class coordinate_mapping
+  {
+  public:
+    virtual ~coordinate_mapping() {}
+
+    /// Return coordinate_mapping signature string
+    virtual const char * signature() const = 0;
+
+    /// Create object of the same type
+    virtual coordinate_mapping * create() const = 0;
+
+    /// Return geometric dimension of the coordinate_mapping
+    virtual std::size_t geometric_dimension() const = 0;
+
+    /// Return topological dimension of the coordinate_mapping
+    virtual std::size_t topological_dimension() const = 0;
+
+    /// Return cell shape of the coordinate_mapping
+    virtual shape cell_shape() const = 0;
+
+    /// Create finite_element object representing the coordinate parameterization
+    virtual finite_element * create_coordinate_finite_element() const = 0;
+
+    /// Create dofmap object representing the coordinate parameterization
+    virtual dofmap * create_coordinate_dofmap() const = 0;
+
+    /// Compute physical coordinates x from reference coordinates X, the inverse of compute_reference_coordinates
+    virtual void compute_physical_coordinates(
+        double * x, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs) const = 0;
+
+    /// Compute reference coordinates X from physical coordinates x, the inverse of compute_physical_coordinates
+    virtual void compute_reference_coordinates(
+        double * X, std::size_t num_points,
+        const double * x,
+        const double * coordinate_dofs, double cell_orientation) const = 0;
+    /// Compute X, J, detJ, K from physical coordinates x on a cell // TODO: Can compute all this at no extra cost
+    //virtual void compute_reference_geometry(
+    //    double * X, double * J, double * detJ, double * K, std::size_t num_points,
+    //    const double * x,
+    //    const double * coordinate_dofs, double cell_orientation,
+    //    std::size_t iterations, double tolerance) const = 0;
+
+    /// Compute Jacobian of coordinate mapping J = dx/dX at reference coordinates X
+    virtual void compute_jacobians(
+        double * J, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs) const = 0;
+
+    /// Compute determinants of (pseudo-)Jacobians J
+    virtual void compute_jacobian_determinants(
+        double * detJ, std::size_t num_points,
+        const double * J,
+        double cell_orientation) const = 0;
+
+    /// Compute (pseudo-)inverses K of (pseudo-)Jacobians J
+    virtual void compute_jacobian_inverses(
+        double * K, std::size_t num_points,
+        const double * J, const double * detJ) const = 0;
+
+    /// Combined (for convenience) computation of x, J, detJ, K from X and coordinate_dofs on a cell
+    virtual void compute_geometry(
+        double * x, double * J, double * detJ, double * K, std::size_t num_points,
+        const double * X,
+        const double * coordinate_dofs, double cell_orientation) const = 0;
 
   };
 
@@ -281,9 +350,9 @@ namespace ufc
     virtual ~cell_integral() {}
 
     /// Tabulate the tensor for the contribution from a local cell
-    virtual void tabulate_tensor(double* A,
+    virtual void tabulate_tensor(double * A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double * coordinate_dofs,
                                  int cell_orientation) const = 0;
 
   };
@@ -299,9 +368,9 @@ namespace ufc
     virtual ~exterior_facet_integral() {}
 
     /// Tabulate the tensor for the contribution from a local exterior facet
-    virtual void tabulate_tensor(double* A,
+    virtual void tabulate_tensor(double * A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double * coordinate_dofs,
                                  std::size_t facet,
                                  int cell_orientation) const = 0;
 
@@ -318,10 +387,10 @@ namespace ufc
     virtual ~interior_facet_integral() {}
 
     /// Tabulate the tensor for the contribution from a local interior facet
-    virtual void tabulate_tensor(double* A,
+    virtual void tabulate_tensor(double * A,
                                  const double * const * w,
-                                 const double* vertex_coordinates_0,
-                                 const double* vertex_coordinates_1,
+                                 const double * coordinate_dofs_0,
+                                 const double * coordinate_dofs_1,
                                  std::size_t facet_0,
                                  std::size_t facet_1,
                                  int cell_orientation_0,
@@ -342,9 +411,9 @@ namespace ufc
     virtual ~vertex_integral() {}
 
     /// Tabulate the tensor for the contribution from the local vertex
-    virtual void tabulate_tensor(double* A,
+    virtual void tabulate_tensor(double * A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double * coordinate_dofs,
                                  std::size_t vertex,
                                  int cell_orientation) const = 0;
 
@@ -368,13 +437,13 @@ namespace ufc
     virtual std::size_t num_cells() const = 0;
 
     /// Tabulate the tensor for the contribution from a custom domain
-    virtual void tabulate_tensor(double* A,
+    virtual void tabulate_tensor(double * A,
                                  const double * const * w,
-                                 const double* vertex_coordinates,
+                                 const double * coordinate_dofs,
                                  std::size_t num_quadrature_points,
-                                 const double* quadrature_points,
-                                 const double* quadrature_weights,
-                                 const double* facet_normals,
+                                 const double * quadrature_points,
+                                 const double * quadrature_weights,
+                                 const double * facet_normals,
                                  int cell_orientation) const = 0;
 
   };
@@ -401,7 +470,7 @@ namespace ufc
     virtual ~form() {}
 
     /// Return a string identifying the form
-    virtual const char* signature() const = 0;
+    virtual const char * signature() const = 0;
 
 
     /// Return the rank of the global tensor (r)
@@ -414,11 +483,20 @@ namespace ufc
     virtual std::size_t original_coefficient_position(std::size_t i) const = 0;
 
 
+    /// Create a new finite element for parameterization of coordinates
+    virtual finite_element * create_coordinate_finite_element() const = 0;
+
+    /// Create a new dofmap for parameterization of coordinates
+    virtual dofmap * create_coordinate_dofmap() const = 0;
+
+    /// Create a new coordinate mapping
+    virtual coordinate_mapping * create_coordinate_mapping() const = 0;
+
     /// Create a new finite element for argument function 0 <= i < r+n
-    virtual finite_element* create_finite_element(std::size_t i) const = 0;
+    virtual finite_element * create_finite_element(std::size_t i) const = 0;
 
     /// Create a new dofmap for argument function 0 <= i < r+n
-    virtual dofmap* create_dofmap(std::size_t i) const = 0;
+    virtual dofmap * create_dofmap(std::size_t i) const = 0;
 
 
     /// Return the upper bound on subdomain ids for cell integrals
@@ -454,39 +532,39 @@ namespace ufc
 
 
     /// Create a new cell integral on sub domain subdomain_id
-    virtual cell_integral* create_cell_integral(std::size_t subdomain_id) const = 0;
+    virtual cell_integral * create_cell_integral(std::size_t subdomain_id) const = 0;
 
     /// Create a new exterior facet integral on sub domain subdomain_id
-    virtual exterior_facet_integral*
+    virtual exterior_facet_integral *
     create_exterior_facet_integral(std::size_t subdomain_id) const = 0;
 
     /// Create a new interior facet integral on sub domain subdomain_id
-    virtual interior_facet_integral*
+    virtual interior_facet_integral *
     create_interior_facet_integral(std::size_t subdomain_id) const = 0;
 
     /// Create a new vertex integral on sub domain subdomain_id
-    virtual vertex_integral* create_vertex_integral(std::size_t subdomain_id) const = 0;
+    virtual vertex_integral * create_vertex_integral(std::size_t subdomain_id) const = 0;
 
     /// Create a new custom integral on sub domain subdomain_id
-    virtual custom_integral* create_custom_integral(std::size_t subdomain_id) const = 0;
+    virtual custom_integral * create_custom_integral(std::size_t subdomain_id) const = 0;
 
 
     /// Create a new cell integral on everywhere else
-    virtual cell_integral* create_default_cell_integral() const = 0;
+    virtual cell_integral * create_default_cell_integral() const = 0;
 
     /// Create a new exterior facet integral on everywhere else
-    virtual exterior_facet_integral*
+    virtual exterior_facet_integral *
     create_default_exterior_facet_integral() const = 0;
 
     /// Create a new interior facet integral on everywhere else
-    virtual interior_facet_integral*
+    virtual interior_facet_integral *
     create_default_interior_facet_integral() const = 0;
 
     /// Create a new vertex integral on everywhere else
-    virtual vertex_integral* create_default_vertex_integral() const = 0;
+    virtual vertex_integral * create_default_vertex_integral() const = 0;
 
     /// Create a new custom integral on everywhere else
-    virtual custom_integral* create_default_custom_integral() const = 0;
+    virtual custom_integral * create_default_custom_integral() const = 0;
 
   };
 

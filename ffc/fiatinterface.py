@@ -19,6 +19,7 @@
 # Modified by Marie Rognes, 2009-2013.
 # Modified by Martin Alnaes, 2013
 # Modified by Andrew T. T. McRae, 2013
+# Modified by Lizao Li, 2015
 
 # Python modules
 from numpy import array, asarray, polymul, zeros, ones
@@ -28,6 +29,7 @@ import weakref
 # UFL and FIAT modules
 import ufl
 from ufl.utils.sorting import sorted_by_key
+from ufl.algorithms.elementtransformations import reconstruct_element
 import FIAT
 
 from FIAT.trace import DiscontinuousLagrangeTrace
@@ -40,9 +42,6 @@ from ffc.quadratureelement import QuadratureElement as FFCQuadratureElement
 from ffc.mixedelement import MixedElement
 from ffc.restrictedelement import RestrictedElement
 from ffc.enrichedelement import SpaceOfReals
-
-# Dictionary mapping from cellname to dimension
-from ufl.cell import cell2dim
 
 # Element families supported by FFC
 supported_families = ("Brezzi-Douglas-Marini",
@@ -70,7 +69,8 @@ supported_families = ("Brezzi-Douglas-Marini",
                       "BrokenElement",
                       "TraceElement",
                       "FacetElement",
-                      "InteriorElement")
+                      "InteriorElement",
+                      "Regge")
 
 # Cache for computed elements
 
@@ -128,6 +128,8 @@ def _create_fiat_element(ufl_element):
 
     # Get element data
     family = ufl_element.family()
+    cell = ufl_element.cell()
+    degree = ufl_element.degree()
 
     # Check that FFC supports this element
     ffc_assert(family in supported_families,
@@ -135,26 +137,11 @@ def _create_fiat_element(ufl_element):
 
     # Handle the space of the constant
     if family == "Real":
-        domain, = ufl_element.domains() # Assuming single domain
-
-        if not isinstance(ufl_element.cell(), ufl.OuterProductCell):
-            dg0_element = ufl.FiniteElement("DG", domain, 0)
-        else:
-            dg0_element_A = ufl.FiniteElement("DG", ufl_element.cell()._A, 0)
-            dg0_element_B = ufl.FiniteElement("DG", ufl_element.cell()._B, 0)
-            dg0_element = ufl.OuterProductElement(dg0_element_A, dg0_element_B).reconstruct(domain=domain)
+        cell = ufl_element.cell()
+        dg0_element = ufl.FiniteElement("DG", cell, 0)
 
         constant = _create_fiat_element(dg0_element)
         return SpaceOfReals(constant)
-
-    # Handle the specialized time elements
-    elif family == "Lobatto" :
-        from ffc.timeelements import LobattoElement as FFCLobattoElement
-        return FFCLobattoElement(ufl_element.degree())
-
-    elif family == "Radau" :
-        from ffc.timeelements import RadauElement as FFCRadauElement
-        return FFCRadauElement(ufl_element.degree())
 
     # FIXME: AL: Should this really be here?
     # Handle QuadratureElement
@@ -166,6 +153,7 @@ def _create_fiat_element(ufl_element):
 
     raise Exception("Something strange happened: reached end of function without returning an element")
 
+
 def create_actual_fiat_element(ufl_element):
     fiat_element = None
 
@@ -175,7 +163,10 @@ def create_actual_fiat_element(ufl_element):
         # We support RTCE and RTCF elements on quadrilaterals,
         # even though they are not supported by FIAT.
         if ufl_element.cell().cellname() == "quadrilateral":
-            fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
+            fiat_element = create_actual_fiat_element(reconstruct_element(ufl_element,
+                                                                          ufl_element.family(),
+                                                                          _quad_opc,
+                                                                          ufl_element.degree()))
         else:
             if family in ("FacetElement", "InteriorElement"):
                 # rescue these
@@ -188,9 +179,9 @@ def create_actual_fiat_element(ufl_element):
         pass
     # HDiv and HCurl elements have family "OuterProductElement",
     # so get matching FIAT element directly rather than via lookup
-    elif isinstance(ufl_element, ufl.HDiv):
+    elif isinstance(ufl_element, ufl.HDivElement):
         fiat_element = FIAT.Hdiv(create_element(ufl_element._element))
-    elif isinstance(ufl_element, ufl.HCurl):
+    elif isinstance(ufl_element, ufl.HCurlElement):
         fiat_element = FIAT.Hcurl(create_element(ufl_element._element))
     elif isinstance(ufl_element, ufl.FacetElement):
         fiat_element = FIAT.RestrictedElement(create_element(ufl_element._element), restriction_domain="facet")
@@ -206,8 +197,7 @@ def create_actual_fiat_element(ufl_element):
             fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
         elif isinstance(ufl_element, (ufl.OuterProductElement, ufl.OuterProductVectorElement, ufl.OuterProductTensorElement)):
-            domain, = ufl_element.domains() # Assuming single domain
-            cell = domain.cell()            # Assuming single cell in domain
+            cell = ufl_element.cell()
             if not isinstance(cell, ufl.OuterProductCell):
                 error("An OuterProductElement must have an OuterProductCell as domain, sorry.")
 
@@ -220,8 +210,7 @@ def create_actual_fiat_element(ufl_element):
             fiat_element = create_actual_fiat_element(ufl_element.reconstruct(domain=_quad_opc))
         else:
             # "Normal element" case
-            domain, = ufl_element.domains() # Assuming single domain
-            cell = domain.cell()            # Assuming single cell in domain
+            cell = ufl_element.cell()
             degree = ufl_element.degree()
             fiat_cell = reference_cell(cell)
             fiat_element = ElementClass(fiat_cell, degree)
@@ -261,7 +250,12 @@ def create_quadrature(cell, num_points):
     if isinstance(cell, int) and cell == 0:
         return ([()], array([1.0,]))
 
-    if cell2dim(cell) == 0:
+    if isinstance(cell, str):
+        cellname = cell
+    else:
+        cellname = cell.cellname()
+
+    if cellname == "vertex":
         return ([()], array([1.0,]))
 
     quad_rule = FIAT.make_quadrature(reference_cell(cell), num_points)
@@ -271,23 +265,23 @@ def map_facet_points(*arg, **kwargs):
     # This is here to prevent import failures from dead code.
     raise NotImplementedError("Function removed!")
 
-def _extract_elements(ufl_element, domain=None):
+def _extract_elements(ufl_element, restriction_domain=None):
     "Recursively extract un-nested list of (component) elements."
 
     elements = []
     if isinstance(ufl_element, ufl.MixedElement):
         for sub_element in ufl_element.sub_elements():
-            elements += _extract_elements(sub_element, domain)
+            elements += _extract_elements(sub_element, restriction_domain)
         return elements
 
     # Handle restricted elements since they might be mixed elements too.
     if isinstance(ufl_element, ufl.RestrictedElement):
-        base_element = ufl_element.element()
-        restriction = ufl_element.cell_restriction()
-        return _extract_elements(base_element, restriction)
+        base_element = ufl_element.sub_element()
+        restriction_domain = ufl_element.restriction_domain()
+        return _extract_elements(base_element, restriction_domain)
 
-    if domain:
-        ufl_element = ufl.RestrictedElement(ufl_element, domain)
+    if restriction_domain:
+        ufl_element = ufl.RestrictedElement(ufl_element, restriction_domain)
 
     elements += [create_element(ufl_element)]
 
@@ -299,13 +293,14 @@ def _create_restricted_element(ufl_element):
     if not isinstance(ufl_element, ufl.RestrictedElement):
         error("create_restricted_element expects an ufl.RestrictedElement")
 
-    base_element = ufl_element.element()
-    restriction_domain = ufl_element.cell_restriction()
+    base_element = ufl_element.sub_element()
+    restriction_domain = ufl_element.restriction_domain()
 
     # If simple element -> create RestrictedElement from fiat_element
     if isinstance(base_element, ufl.FiniteElement):
         element = _create_fiat_element(base_element)
-        return RestrictedElement(element, _indices(element, restriction_domain), restriction_domain)
+        tdim = ufl_element.cell().topological_dimension()
+        return RestrictedElement(element, _indices(element, restriction_domain, tdim), restriction_domain)
 
     # If restricted mixed element -> convert to mixed restricted element
     if isinstance(base_element, ufl.MixedElement):
@@ -314,7 +309,7 @@ def _create_restricted_element(ufl_element):
 
     error("Cannot create restricted element from %s" % str(ufl_element))
 
-def _indices(element, restriction_domain, dim=0):
+def _indices(element, restriction_domain, tdim):
     "Extract basis functions indices that correspond to restriction_domain."
 
     # FIXME: The restriction_domain argument in FFC/UFL needs to be re-thought and
@@ -322,31 +317,27 @@ def _indices(element, restriction_domain, dim=0):
 
     # If restriction_domain is "interior", pick basis functions associated with
     # cell.
-    if restriction_domain == "interior" and dim:
-        return element.entity_dofs()[dim][0]
+    if restriction_domain == "interior":
+        return element.entity_dofs()[tdim][0]
 
-    # If restriction_domain is a ufl.Cell, pick basis functions associated with
+    # Pick basis functions associated with
     # the topological degree of the restriction_domain and of all lower
     # dimensions.
-    if isinstance(restriction_domain, ufl.Cell):
-        dim = restriction_domain.topological_dimension()
-        entity_dofs = element.entity_dofs()
-        indices = []
-        for dim in range(restriction_domain.topological_dimension() + 1):
-            entities = entity_dofs[dim]
-            for (entity, index) in sorted_by_key(entities):
-                indices += index
-        return indices
-
-    # Just extract all indices to make handling in RestrictedElement
-    # uniform.
-    #elif isinstance(restriction_domain, ufl.Measure):
-    #    indices = []
-    #    entity_dofs = element.entity_dofs()
-    #    for dim, entities in entity_dofs.items():
-    #        for entity, index in entities.items():
-    #            indices += index
-    #    return indices
-
+    if restriction_domain == "facet":
+        rdim = tdim-1
+    elif restriction_domain == "face":
+        rdim = 2
+    elif restriction_domain == "edge":
+        rdim = 1
+    elif restriction_domain == "vertex":
+        rdim = 0
     else:
         error("Restriction to domain: %s, is not supported." % repr(restriction_domain))
+
+    entity_dofs = element.entity_dofs()
+    indices = []
+    for dim in range(rdim + 1):
+        entities = entity_dofs[dim]
+        for (entity, index) in sorted_by_key(entities):
+            indices += index
+    return indices

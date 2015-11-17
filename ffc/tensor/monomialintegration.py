@@ -33,6 +33,7 @@ from ffc.log import info, debug, error
 from ffc.fiatinterface import create_element
 from ffc.fiatinterface import map_facet_points
 from ffc.quadrature_schemes import create_quadrature
+from ffc.representationutils import create_quadrature_points_and_weights
 
 # FFC tensor representation modules
 from .multiindex import build_indices
@@ -44,8 +45,7 @@ def integrate(monomial,
               facet0, facet1,
               quadrature_degree,
               quadrature_rule,
-              cellname,
-              facet_cellname):
+              cell):
     """Compute the reference tensor for a given monomial term of a
     multilinear form"""
 
@@ -55,12 +55,7 @@ def integrate(monomial,
     tic = time.time()
 
     # Initialize quadrature points and weights
-    (points, weights) = _init_quadrature(monomial.arguments,
-                                         integral_type,
-                                         quadrature_degree,
-                                         quadrature_rule,
-                                         cellname,
-                                         facet_cellname)
+    (points, weights) = create_quadrature_points_and_weights(integral_type, cell, quadrature_degree, quadrature_rule)
 
     # Initialize quadrature table for basis functions
     table = _init_table(monomial.arguments,
@@ -69,7 +64,7 @@ def integrate(monomial,
                         facet0, facet1)
 
     # Compute table Psi for each factor
-    psis = [_compute_psi(v, table, len(points), integral_type) \
+    psis = [_compute_psi(v, table, len(points)) \
                 for v in monomial.arguments]
 
     # Compute product of all Psis
@@ -82,16 +77,6 @@ def integrate(monomial,
     debug("Shape of reference tensor: " + str(numpy.shape(A0)))
 
     return A0
-
-def _init_quadrature(arguments, integral_type, quadrature_degree, quadrature_rule, cellname, facet_cellname):
-    "Initialize quadrature for given monomial."
-    # Create quadrature rule and get points and weights
-    if integral_type == "cell":
-        (points, weights) = create_quadrature(cellname, quadrature_degree, quadrature_rule)
-    else:
-        (points, weights) = create_quadrature(facet_cellname, quadrature_degree, quadrature_rule)
-
-    return (points, weights)
 
 def _init_table(arguments, integral_type, points, facet0, facet1):
     """Initialize table of basis functions and their derivatives at
@@ -124,7 +109,7 @@ def _init_table(arguments, integral_type, points, facet0, facet1):
 
     return table
 
-def _compute_psi(v, table, num_points, integral_type):
+def _compute_psi(v, table, num_points):
     "Compute the table Psi for the given basis function v."
 
     # We just need to pick the values for Psi from the table, which is
@@ -143,8 +128,7 @@ def _compute_psi(v, table, num_points, integral_type):
     # later when we sum over these dimensions.
 
     # Get topological dimension of cell
-    domain, = v.element.domains() # Assuming single domain
-    tdim = domain.topological_dimension()
+    tdim = v.element.cell().topological_dimension()
 
     # Get indices and shapes for components
     if len(v.components) ==  0:
@@ -173,8 +157,8 @@ def _compute_psi(v, table, num_points, integral_type):
 
     # Iterate over derivative indices
     dlists = build_indices([index.index_range for index in dindex]) or [[]]
+    etable = table[(v.element, v.restriction)]
     if len(cindex) > 0:
-        etable = table[(v.element, v.restriction)]
         for component in range(len(cindex[0].index_range)):
             for dlist in dlists:
                 # Translate derivative multiindex to lookup tuple
@@ -183,7 +167,6 @@ def _compute_psi(v, table, num_points, integral_type):
                 Psi[component][tuple(dlist)] = \
                     etable[dtuple][:, cindex[0].index_range[component], :]
     else:
-        etable = table[(v.element, v.restriction)]
         for dlist in dlists:
             # Translate derivative multiindex to lookup tuple
             dtuple = _multiindex_to_tuple(dlist, tdim)

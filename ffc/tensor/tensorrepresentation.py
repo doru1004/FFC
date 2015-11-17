@@ -60,9 +60,7 @@ def compute_integral_ir(itg_data,
     quadrature_rule = itg_data.metadata["quadrature_rule"]
 
     # Get some cell properties
-    cell = itg_data.domain.cell()
-    cellname = cell.cellname()
-    facet_cellname = cell.facet_cellname()
+    cell = itg_data.domain.ufl_cell()
     num_facets = cell.num_facets()
 
     # Helper to simplify code below
@@ -71,8 +69,7 @@ def compute_integral_ir(itg_data,
                                            integral_type,
                                            quadrature_degree,
                                            quadrature_rule,
-                                           cellname,
-                                           facet_cellname)
+                                           cell)
 
     # Compute representation of cell tensor
     if integral_type == "cell":
@@ -104,8 +101,7 @@ def _compute_terms(monomial_form,
                    integral_type,
                    quadrature_degree,
                    quadrature_rule,
-                   cellname,
-                   facet_cellname):
+                   cell):
     "Compute list of tensor contraction terms for monomial form."
 
     # Compute terms
@@ -121,8 +117,7 @@ def _compute_terms(monomial_form,
                                  facet0, facet1,
                                  quadrature_degree,
                                  quadrature_rule,
-                                 cellname,
-                                 facet_cellname)
+                                 cell)
 
             # Compute geometry tensor
             GK = GeometryTensor(monomial)

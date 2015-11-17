@@ -104,7 +104,7 @@ class MonomialFactor:
             raise MonomialException("Unable to create monomial from expression: " + str(arg))
 
     def element(self):
-        return self.function.element()
+        return self.function.ufl_element()
 
     def index(self):
         if isinstance(self.function, Coefficient):
@@ -334,12 +334,12 @@ class MonomialTransformer(ReuseTransformer):
 
         # Make some unique utility indices
         from ufl import indices
-        on = o.rank()
+        on = len(o.ufl_shape)
         ind = list(indices(on))
 
         # Get underlying expression to take gradient of
         f, = o.ufl_operands
-        fn = f.rank()
+        fn = len(f.ufl_shape)
 
         ffc_assert(on == fn + 1, "Assuming grad always adds one axis.")
 
