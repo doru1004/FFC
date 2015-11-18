@@ -128,7 +128,7 @@ def _analyze_form(form, parameters):
                                       do_apply_function_pullbacks=True,
                                       do_apply_integral_scaling=True,
                                       do_apply_geometry_lowering=True,
-                                      preserve_geometry_types=(Jacobian,),
+                                      preserve_geometry_types=(),
                                       do_apply_restrictions=True,
                                       )
     else:
