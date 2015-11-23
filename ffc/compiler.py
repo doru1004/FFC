@@ -344,6 +344,11 @@ int evaluate(struct Function *f, double *x, double *result)
 	wrap_evaluate(result, (double *)phi, f->f, f->f_map%(nlayers)s, cell);
 	return 0;
 }
+
+extern "C" int evaluate_jacobi(struct Function *f, double *x, double *result)
+{
+	return 0;
+}
 """
 
     return evaluate_template_c % code
