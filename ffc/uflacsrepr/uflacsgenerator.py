@@ -30,6 +30,7 @@ def generate_integral_code(ir, prefix, parameters):
 
     # Generate tabulate_tensor body using uflacs algorithms
     uflacs_code = generate_tabulate_tensor_ast(ir, parameters)
+    return uflacs_code
     tabulate_tensor_code = \
 """
 void %s(%s)

@@ -46,6 +46,7 @@ from ffc.utils import compute_permutations, product
 from ffc.log import info, error, begin, end, debug_ir, ffc_assert, warning
 from ffc.fiatinterface import create_element, reference_cell
 from ffc.mixedelement import MixedElement
+from FIAT.enriched import EnrichedElement
 from ffc.enrichedelement import SpaceOfReals
 from ffc.fiatinterface import DiscontinuousLagrangeTrace
 from ffc.quadratureelement import QuadratureElement
@@ -623,7 +624,7 @@ def _tabulate_dof_coordinates(ufl_element, element):
     cell = ufl_element.cell()
 
     data = {}
-    data["cell"] = domain.cell()
+    data["cell"] = domain.ufl_cell()
     data["tdim"] = cell.topological_dimension()
     data["gdim"] = cell.geometric_dimension()
     data["points"] = [sorted(L.pt_dict.keys())[0] for L in element.dual_basis()]

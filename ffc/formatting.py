@@ -54,6 +54,8 @@ def format_code(code, wrapper_code, prefix, parameters):
     code_h += _generate_comment(parameters) + "\n"
     code_c += _generate_comment(parameters) + "\n"
 
+    if parameters["format"] == "pyop2":
+        return code_integrals
     # Skip if dolfin-related machinery not necessary
     if not parameters["format"] == "dolfin":
         tabulate_tensor_codes = [c['tabulate_tensor'] for c in code_integrals]
