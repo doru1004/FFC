@@ -280,24 +280,7 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          cmdclass         = {"build": my_build},
-          data_files       = [(os.path.join("share", "man", "man1"),
-                               [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
-                              (os.path.join("include"),
-                               [os.path.join("ufc", "ufc.h"),
-                                os.path.join("ufc", "ufc_geometry.h")]),
-                              (os.path.join("share", "ufc"),
-                               [os.path.join("cmake", "templates", \
-                                             "UFCConfig.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UFCConfigVersion.cmake"),
-                                os.path.join("cmake", "templates", \
-                                             "UseUFC.cmake")]),
-                              (os.path.join("lib", "pkgconfig"),
-                               [os.path.join("cmake", "templates", "ufc-1.pc")]),
-                              (os.path.join("include", "swig"),
-                               [os.path.join("ufc", "ufc.i"),
-                                os.path.join("ufc", "ufc_shared_ptr_classes.i")])])
+          cmdclass         = {"build": my_build})
 
 if __name__ == "__main__":
     run_install()
