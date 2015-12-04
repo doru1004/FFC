@@ -221,10 +221,10 @@ def run_install():
 
     # Subclass extension building command to ensure that distutils to
     # finds the correct SWIG executable
-    SWIG_EXECUTABLE = get_swig_executable()
-    class my_build_ext(build_ext.build_ext):
-        def find_swig(self):
-            return SWIG_EXECUTABLE
+    # SWIG_EXECUTABLE = get_swig_executable()
+    # class my_build_ext(build_ext.build_ext):
+    #     def find_swig(self):
+    #         return SWIG_EXECUTABLE
 
     # Subclass the build command to ensure that build_ext produces
     # ufc.py before build_py tries to copy it.
@@ -245,16 +245,16 @@ def run_install():
         CXX_FLAGS += " -std=c++0x"
 
     # Generate config files
-    generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
+    # generate_config_files(SWIG_EXECUTABLE, CXX_FLAGS)
 
-    # Setup extension module for UFC
-    swig_options = ["-c++", "-shadow", "-modern",
-                    "-modernargs", "-fastdispatch",
-                    "-fvirtual", "-nosafecstrings",
-                    "-noproxydel", "-fastproxy",
-                    "-fastinit", "-fastunpack",
-                    "-fastquery", "-nobuildnone"]
-    if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
+    # # Setup extension module for UFC
+    # swig_options = ["-c++", "-shadow", "-modern",
+    #                 "-modernargs", "-fastdispatch",
+    #                 "-fvirtual", "-nosafecstrings",
+    #                 "-noproxydel", "-fastproxy",
+    #                 "-fastinit", "-fastunpack",
+    #                 "-fastquery", "-nobuildnone"]
+    # if sys.version_info[0] > 2: swig_options.insert(0, "-py3")
 
     # Call distutils to perform installation
     setup(name             = "FFC",
@@ -280,7 +280,7 @@ def run_install():
                               "ufc": "ufc"},
           scripts          = scripts,
           include_dirs     = [numpy.get_include()],
-          cmdclass         = {"build": my_build, "build_ext": my_build_ext},
+          cmdclass         = {"build": my_build},
           data_files       = [(os.path.join("share", "man", "man1"),
                                [os.path.join("doc", "man", "man1", "ffc.1.gz")]),
                               (os.path.join("include"),
