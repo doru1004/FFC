@@ -119,13 +119,9 @@ Cell("tetrahedron"): _facet_to_cell_jacobian_tetrahedron,
 Cell("quadrilateral"): _facet_to_cell_jacobian_quad,
 Cell("quadrilateral", 3): _facet_to_cell_jacobian_quad,
 OuterProductCell(Cell("interval"), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
-OuterProductCell(Cell("interval", 2), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
-OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _facet_to_cell_jacobian_interval_x_interval,
-OuterProductCell(Cell("interval", 3), Cell("interval")): _facet_to_cell_jacobian_interval_x_interval,
+OuterProductCell(Cell("interval"), Cell("interval"), gdim=3): _facet_to_cell_jacobian_interval_x_interval,
 OuterProductCell(Cell("triangle"), Cell("interval")): _facet_to_cell_jacobian_triangle_x_interval,
-OuterProductCell(Cell("triangle", 3), Cell("interval")): _facet_to_cell_jacobian_triangle_x_interval,
 OuterProductCell(Cell("quadrilateral"), Cell("interval")): _facet_to_cell_jacobian_quad_x_interval,
-OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _facet_to_cell_jacobian_quad_x_interval
 }
 
 # Code snippets storing facet orientations on reference element
@@ -175,13 +171,9 @@ Cell("tetrahedron"): _reference_normals_tetrahedron,
 Cell("quadrilateral"): _reference_normals_quad,
 Cell("quadrilateral", 3): _reference_normals_quad,
 OuterProductCell(Cell("interval"), Cell("interval")): _reference_normals_interval_x_interval,
-OuterProductCell(Cell("interval", 2), Cell("interval")): _reference_normals_interval_x_interval,
-OuterProductCell(Cell("interval", 2), Cell("interval"), gdim=3): _reference_normals_interval_x_interval,
-OuterProductCell(Cell("interval", 3), Cell("interval")): _reference_normals_interval_x_interval,
+OuterProductCell(Cell("interval"), Cell("interval"), gdim=3): _reference_normals_interval_x_interval,
 OuterProductCell(Cell("triangle"), Cell("interval")): _reference_normals_triangle_x_interval,
-OuterProductCell(Cell("triangle", 3), Cell("interval")): _reference_normals_triangle_x_interval,
 OuterProductCell(Cell("quadrilateral"), Cell("interval")): _reference_normals_quad_x_interval,
-OuterProductCell(Cell("quadrilateral", 3), Cell("interval")): _reference_normals_quad_x_interval
 }
 
 # No idea what this is

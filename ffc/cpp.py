@@ -529,7 +529,9 @@ def _tabulate_tensor(vals):
         # Create zeros if value is smaller than tolerance.
         values = []
         for v in tensor:
-            if abs(v) < f_epsilon:
+            if not isinstance(v, (float, int)):
+                values.append(str(v))
+            elif abs(v) < f_epsilon:
                 values.append(f_float(0.0))
             else:
                 values.append(f_float(v))
