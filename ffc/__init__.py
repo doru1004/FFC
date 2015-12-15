@@ -15,7 +15,7 @@ The interface consists of the following functions:
 __version__ = "1.7.0dev"
 
 # Import compiler functions
-from ffc.compiler import compile_form, compile_element
+from ffc.compiler import compile_form, compile_element, compile_coordinate_element
 
 # Import JIT compiler
 from ffc.jitcompiler import jit
