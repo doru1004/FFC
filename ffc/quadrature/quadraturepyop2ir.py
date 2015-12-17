@@ -384,13 +384,11 @@ def _generate_element_tensor(integrals, sets, optimise_parameters, parameters):
     # Initialise return values.
     tensor_ops_count = 0
 
-    ffc_assert(1 == len(integrals), "This function is not capable of handling multiple integrals.")
-
     # We receive a dictionary {num_points: form,}.
     # Loop points and forms.
+    nest_ir = []
     for points, terms, functions, ip_consts, coordinate, conditionals in integrals:
 
-        nest_ir = []
         ip_ir = []
         num_ops = 0
 
