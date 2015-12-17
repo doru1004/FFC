@@ -844,6 +844,7 @@ def remove_unused(code, used_set=set()):
     names that are known to be used a priori.
     """
 
+    return code
     # Dictionary of (declaration_line, used_lines) for variables
     variables = {}
 
