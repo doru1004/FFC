@@ -35,7 +35,7 @@ from ufl.permutation import build_component_numbering
 from ufl.algorithms import Transformer
 
 # FFC modules.
-from ffc.log import ffc_assert, error, info
+from ffc.log import ffc_assert, error, info, set_indent
 from ffc.fiatinterface import create_element, map_facet_points
 from ffc.mixedelement import MixedElement
 from ffc.cpp import format
@@ -780,6 +780,7 @@ class QuadratureTransformerBase(Transformer):
         if len(terms) == 0 and self.parameters["format"] == "pyop2":
             # Integrand simplified to zero (i.e. empty) so raise
             # exception (Firedrake catches this later)
+            set_indent(0)
             raise EmptyIntegrandError('Integrand %s is empty' % integrand)
         for key, val in sorted(terms.items()):
             # If value was zero continue.
@@ -804,6 +805,7 @@ class QuadratureTransformerBase(Transformer):
         if len(new_terms) == 0 and self.parameters["format"] == "pyop2":
             # Integrand simplified to zero (i.e. empty) so raise
             # exception (Firedrake catches this later)
+            set_indent(0)
             raise EmptyIntegrandError('Integrand %s is empty' % integrand)
         return new_terms
 
