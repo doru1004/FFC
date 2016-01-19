@@ -211,7 +211,7 @@ def compile_element(ufl_element, cdim):
     from ffc.cpp import set_float_formatting, format
     from ffc.fiatinterface import create_actual_fiat_element
     from ffc.symbolic import ssa_arrays, c_print
-    from FIAT.reference_element import two_product_cell
+    from FIAT.reference_element import TensorProductCell
     import ufl
     import sympy as sp
     import numpy as np
@@ -283,7 +283,7 @@ def compile_element(ufl_element, cdim):
     cell = ufl_element.cell()
 
     calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
-    extruded = isinstance(element.get_reference_element(), two_product_cell)
+    extruded = isinstance(element.get_reference_element(), TensorProductCell)
 
     code = {
         "cdim": cdim,
@@ -357,7 +357,7 @@ def compile_coordinate_element(ufl_coordinate_element):
     from ffc.cpp import set_float_formatting, format
     from ffc.fiatinterface import create_actual_fiat_element
     from ffc.symbolic import ssa_arrays, c_print
-    from FIAT.reference_element import two_product_cell
+    from FIAT.reference_element import TensorProductCell
     import ufl
     import sympy as sp
     import numpy as np
@@ -457,7 +457,7 @@ def compile_coordinate_element(ufl_coordinate_element):
     cell = ufl_coordinate_element.cell()
 
     # calculate_basisvalues, vdim = calculate_basisvalues(cell, element)
-    extruded = isinstance(element.get_reference_element(), two_product_cell)
+    extruded = isinstance(element.get_reference_element(), TensorProductCell)
 
     code = {
         "geometric_dimension": cell.geometric_dimension(),

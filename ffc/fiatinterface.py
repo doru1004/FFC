@@ -220,7 +220,7 @@ def create_actual_fiat_element(ufl_element):
 
     if ufl_element.cell().cellname() == "quadrilateral" and \
             isinstance(fiat_element.get_reference_element(),
-                       FIAT.reference_element.two_product_cell):
+                       FIAT.reference_element.TensorProductCell):
         # Flatten tensor product element
 
         from FIAT.reference_element import FiredrakeQuadrilateral
