@@ -196,7 +196,7 @@ def create_actual_fiat_element(ufl_element):
             B = create_element(ufl_element._elements[1])
             fiat_element = ElementClass(A, B)
         # OPVE is only here to satisfy calls from Firedrake
-        elif isinstance(ufl_element, (ufl.TensorProductElement, ufl.TensorProductVectorElement, ufl.OuterProductTensorElement)):
+        elif isinstance(ufl_element, (ufl.TensorProductElement, ufl.TensorProductVectorElement, ufl.TensorProductTensorElement)):
             cell = ufl_element.cell()
             if not isinstance(cell, ufl.TensorProductCell):
                 error("An TensorProductElement must have an TensorProductCell as domain, sorry.")
