@@ -53,7 +53,10 @@ def _find_element_derivatives(expr, elements, element_replace_map):
     for d in list(derivatives):
         # After UFL has evaluated derivatives, only one element
         # can be found inside any single Grad expression
-        elem, = extract_elements(d.ufl_operands[0])
+        elems = extract_elements(d.ufl_operands[0])
+        if len(elems) == 0:
+            continue
+        elem, = elems
         elem = element_replace_map[elem]
         # Set the number of derivatives to the highest value encountered so far.
         num_derivatives[elem] = max(num_derivatives[elem], len(extract_type(d, Grad)), len(extract_type(d, ReferenceGrad)))

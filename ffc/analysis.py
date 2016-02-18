@@ -131,6 +131,16 @@ def _analyze_form(form, parameters):
                                       preserve_geometry_types=(Jacobian,),
                                       do_apply_restrictions=True,
                                       )
+    elif parameters["representation"] == "tsfc":
+        # Temporary workaround to let TSFC have a different preprocessing pipeline
+        # than the legacy representations quadrature and tensor. This approach imposes
+        # a limitation that e.g. uflacs and tensor representation cannot be mixed in the same form.
+        form_data = compute_form_data(form,
+                                      do_apply_function_pullbacks=True,
+                                      do_apply_integral_scaling=True,
+                                      do_apply_geometry_lowering=True,
+                                      do_apply_restrictions=True,
+                                      )
     else:
         form_data = compute_form_data(form)
 
@@ -179,7 +189,7 @@ def _attach_integral_metadata(form_data, parameters):
                                                 form_data.unique_sub_elements,
                                                 form_data.function_replace_map)
                 info("representation:    auto --> %s" % r)
-            elif r in ("quadrature", "tensor", "uflacs"):
+            elif r in ("quadrature", "tensor", "uflacs", "tsfc"):
                 info("representation:    %s" % r)
             else:
                 info("Valid choices are 'tensor', 'quadrature', 'uflacs', or 'auto'.")
